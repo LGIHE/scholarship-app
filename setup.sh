@@ -329,7 +329,7 @@ install_dependencies() {
     print_header "Installing Dependencies"
     
     print_info "Installing Composer dependencies..."
-    if composer install --no-interaction --prefer-dist --optimize-autoloader; then
+    if /opt/cpanel/ea-php84/root/usr/bin/php $(which composer) install --no-dev --optimize-autoloader; then
         print_success "Composer dependencies installed"
     else
         print_error "Failed to install Composer dependencies"
@@ -371,7 +371,26 @@ run_migrations() {
         return 0
     else
         print_error "Failed to run migrations"
-        return 1
+        print_info "Attempting to reset and retry migrations..."
+        
+        # Try to reset and run again
+        php artisan migrate:reset --force 2>/dev/null
+        
+        # For SQLite, recreate the database file if it exists
+        if [ "$DB_CONNECTION" = "sqlite" ] && [ -f "$DB_DATABASE" ]; then
+            print_info "Recreating SQLite database file..."
+            rm -f "$DB_DATABASE"
+            touch "$DB_DATABASE"
+        fi
+        
+        if php artisan migrate --force; then
+            print_success "Database migrations completed after reset"
+            return 0
+        else
+            print_error "Migration failed even after reset. Please check your database configuration."
+            print_info "For MySQL/PostgreSQL, you may need to manually drop and recreate the database."
+            return 1
+        fi
     fi
 }
 
