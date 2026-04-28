@@ -61,6 +61,7 @@ class ApplicationController extends Controller
             'user_id' => $request->user()->id,
             'has_documents' => $request->has('documents'),
             'all_keys' => array_keys($request->all()),
+            'documents_keys' => $request->has('documents') ? array_keys($request->input('documents', [])) : [],
         ]);
 
         $request->validate([
@@ -75,7 +76,7 @@ class ApplicationController extends Controller
             'personal_info.residence_area' => 'required|string|in:rural,urban',
             'personal_info.university' => 'required|string|max:255',
             'personal_info.program_of_study' => 'required|string|max:255',
-            'personal_info.cgpa' => 'required|numeric|between:0,5',
+            'personal_info.cgpa' => 'nullable|numeric|between:0,5',
             'personal_info.high_school' => 'required|string|max:255',
             'financial_info' => 'required|array',
             'financial_info.household_income' => 'required|numeric|min:0',
@@ -91,19 +92,41 @@ class ApplicationController extends Controller
             'essay' => 'required|array',
             'essay.personal_statement' => 'required|string|min:100',
             'essay.commitment' => 'required|string|min:100',
+            'documents' => 'required|array',
+            'documents.academic_documents' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'documents.national_id' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'documents.admission_form' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'documents.provisional_results' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ], [], [
+            // Custom attribute names for better error messages
+            'personal_info.first_name' => 'first name',
+            'personal_info.last_name' => 'last name',
+            'personal_info.gender' => 'gender',
+            'personal_info.has_disability' => 'disability status',
+            'personal_info.disability_details' => 'disability details',
+            'personal_info.refugee_or_displaced' => 'refugee/displaced status',
+            'personal_info.refugee_details' => 'refugee/displaced details',
+            'personal_info.residence_area' => 'residence area',
+            'personal_info.university' => 'university',
+            'personal_info.program_of_study' => 'program of study',
+            'personal_info.cgpa' => 'CGPA',
+            'personal_info.high_school' => 'high school',
+            'financial_info.household_income' => 'household income',
+            'financial_info.number_of_dependents' => 'number of dependents',
+            'financial_info.estimated_tuition' => 'estimated tuition',
+            'financial_info.estimated_living_expenses' => 'estimated living expenses',
+            'financial_info.income_sources' => 'income sources',
+            'financial_info.funding_gap' => 'funding gap',
+            'guardian_info.guardian_name' => 'guardian name',
+            'guardian_info.guardian_phone' => 'guardian phone',
+            'guardian_info.guardian_relation' => 'guardian relation',
+            'essay.personal_statement' => 'personal statement',
+            'essay.commitment' => 'teaching commitment',
+            'documents.academic_documents' => 'academic documents',
+            'documents.national_id' => 'national ID',
+            'documents.admission_form' => 'admission form',
+            'documents.provisional_results' => 'provisional results',
         ]);
-
-        // Validate documents separately with better error handling
-        $documentValidation = [];
-        if ($request->has('documents')) {
-            $documentValidation = [
-                'documents.academic_documents' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-                'documents.national_id' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-                'documents.admission_form' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-                'documents.provisional_results' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            ];
-            $request->validate($documentValidation);
-        }
 
         $payload = $this->preparePayload($request);
         
@@ -115,37 +138,32 @@ class ApplicationController extends Controller
         // Handle document uploads with custom naming
         $documentPaths = [];
         
-        // Check if documents exist in the request
-        if ($request->has('documents')) {
-            $documents = $request->input('documents');
-            
-            if (isset($documents['academic_documents']) && $documents['academic_documents'] instanceof \Illuminate\Http\UploadedFile) {
-                $file = $documents['academic_documents'];
-                $extension = $file->getClientOriginalExtension();
-                $filename = $applicantName . '_academic_documents.' . $extension;
-                $documentPaths['academic_documents'] = $file->storeAs('applications/documents', $filename, 'public');
-            }
-            
-            if (isset($documents['national_id']) && $documents['national_id'] instanceof \Illuminate\Http\UploadedFile) {
-                $file = $documents['national_id'];
-                $extension = $file->getClientOriginalExtension();
-                $filename = $applicantName . '_national_id.' . $extension;
-                $documentPaths['national_id'] = $file->storeAs('applications/documents', $filename, 'public');
-            }
-            
-            if (isset($documents['admission_form']) && $documents['admission_form'] instanceof \Illuminate\Http\UploadedFile) {
-                $file = $documents['admission_form'];
-                $extension = $file->getClientOriginalExtension();
-                $filename = $applicantName . '_admission_form.' . $extension;
-                $documentPaths['admission_form'] = $file->storeAs('applications/documents', $filename, 'public');
-            }
-            
-            if (isset($documents['provisional_results']) && $documents['provisional_results'] instanceof \Illuminate\Http\UploadedFile) {
-                $file = $documents['provisional_results'];
-                $extension = $file->getClientOriginalExtension();
-                $filename = $applicantName . '_provisional_results.' . $extension;
-                $documentPaths['provisional_results'] = $file->storeAs('applications/documents', $filename, 'public');
-            }
+        if ($request->hasFile('documents.academic_documents')) {
+            $file = $request->file('documents.academic_documents');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $applicantName . '_academic_documents.' . $extension;
+            $documentPaths['academic_documents'] = $file->storeAs('applications/documents', $filename, 'public');
+        }
+        
+        if ($request->hasFile('documents.national_id')) {
+            $file = $request->file('documents.national_id');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $applicantName . '_national_id.' . $extension;
+            $documentPaths['national_id'] = $file->storeAs('applications/documents', $filename, 'public');
+        }
+        
+        if ($request->hasFile('documents.admission_form')) {
+            $file = $request->file('documents.admission_form');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $applicantName . '_admission_form.' . $extension;
+            $documentPaths['admission_form'] = $file->storeAs('applications/documents', $filename, 'public');
+        }
+        
+        if ($request->hasFile('documents.provisional_results')) {
+            $file = $request->file('documents.provisional_results');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $applicantName . '_provisional_results.' . $extension;
+            $documentPaths['provisional_results'] = $file->storeAs('applications/documents', $filename, 'public');
         }
 
         $application = Application::updateOrCreate(
@@ -166,6 +184,7 @@ class ApplicationController extends Controller
         \Illuminate\Support\Facades\Log::info('Application submitted successfully', [
             'application_id' => $application->id,
             'status' => $application->status,
+            'documents_uploaded' => count($documentPaths),
         ]);
 
         try {

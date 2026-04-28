@@ -63,8 +63,13 @@ class ScoringService
     private function calculateAcademicMerit(array $personalInfo): int
     {
         // Max 25 points
-        // Assuming GPA out of 4.0 is provided. If not, default to average 2.5
-        $gpa = floatval($personalInfo['gpa'] ?? 2.5);
+        // Check for CGPA first, then GPA, default to 0 if neither exists (for first-year students)
+        $gpa = floatval($personalInfo['cgpa'] ?? $personalInfo['gpa'] ?? 0);
+        
+        // If no GPA provided (first-year students), give base points
+        if ($gpa == 0) {
+            return 10; // Base points for first-year students without CGPA
+        }
         
         // Formula: (GPA / 4.0) * 25
         $score = ($gpa / 4.0) * 25;

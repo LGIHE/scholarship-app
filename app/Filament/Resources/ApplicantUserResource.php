@@ -113,7 +113,7 @@ class ApplicantUserResource extends Resource
                             ->options(function () {
                                 return \Spatie\Permission\Models\Permission::all()
                                     ->pluck('name', 'id')
-                                    ->toArray();
+                                    ->map(fn ($name) => ucwords(str_replace(['.', '_'], ' ', $name)));
                             })
                             ->columns(3)
                             ->gridDirection('row')

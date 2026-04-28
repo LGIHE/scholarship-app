@@ -78,7 +78,7 @@ class RoleResource extends Resource
                                             ->options(function () {
                                                 return Permission::where('name', 'like', 'application.%')
                                                     ->pluck('name', 'id')
-                                                    ->mapWithKeys(fn ($name, $id) => [$id => ucwords(str_replace(['.', '_'], ' ', $name))]);
+                                                    ->map(fn ($name) => ucwords(str_replace(['.', '_'], ' ', $name)));
                                             })
                                             ->columns(2)
                                             ->gridDirection('row')
@@ -93,7 +93,7 @@ class RoleResource extends Resource
                                             ->options(function () {
                                                 return Permission::where('name', 'like', 'scholar.%')
                                                     ->pluck('name', 'id')
-                                                    ->mapWithKeys(fn ($name, $id) => [$id => ucwords(str_replace(['.', '_'], ' ', $name))]);
+                                                    ->map(fn ($name) => ucwords(str_replace(['.', '_'], ' ', $name)));
                                             })
                                             ->columns(2)
                                             ->gridDirection('row')
@@ -108,7 +108,7 @@ class RoleResource extends Resource
                                             ->options(function () {
                                                 return Permission::where('name', 'like', 'user.%')
                                                     ->pluck('name', 'id')
-                                                    ->mapWithKeys(fn ($name, $id) => [$id => ucwords(str_replace(['.', '_'], ' ', $name))]);
+                                                    ->map(fn ($name) => ucwords(str_replace(['.', '_'], ' ', $name)));
                                             })
                                             ->columns(2)
                                             ->gridDirection('row')
@@ -126,7 +126,7 @@ class RoleResource extends Resource
                                                     'permission.view', 'permission.create', 'permission.edit', 'permission.delete',
                                                 ])
                                                     ->pluck('name', 'id')
-                                                    ->mapWithKeys(fn ($name, $id) => [$id => ucwords(str_replace(['.', '_'], ' ', $name))]);
+                                                    ->map(fn ($name) => ucwords(str_replace(['.', '_'], ' ', $name)));
                                             })
                                             ->columns(2)
                                             ->gridDirection('row')
@@ -144,7 +144,7 @@ class RoleResource extends Resource
                                                         ->orWhere('name', 'like', 'report.%');
                                                 })
                                                     ->pluck('name', 'id')
-                                                    ->mapWithKeys(fn ($name, $id) => [$id => ucwords(str_replace(['.', '_'], ' ', $name))]);
+                                                    ->map(fn ($name) => ucwords(str_replace(['.', '_'], ' ', $name)));
                                             })
                                             ->columns(2)
                                             ->gridDirection('row')
@@ -159,7 +159,7 @@ class RoleResource extends Resource
                                             ->options(function () {
                                                 return Permission::where('name', 'like', 'settings.%')
                                                     ->pluck('name', 'id')
-                                                    ->mapWithKeys(fn ($name, $id) => [$id => ucwords(str_replace(['.', '_'], ' ', $name))]);
+                                                    ->map(fn ($name) => ucwords(str_replace(['.', '_'], ' ', $name)));
                                             })
                                             ->columns(2)
                                             ->gridDirection('row')

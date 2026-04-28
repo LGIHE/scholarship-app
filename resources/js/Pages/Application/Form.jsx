@@ -8,6 +8,19 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+// Helper component for required labels
+const RequiredLabel = ({ htmlFor, value, required = false }) => (
+    <InputLabel 
+        htmlFor={htmlFor} 
+        value={
+            <span>
+                {value}
+                {required && <span className="ml-1 text-red-500">*</span>}
+            </span>
+        } 
+    />
+);
+
 const STEP_CONFIG = [
     {
         id: 1,
@@ -171,6 +184,7 @@ export default function Form() {
     const [activeStep, setActiveStep] = useState(1);
     const [savingDraft, setSavingDraft] = useState(false);
     const [draftMessage, setDraftMessage] = useState('');
+    const [stepErrors, setStepErrors] = useState({});
 
     const initialRender = useRef(true);
     const hasChanged = useRef(false);
@@ -236,10 +250,11 @@ export default function Form() {
             toNumber(data.financial_info.number_of_dependents) * 2,
         );
 
-        const academicMerit = Math.max(
-            0,
-            Math.min(25, (toNumber(data.personal_info.cgpa) / 4) * 25),
-        );
+        // Handle optional CGPA - give base points if not provided
+        const cgpa = toNumber(data.personal_info.cgpa);
+        const academicMerit = cgpa === 0 
+            ? 10 // Base points for first-year students without CGPA
+            : Math.max(0, Math.min(25, (cgpa / 4) * 25));
 
         let demographics = 5;
 
@@ -297,6 +312,16 @@ export default function Form() {
             ...data[section],
             [field]: value,
         });
+
+        // Clear step errors for this field when user starts typing
+        const fieldKey = `${section}.${field}`;
+        if (stepErrors[fieldKey]) {
+            setStepErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[fieldKey];
+                return newErrors;
+            });
+        }
     };
 
     const saveDraft = async (message = 'Draft saved successfully.') => {
@@ -349,8 +374,106 @@ export default function Form() {
         setActiveStep(stepId);
     };
 
+    // Validate current step before moving forward
+    const validateStep = (step) => {
+        const errors = {};
+
+        if (step === 1) {
+            // Personal Info validation
+            if (!data.personal_info.first_name?.trim()) {
+                errors['personal_info.first_name'] = 'First name is required';
+            }
+            if (!data.personal_info.last_name?.trim()) {
+                errors['personal_info.last_name'] = 'Last name is required';
+            }
+            if (!data.personal_info.gender) {
+                errors['personal_info.gender'] = 'Gender is required';
+            }
+            if (!data.personal_info.has_disability) {
+                errors['personal_info.has_disability'] = 'Disability status is required';
+            }
+            if (data.personal_info.has_disability === 'yes' && !data.personal_info.disability_details?.trim()) {
+                errors['personal_info.disability_details'] = 'Disability details are required';
+            }
+            if (!data.personal_info.refugee_or_displaced) {
+                errors['personal_info.refugee_or_displaced'] = 'Refugee/displaced status is required';
+            }
+            if (data.personal_info.refugee_or_displaced === 'yes' && !data.personal_info.refugee_details?.trim()) {
+                errors['personal_info.refugee_details'] = 'Refugee/displaced details are required';
+            }
+            if (!data.personal_info.residence_area) {
+                errors['personal_info.residence_area'] = 'Residence area is required';
+            }
+            if (!data.personal_info.university?.trim()) {
+                errors['personal_info.university'] = 'University is required';
+            }
+            if (!data.personal_info.program_of_study?.trim()) {
+                errors['personal_info.program_of_study'] = 'Program of study is required';
+            }
+            if (!data.personal_info.high_school?.trim()) {
+                errors['personal_info.high_school'] = 'High school is required';
+            }
+        } else if (step === 2) {
+            // Financial Info validation
+            if (!data.financial_info.household_income || data.financial_info.household_income === '') {
+                errors['financial_info.household_income'] = 'Household income is required';
+            }
+            if (!data.financial_info.number_of_dependents && data.financial_info.number_of_dependents !== 0) {
+                errors['financial_info.number_of_dependents'] = 'Number of dependents is required';
+            }
+            if (!data.financial_info.estimated_tuition || data.financial_info.estimated_tuition === '') {
+                errors['financial_info.estimated_tuition'] = 'Estimated tuition is required';
+            }
+            if (!data.financial_info.estimated_living_expenses || data.financial_info.estimated_living_expenses === '') {
+                errors['financial_info.estimated_living_expenses'] = 'Estimated living expenses is required';
+            }
+            if (!data.financial_info.income_sources?.trim()) {
+                errors['financial_info.income_sources'] = 'Income sources is required';
+            }
+        } else if (step === 3) {
+            // Guardian Info validation
+            if (!data.guardian_info.guardian_name?.trim()) {
+                errors['guardian_info.guardian_name'] = 'Guardian name is required';
+            }
+            if (!data.guardian_info.guardian_phone?.trim()) {
+                errors['guardian_info.guardian_phone'] = 'Guardian phone is required';
+            }
+            if (!data.guardian_info.guardian_relation?.trim()) {
+                errors['guardian_info.guardian_relation'] = 'Guardian relation is required';
+            }
+        } else if (step === 4) {
+            // Documents validation
+            if (!data.documents.academic_documents) {
+                errors['documents.academic_documents'] = 'Academic documents are required';
+            }
+            if (!data.documents.national_id) {
+                errors['documents.national_id'] = 'National ID is required';
+            }
+        } else if (step === 5) {
+            // Essay validation
+            if (!data.essay.personal_statement?.trim() || countWords(data.essay.personal_statement) < 100) {
+                errors['essay.personal_statement'] = 'Personal statement is required (minimum 100 words)';
+            }
+            if (!data.essay.commitment?.trim() || countWords(data.essay.commitment) < 100) {
+                errors['essay.commitment'] = 'Teaching commitment is required (minimum 100 words)';
+            }
+        }
+
+        return errors;
+    };
+
     const nextStep = () => {
         if (activeStep === STEP_CONFIG.length) {
+            return;
+        }
+
+        // Validate current step
+        const errors = validateStep(activeStep);
+        setStepErrors(errors);
+
+        if (Object.keys(errors).length > 0) {
+            setDraftMessage('Please fill in all required fields before proceeding.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
 
@@ -369,6 +492,25 @@ export default function Form() {
         setActiveStep((current) => current - 1);
     };
 
+    // Helper function to determine which step has errors
+    const getStepWithErrors = (errorKey) => {
+        if (errorKey.startsWith('personal_info.')) return 1;
+        if (errorKey.startsWith('financial_info.')) return 2;
+        if (errorKey.startsWith('guardian_info.')) return 3;
+        if (errorKey.startsWith('documents.')) return 4;
+        if (errorKey.startsWith('essay.')) return 5;
+        return 6;
+    };
+
+    // Get steps that have errors
+    const stepsWithErrors = useMemo(() => {
+        const steps = new Set();
+        Object.keys(errors).forEach((key) => {
+            steps.add(getStepWithErrors(key));
+        });
+        return steps;
+    }, [errors]);
+
     const submit = (event) => {
         event.preventDefault();
 
@@ -380,7 +522,7 @@ export default function Form() {
         // Use FormData for file uploads
         post(route('application.submit'), {
             forceFormData: true,
-            preserveScroll: true,
+            preserveScroll: false,
             onSuccess: () => {
                 console.log('Application submitted successfully');
                 setDraftMessage('Application submitted successfully.');
@@ -388,6 +530,8 @@ export default function Form() {
             onError: (errors) => {
                 console.error('Submission errors:', errors);
                 setDraftMessage('Error submitting application. Please check all required fields.');
+                // Scroll to top to show error summary
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             },
         });
     };
@@ -440,13 +584,23 @@ export default function Form() {
                                     type="button"
                                     onClick={() => goToStep(step.id)}
                                     className={
-                                        'rounded-md border px-3 py-3 text-left transition ' +
+                                        'relative rounded-md border px-3 py-3 text-left transition ' +
                                         (step.id === activeStep
                                             ? 'border-emerald-500 bg-emerald-50'
-                                            : 'border-gray-200 hover:border-gray-300')
+                                            : stepsWithErrors.has(step.id)
+                                              ? 'border-red-300 bg-red-50 hover:border-red-400'
+                                              : 'border-gray-200 hover:border-gray-300')
                                     }
                                 >
-                                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    {stepsWithErrors.has(step.id) && (
+                                        <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                                            !
+                                        </div>
+                                    )}
+                                    <div className={
+                                        'text-xs font-semibold uppercase tracking-wide ' +
+                                        (stepsWithErrors.has(step.id) ? 'text-red-600' : 'text-gray-500')
+                                    }>
                                         Step {step.id}
                                     </div>
                                     <div className="text-sm font-semibold text-gray-900">
@@ -460,6 +614,31 @@ export default function Form() {
                         </div>
 
                         <form onSubmit={submit}>
+                            {/* Error Summary Banner */}
+                            {(Object.keys(errors).length > 0 || Object.keys(stepErrors).length > 0) && (
+                                <div className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4">
+                                    <div className="flex items-start">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3 flex-1">
+                                            <h3 className="text-sm font-semibold text-red-800">
+                                                Please fix the following errors before proceeding:
+                                            </h3>
+                                            <div className="mt-2 text-sm text-red-700">
+                                                <ul className="list-disc space-y-1 pl-5">
+                                                    {Object.entries({...errors, ...stepErrors}).map(([key, message]) => (
+                                                        <li key={key}>{message}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={activeStep}
@@ -472,7 +651,7 @@ export default function Form() {
                                     {activeStep === 1 && (
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <div>
-                                                <InputLabel htmlFor="first_name" value="First Name" />
+                                                <RequiredLabel htmlFor="first_name" value="First Name" required />
                                                 <TextInput
                                                     id="first_name"
                                                     className="mt-1 block w-full"
@@ -488,13 +667,13 @@ export default function Form() {
                                                     required
                                                 />
                                                 <InputError
-                                                    message={errors['personal_info.first_name']}
+                                                    message={errors['personal_info.first_name'] || stepErrors['personal_info.first_name']}
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             <div>
-                                                <InputLabel htmlFor="last_name" value="Last Name" />
+                                                <RequiredLabel htmlFor="last_name" value="Last Name" required />
                                                 <TextInput
                                                     id="last_name"
                                                     className="mt-1 block w-full"
@@ -510,7 +689,7 @@ export default function Form() {
                                                     required
                                                 />
                                                 <InputError
-                                                    message={errors['personal_info.last_name']}
+                                                    message={errors['personal_info.last_name'] || stepErrors['personal_info.last_name']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -559,7 +738,7 @@ export default function Form() {
                                             </div>
 
                                             <div>
-                                                <InputLabel htmlFor="gender" value="Gender" />
+                                                <RequiredLabel htmlFor="gender" value="Gender" required />
                                                 <select
                                                     id="gender"
                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -582,7 +761,7 @@ export default function Form() {
                                                     </option>
                                                 </select>
                                                 <InputError
-                                                    message={errors['personal_info.gender']}
+                                                    message={errors['personal_info.gender'] || stepErrors['personal_info.gender']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -609,7 +788,7 @@ export default function Form() {
                                             </div>
 
                                             <div>
-                                                <InputLabel htmlFor="university" value="University" />
+                                                <RequiredLabel htmlFor="university" value="University" required />
                                                 <TextInput
                                                     id="university"
                                                     className="mt-1 block w-full"
@@ -625,15 +804,16 @@ export default function Form() {
                                                     required
                                                 />
                                                 <InputError
-                                                    message={errors['personal_info.university']}
+                                                    message={errors['personal_info.university'] || stepErrors['personal_info.university']}
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="program_of_study"
                                                     value="Program of Study"
+                                                    required
                                                 />
                                                 <TextInput
                                                     id="program_of_study"
@@ -650,7 +830,7 @@ export default function Form() {
                                                     required
                                                 />
                                                 <InputError
-                                                    message={errors['personal_info.program_of_study']}
+                                                    message={errors['personal_info.program_of_study'] || stepErrors['personal_info.program_of_study']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -677,7 +857,7 @@ export default function Form() {
                                             </div>
 
                                             <div>
-                                                <InputLabel htmlFor="cgpa" value="Current CGPA" />
+                                                <InputLabel htmlFor="cgpa" value="Current CGPA (Optional)" />
                                                 <TextInput
                                                     id="cgpa"
                                                     type="number"
@@ -694,8 +874,10 @@ export default function Form() {
                                                         )
                                                     }
                                                     disabled={isLocked}
-                                                    required
                                                 />
+                                                <p className="mt-1 text-xs text-gray-600">
+                                                    Leave blank if you're a first-year student
+                                                </p>
                                                 <InputError
                                                     message={errors['personal_info.cgpa']}
                                                     className="mt-2"
@@ -703,7 +885,7 @@ export default function Form() {
                                             </div>
 
                                             <div>
-                                                <InputLabel htmlFor="high_school" value="High School" />
+                                                <RequiredLabel htmlFor="high_school" value="High School" required />
                                                 <TextInput
                                                     id="high_school"
                                                     className="mt-1 block w-full"
@@ -719,7 +901,7 @@ export default function Form() {
                                                     required
                                                 />
                                                 <InputError
-                                                    message={errors['personal_info.high_school']}
+                                                    message={errors['personal_info.high_school'] || stepErrors['personal_info.high_school']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -749,9 +931,10 @@ export default function Form() {
                                             </div>
 
                                             <div className="md:col-span-2">
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="has_disability"
                                                     value="Are you a person with disability?"
+                                                    required
                                                 />
                                                 <select
                                                     id="has_disability"
@@ -773,16 +956,17 @@ export default function Form() {
                                                     <option value="prefer_not_to_answer">Prefer Not to Answer</option>
                                                 </select>
                                                 <InputError
-                                                    message={errors['personal_info.has_disability']}
+                                                    message={errors['personal_info.has_disability'] || stepErrors['personal_info.has_disability']}
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             {data.personal_info.has_disability === 'yes' && (
                                                 <div className="md:col-span-2">
-                                                    <InputLabel
+                                                    <RequiredLabel
                                                         htmlFor="disability_details"
                                                         value="Please specify your disability"
+                                                        required
                                                     />
                                                     <TextInput
                                                         id="disability_details"
@@ -799,7 +983,7 @@ export default function Form() {
                                                         placeholder="Please describe your disability"
                                                     />
                                                     <InputError
-                                                        message={errors['personal_info.disability_details']}
+                                                        message={errors['personal_info.disability_details'] || stepErrors['personal_info.disability_details']}
                                                         className="mt-2"
                                                     />
                                                 </div>
@@ -896,9 +1080,10 @@ export default function Form() {
                                     {activeStep === 2 && (
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="household_income"
                                                     value="Household Income (UGX)"
+                                                    required
                                                 />
                                                 <TextInput
                                                     id="household_income"
@@ -917,7 +1102,7 @@ export default function Form() {
                                                     required
                                                 />
                                                 <InputError
-                                                    message={errors['financial_info.household_income']}
+                                                    message={errors['financial_info.household_income'] || stepErrors['financial_info.household_income']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -1340,9 +1525,10 @@ export default function Form() {
                                             </div>
 
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="academic_documents"
-                                                    value="Academic Documents (Required)"
+                                                    value="Academic Documents"
+                                                    required
                                                 />
                                                 <p className="mt-1 text-xs text-gray-600 mb-2">
                                                     Upload transcripts, certificates, or other academic records as a single PDF document
@@ -1368,15 +1554,16 @@ export default function Form() {
                                                     </p>
                                                 )}
                                                 <InputError
-                                                    message={errors['documents.academic_documents']}
+                                                    message={errors['documents.academic_documents'] || stepErrors['documents.academic_documents']}
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="national_id"
-                                                    value="National ID (Required)"
+                                                    value="National ID"
+                                                    required
                                                 />
                                                 <p className="mt-1 text-xs text-gray-600 mb-2">
                                                     Upload a clear copy of your National ID card (both sides if applicable)
