@@ -361,6 +361,76 @@ generate_app_key() {
     fi
 }
 
+# Function to clean database for fresh migration
+clean_database() {
+    print_info "Cleaning database for fresh migration..."
+    
+    if [ "$DB_CONNECTION" = "sqlite" ] && [ -f "$DB_DATABASE" ]; then
+        print_info "Recreating SQLite database file..."
+        rm -f "$DB_DATABASE"
+        touch "$DB_DATABASE"
+        return 0
+    elif [ "$DB_CONNECTION" = "mysql" ] || [ "$DB_CONNECTION" = "pgsql" ]; then
+        print_warning "For MySQL/PostgreSQL, we need to drop and recreate the database."
+        read -p "Do you want to drop and recreate the database? This will delete ALL data! (y/N): " confirm_drop
+        
+        if [[ $confirm_drop =~ ^[Yy]$ ]]; then
+            print_info "Dropping and recreating database..."
+            
+            # Create a temporary script to drop and recreate database
+            cat > temp_db_reset.php << 'EOF'
+<?php
+$host = $argv[1] ?? '127.0.0.1';
+$port = $argv[2] ?? '3306';
+$database = $argv[3] ?? 'laravel';
+$username = $argv[4] ?? 'root';
+$password = $argv[5] ?? '';
+$connection = $argv[6] ?? 'mysql';
+
+try {
+    if ($connection === 'mysql') {
+        $dsn = "mysql:host={$host};port={$port}";
+        $pdo = new PDO($dsn, $username, $password);
+        $pdo->exec("DROP DATABASE IF EXISTS `{$database}`");
+        $pdo->exec("CREATE DATABASE `{$database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        echo "SUCCESS: MySQL database recreated\n";
+    } elseif ($connection === 'pgsql') {
+        $dsn = "pgsql:host={$host};port={$port}";
+        $pdo = new PDO($dsn, $username, $password);
+        $pdo->exec("DROP DATABASE IF EXISTS \"{$database}\"");
+        $pdo->exec("CREATE DATABASE \"{$database}\"");
+        echo "SUCCESS: PostgreSQL database recreated\n";
+    }
+    exit(0);
+} catch (Exception $e) {
+    echo "ERROR: " . $e->getMessage() . "\n";
+    exit(1);
+}
+EOF
+
+            # Run the database reset script
+            local output=$(php temp_db_reset.php "$DB_HOST" "$DB_PORT" "$DB_DATABASE" "$DB_USERNAME" "$DB_PASSWORD" "$DB_CONNECTION" 2>&1)
+            local exit_code=$?
+            
+            # Remove the temporary script
+            rm -f temp_db_reset.php
+            
+            if [ $exit_code -eq 0 ]; then
+                print_success "Database recreated successfully"
+                return 0
+            else
+                print_error "Failed to recreate database: $output"
+                return 1
+            fi
+        else
+            print_info "Skipping database recreation. You may need to manually clean the database."
+            return 1
+        fi
+    fi
+    
+    return 0
+}
+
 # Function to run migrations
 run_migrations() {
     print_header "Running Database Migrations"
@@ -376,20 +446,26 @@ run_migrations() {
         # Try to reset and run again
         php artisan migrate:reset --force 2>/dev/null
         
-        # For SQLite, recreate the database file if it exists
-        if [ "$DB_CONNECTION" = "sqlite" ] && [ -f "$DB_DATABASE" ]; then
-            print_info "Recreating SQLite database file..."
-            rm -f "$DB_DATABASE"
-            touch "$DB_DATABASE"
-        fi
-        
         if php artisan migrate --force; then
             print_success "Database migrations completed after reset"
             return 0
         else
-            print_error "Migration failed even after reset. Please check your database configuration."
-            print_info "For MySQL/PostgreSQL, you may need to manually drop and recreate the database."
-            return 1
+            print_error "Migration failed even after reset."
+            
+            # Offer to clean database completely
+            if clean_database; then
+                print_info "Attempting migrations on clean database..."
+                if php artisan migrate --force; then
+                    print_success "Database migrations completed after cleanup"
+                    return 0
+                else
+                    print_error "Migration still failed. Please check your database configuration and connection."
+                    return 1
+                fi
+            else
+                print_error "Could not clean database. Please manually drop and recreate your database, then run the script again."
+                return 1
+            fi
         fi
     fi
 }
