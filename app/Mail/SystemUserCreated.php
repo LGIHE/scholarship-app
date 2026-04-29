@@ -10,7 +10,6 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\URL;
 
 class SystemUserCreated extends Mailable implements ShouldQueue
 {
@@ -23,14 +22,17 @@ class SystemUserCreated extends Mailable implements ShouldQueue
         // Generate a password reset token for the new user
         $token = Password::createToken($user);
         
-        // Create a Filament admin password reset URL for system users
-        $this->setupUrl = url('/admin/password-reset/reset?token=' . $token . '&email=' . urlencode($user->email));
+        // Use our custom admin password setup route (no signature required)
+        $this->setupUrl = route('admin.password.setup', [
+            'token' => $token,
+            'email' => $user->email,
+        ]);
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to LGF System - Set Your Password',
+            subject: 'Welcome to LGF Admin System - Set Your Password',
         );
     }
 

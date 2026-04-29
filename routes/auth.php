@@ -33,6 +33,10 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    // Admin password setup route (no signature validation required)
+    Route::get('admin-password-setup', [\App\Http\Controllers\Auth\AdminPasswordSetupController::class, 'setup'])
+        ->name('admin.password.setup');
 });
 
 Route::middleware('auth')->group(function () {
