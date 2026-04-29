@@ -51,11 +51,6 @@ class NewPasswordController extends Controller
                     'remember_token' => Str::random(60),
                 ])->save();
 
-                // Auto-verify email for system users
-                if ($user->hasAnyRole(['System Admin', 'Committee Member'])) {
-                    $user->forceFill(['email_verified_at' => now()])->save();
-                }
-
                 event(new PasswordReset($user));
             }
         );
@@ -64,16 +59,7 @@ class NewPasswordController extends Controller
         // the application's home authenticated view. If there is an error we can
         // redirect them back to where they came from with their error message.
         if ($status == Password::PASSWORD_RESET) {
-            // Find the user to check their role
-            $user = \App\Models\User::where('email', $request->email)->first();
-            
-            if ($user && $user->hasAnyRole(['System Admin', 'Committee Member'])) {
-                // Redirect system users to admin panel
-                return redirect()->route('filament.admin.auth.login')->with('status', 'Password set successfully! You can now log in to the admin panel.');
-            } else {
-                // Redirect regular users to applicant portal
-                return redirect()->route('login')->with('status', __($status));
-            }
+            return redirect()->route('login')->with('status', __($status));
         }
 
         throw ValidationException::withMessages([

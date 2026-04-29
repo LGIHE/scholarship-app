@@ -23,8 +23,8 @@ class SystemUserCreated extends Mailable implements ShouldQueue
         // Generate a password reset token for the new user
         $token = Password::createToken($user);
         
-        // Create a password reset URL
-        $this->setupUrl = url('/reset-password/' . $token . '?email=' . urlencode($user->email));
+        // Create a Filament admin password reset URL for system users
+        $this->setupUrl = url('/admin/password-reset/reset?token=' . $token . '&email=' . urlencode($user->email));
     }
 
     public function envelope(): Envelope
