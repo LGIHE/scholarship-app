@@ -46,8 +46,29 @@ check_php_version() {
     local required_version="8.2"
     
     if [ "$(printf '%s\n' "$required_version" "$php_version" | sort -V | head -n1)" != "$required_version" ]; then
-        print_error "PHP version $php_version is installed, but version $required_version or higher is required"
-        return 1
+        print_warning "PHP version $php_version is installed, but version $required_version or higher is recommended"
+        print_info "Checking if a higher PHP version is available on this server..."
+        
+        # Check common alternative PHP binary paths on shared hosting
+        for bin in php82 php8.2 /usr/local/php82/bin/php /opt/php82/bin/php; do
+            if command -v "$bin" >/dev/null 2>&1; then
+                local alt_version=$("$bin" -r "echo PHP_VERSION;")
+                print_success "Found PHP $alt_version at: $bin"
+                print_info "To use it, prefix your commands with: $bin"
+                print_info "Or set it as default: export PATH=\$(dirname $bin):\$PATH"
+                break
+            fi
+        done
+        
+        echo
+        print_warning "Your current PHP ($php_version) may cause issues with Composer dependencies."
+        read -p "Do you want to continue anyway? (y/N): " continue_anyway
+        if [[ ! $continue_anyway =~ ^[Yy]$ ]]; then
+            print_info "Please switch to PHP 8.2+ in your hosting control panel (cPanel → Select PHP Version)"
+            return 1
+        fi
+        print_warning "Continuing with PHP $php_version — some features may not work correctly"
+        return 0
     fi
     
     print_success "PHP version $php_version is installed"
