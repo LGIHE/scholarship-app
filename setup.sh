@@ -621,12 +621,16 @@ main() {
     print_success "Your Laravel application has been set up successfully!"
     echo
     print_info "Next steps:"
-    echo "  1. Review your .env file for any additional configuration"
-    echo "  2. Start the development server: php artisan serve"
-    echo "  3. Access the admin panel at: $APP_URL/admin"
-    echo "  4. If using frontend assets, run: npm run dev"
+    echo "  1. Configure your web server to serve from the 'public' directory"
+    echo "  2. For Apache: Run './configure_apache.sh' or see APACHE_SETUP.md"
+    echo "  3. For development: php artisan serve"
+    echo "  4. Access the admin panel at: $APP_URL/admin"
+    echo "  5. If using frontend assets, run: npm run dev"
     echo
-    print_warning "Important: Make sure to secure your application before deploying to production!"
+    print_warning "Important:"
+    echo "  - If you see 'Apache is functioning normally', your web server needs configuration"
+    echo "  - Make sure to secure your application before deploying to production!"
+    echo "  - The document root should point to: $(pwd)/public"
     echo
 }
 
