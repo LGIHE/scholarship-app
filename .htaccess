@@ -1,0 +1,7 @@
+Options -Indexes
+
+RewriteEngine On
+
+# Redirect all requests to the Laravel public directory
+RewriteRule ^$ public/ [L]
+RewriteRule ^((?!public/).*)$ public/$1 [L,NC]
