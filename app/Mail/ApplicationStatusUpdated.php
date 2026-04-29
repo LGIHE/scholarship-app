@@ -10,25 +10,28 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ApplicationReceived extends Mailable implements ShouldQueue
+class ApplicationStatusUpdated extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Application $application)
-    {
+    public function __construct(
+        public Application $application,
+        public string $oldStatus,
+        public string $newStatus
+    ) {
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'We have received your LGF Scholarship Application',
+            subject: 'LGF Scholarship Application Status Update',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.applications.received',
+            markdown: 'emails.applications.status-updated',
         );
     }
 }

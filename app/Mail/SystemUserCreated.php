@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\Application;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -10,25 +10,27 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ApplicationReceived extends Mailable implements ShouldQueue
+class SystemUserCreated extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Application $application)
-    {
+    public function __construct(
+        public User $user,
+        public string $temporaryPassword
+    ) {
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'We have received your LGF Scholarship Application',
+            subject: 'Your LGF System Account Has Been Created',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.applications.received',
+            markdown: 'emails.users.system-user-created',
         );
     }
 }

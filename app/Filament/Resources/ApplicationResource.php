@@ -215,7 +215,19 @@ class ApplicationResource extends Resource
                     ->icon('heroicon-o-eye')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->action(fn (Application $record) => $record->update(['status' => 'under_review']))
+                    ->action(function (Application $record) {
+                        $oldStatus = $record->status;
+                        $record->update(['status' => 'under_review']);
+                        
+                        // Send status update email
+                        try {
+                            \Illuminate\Support\Facades\Mail::to($record->user)->send(
+                                new \App\Mail\ApplicationStatusUpdated($record, $oldStatus, 'under_review')
+                            );
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Failed to send status update email: ' . $e->getMessage());
+                        }
+                    })
                     ->hidden(fn (Application $record) => $record->status !== 'submitted')
                     ->visible(fn () => auth()->user()->can('application.review')),
 
@@ -232,7 +244,12 @@ class ApplicationResource extends Resource
                             $user->assignRole('Scholar');
                         }
 
-                        \Illuminate\Support\Facades\Mail::to($user)->send(new \App\Mail\ApplicationApproved($record));
+                        // Send approval email
+                        try {
+                            \Illuminate\Support\Facades\Mail::to($user)->send(new \App\Mail\ApplicationApproved($record));
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Failed to send approval email: ' . $e->getMessage());
+                        }
 
                         // Create Scholar record
                         \App\Models\Scholar::firstOrCreate(
@@ -253,7 +270,18 @@ class ApplicationResource extends Resource
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn (Application $record) => $record->update(['status' => 'rejected']))
+                    ->action(function (Application $record) {
+                        $record->update(['status' => 'rejected']);
+                        
+                        // Send rejection email
+                        try {
+                            \Illuminate\Support\Facades\Mail::to($record->user)->send(
+                                new \App\Mail\ApplicationRejected($record)
+                            );
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Failed to send rejection email: ' . $e->getMessage());
+                        }
+                    })
                     ->hidden(fn (Application $record) => in_array($record->status, ['rejected', 'approved']))
                     ->visible(fn () => auth()->user()->can('application.reject')),
             ])
