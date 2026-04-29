@@ -17,25 +17,48 @@ class ListSystemUsers extends ListRecords
                 ->modal()
                 ->modalWidth('4xl')
                 ->mutateFormDataUsing(function (array $data): array {
-                    // Generate a temporary password if creating new user
+                    // If no password provided, we'll create the user without a password
+                    // and send them a setup link
                     if (empty($data['password'])) {
-                        $data['temporary_password'] = \Illuminate\Support\Str::random(12);
-                        $data['password'] = $data['temporary_password'];
+                        // Don't set a password - leave it null
+                        unset($data['password']);
+                        $data['send_setup_email'] = true;
                     } else {
-                        $data['temporary_password'] = $data['password'];
+                        $data['send_setup_email'] = false;
                     }
                     return $data;
                 })
                 ->after(function ($record, array $data) {
-                    // Send welcome email with temporary password
-                    if (isset($data['temporary_password'])) {
+                    // Send setup email if password was not provided
+                    if ($data['send_setup_email'] ?? false) {
                         try {
                             \Illuminate\Support\Facades\Mail::to($record)->send(
-                                new \App\Mail\SystemUserCreated($record, $data['temporary_password'])
+                                new \App\Mail\SystemUserCreated($record)
                             );
+                            
+                            // Show success notification
+                            \Filament\Notifications\Notification::make()
+                                ->title('User Created Successfully')
+                                ->body('Password setup email sent to ' . $record->email)
+                                ->success()
+                                ->send();
                         } catch (\Exception $e) {
                             \Illuminate\Support\Facades\Log::error('Failed to send system user creation email: ' . $e->getMessage());
+                            
+                            // Show notification to admin
+                            \Filament\Notifications\Notification::make()
+                                ->title('User Created')
+                                ->body('User created successfully, but failed to send setup email. Please manually send password reset link.')
+                                ->warning()
+                                ->send();
                         }
+                    } else {
+                        // Show success notification for users with password
+                        \Filament\Notifications\Notification::make()
+                            ->title('User Created Successfully')
+                            ->body('User can now log in with the provided password.')
+                            ->success()
+                            ->send();
                     }
                 }),
         ];

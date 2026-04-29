@@ -51,6 +51,22 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         ];
     }
 
+    /**
+     * Override to handle nullable passwords
+     */
+    public function getAuthPassword()
+    {
+        return $this->password;
+    }
+
+    /**
+     * Check if user has a password set
+     */
+    public function hasPassword(): bool
+    {
+        return !is_null($this->password);
+    }
+
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);

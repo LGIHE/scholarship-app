@@ -5,14 +5,18 @@ Dear {{ $user->name }},
 
 Your system account has been created for the Luigi Giussani Foundation administration panel.
 
-**Email:** {{ $user->email }}  
-**Temporary Password:** {{ $temporaryPassword }}
+**Email:** {{ $user->email }}
 
-**Important:** Please change your password immediately after your first login for security purposes.
+To complete your account setup, please click the button below to set your password:
 
-<x-mail::button :url="config('app.url') . '/admin'">
-Access Admin Panel
+<x-mail::button :url="$setupUrl">
+Set Your Password
 </x-mail::button>
+
+**Important Security Notes:**
+- This link is valid for 48 hours
+- You will be asked to create a secure password
+- After setting your password, you can access the admin panel
 
 Your account has been assigned the following role(s):
 @foreach($user->roles as $role)
@@ -23,4 +27,9 @@ If you have any questions or did not expect to receive this email, please contac
 
 Best regards,<br>
 {{ config('app.name') }}
+
+---
+
+*If the button doesn't work, copy and paste this link into your browser:*  
+{{ $setupUrl }}
 </x-mail::message>

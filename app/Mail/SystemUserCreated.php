@@ -9,21 +9,28 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\URL;
 
 class SystemUserCreated extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(
-        public User $user,
-        public string $temporaryPassword
-    ) {
+    public string $setupUrl;
+
+    public function __construct(public User $user)
+    {
+        // Generate a password reset token for the new user
+        $token = Password::createToken($user);
+        
+        // Create a password reset URL
+        $this->setupUrl = url('/reset-password/' . $token . '?email=' . urlencode($user->email));
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your LGF System Account Has Been Created',
+            subject: 'Welcome to LGF System - Set Your Password',
         );
     }
 
@@ -31,6 +38,9 @@ class SystemUserCreated extends Mailable implements ShouldQueue
     {
         return new Content(
             markdown: 'emails.users.system-user-created',
+            with: [
+                'setupUrl' => $this->setupUrl,
+            ],
         );
     }
 }

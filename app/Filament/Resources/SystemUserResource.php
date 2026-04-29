@@ -79,12 +79,11 @@ class SystemUserResource extends Resource
                             ->revealable()
                             ->dehydrateStateUsing(fn ($state) => filled($state) ? \Illuminate\Support\Facades\Hash::make($state) : null)
                             ->dehydrated(fn ($state) => filled($state))
-                            ->required(fn (string $context): bool => $context === 'create')
                             ->maxLength(255)
                             ->label('Password')
                             ->helperText(fn (string $context): string => 
                                 $context === 'create' 
-                                    ? 'Leave blank to auto-generate a secure password. The password will be sent to the user via email.' 
+                                    ? 'Leave blank to send a password setup link via email. The user will set their own password.' 
                                     : 'Leave blank to keep current password'
                             ),
                     ])->columns(2),
