@@ -373,7 +373,7 @@ install_dependencies() {
 generate_app_key() {
     print_header "Generating Application Key"
     
-    if php artisan key:generate --ansi; then
+    if /opt/cpanel/ea-php84/root/usr/bin/php artisan key:generate --ansi; then
         print_success "Application key generated"
         return 0
     else
@@ -457,7 +457,7 @@ run_migrations() {
     print_header "Running Database Migrations"
     
     print_info "Running migrations..."
-    if php artisan migrate --force; then
+    if /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force; then
         print_success "Database migrations completed"
         return 0
     else
@@ -465,9 +465,9 @@ run_migrations() {
         print_info "Attempting to reset and retry migrations..."
         
         # Try to reset and run again
-        php artisan migrate:reset --force 2>/dev/null
+        /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate:reset --force 2>/dev/null
         
-        if php artisan migrate --force; then
+        if /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force; then
             print_success "Database migrations completed after reset"
             return 0
         else
@@ -476,7 +476,7 @@ run_migrations() {
             # Offer to clean database completely
             if clean_database; then
                 print_info "Attempting migrations on clean database..."
-                if php artisan migrate --force; then
+                if /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force; then
                     print_success "Database migrations completed after cleanup"
                     return 0
                 else
@@ -568,16 +568,16 @@ optimize_application() {
     print_header "Optimizing Application"
     
     print_info "Clearing caches..."
-    php artisan config:clear
-    php artisan cache:clear
-    php artisan view:clear
-    php artisan route:clear
+    /opt/cpanel/ea-php84/root/usr/bin/php artisan config:clear
+    /opt/cpanel/ea-php84/root/usr/bin/php artisan cache:clear
+    /opt/cpanel/ea-php84/root/usr/bin/php artisan view:clear
+    /opt/cpanel/ea-php84/root/usr/bin/php artisan route:clear
     
     if [ "$APP_ENV" = "production" ]; then
         print_info "Optimizing for production..."
-        php artisan config:cache
-        php artisan route:cache
-        php artisan view:cache
+        /opt/cpanel/ea-php84/root/usr/bin/php artisan config:cache
+        /opt/cpanel/ea-php84/root/usr/bin/php artisan route:cache
+        /opt/cpanel/ea-php84/root/usr/bin/php artisan view:cache
         
         if command_exists npm; then
             print_info "Building frontend assets..."
@@ -644,7 +644,7 @@ main() {
     print_info "Next steps:"
     echo "  1. Configure your web server to serve from the 'public' directory"
     echo "  2. For Apache: Run './configure_apache.sh' or see APACHE_SETUP.md"
-    echo "  3. For development: php artisan serve"
+    echo "  3. For development: /opt/cpanel/ea-php84/root/usr/bin/php artisan serve"
     echo "  4. Access the admin panel at: $APP_URL/admin"
     echo "  5. If using frontend assets, run: npm run dev"
     echo
