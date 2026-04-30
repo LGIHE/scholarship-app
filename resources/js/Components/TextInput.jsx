@@ -25,6 +25,11 @@ export default forwardRef(function TextInput(
                 className
             }
             ref={localRef}
+            style={{ 
+                pointerEvents: 'auto',
+                userSelect: 'text',
+                ...props.style 
+            }}
         />
     );
 });

@@ -1,8 +1,9 @@
 import InputError from '@/Components/InputError';
+import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function ForgotPassword({ status }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -11,7 +12,6 @@ export default function ForgotPassword({ status }) {
 
     const submit = (e) => {
         e.preventDefault();
-
         post(route('password.email'));
     };
 
@@ -32,21 +32,35 @@ export default function ForgotPassword({ status }) {
             )}
 
             <form onSubmit={submit}>
-                <TextInput
-                    id="email"
-                    type="email"
-                    name="email"
-                    value={data.email}
-                    className="mt-1 block w-full"
-                    isFocused={true}
-                    onChange={(e) => setData('email', e.target.value)}
-                />
+                <div>
+                    <InputLabel htmlFor="email" value="Email Address" />
 
-                <InputError message={errors.email} className="mt-2" />
+                    <TextInput
+                        id="email"
+                        type="email"
+                        name="email"
+                        value={data.email}
+                        className="mt-1 block w-full"
+                        isFocused={true}
+                        onChange={(e) => setData('email', e.target.value)}
+                        placeholder="Enter your email address"
+                        required
+                        autoComplete="email"
+                    />
 
-                <div className="mt-4 flex items-center justify-end">
+                    <InputError message={errors.email} className="mt-2" />
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                    <Link
+                        href={route('login')}
+                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    >
+                        Back to Login
+                    </Link>
+
                     <PrimaryButton className="ms-4" disabled={processing}>
-                        Email Password Reset Link
+                        {processing ? 'Sending...' : 'Email Password Reset Link'}
                     </PrimaryButton>
                 </div>
             </form>
