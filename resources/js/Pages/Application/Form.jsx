@@ -1709,7 +1709,7 @@ export default function Form() {
                                             <div>
                                                 <InputLabel
                                                     htmlFor="admission_form"
-                                                    value="Admission Form (Optional)"
+                                                    value="Admission Letter (Optional)"
                                                 />
                                                 <p className="mt-1 text-xs text-gray-600 mb-2">
                                                     Upload your university admission letter or form if available
