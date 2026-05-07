@@ -16,6 +16,7 @@ class Application extends Model
         'financial_info',
         'guardian_info',
         'essay',
+        'documents',
         'scoring_breakdown',
         'status',
     ];
@@ -25,6 +26,7 @@ class Application extends Model
         'financial_info' => 'array',
         'guardian_info' => 'array',
         'essay' => 'array',
+        'documents' => 'array',
         'scoring_breakdown' => 'array',
     ];
 

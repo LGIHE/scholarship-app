@@ -78,6 +78,20 @@ function formatCurrency(value) {
     }).format(toNumber(value));
 }
 
+function formatNumberWithCommas(value) {
+    if (!value) return '';
+    // Remove any non-digit characters
+    const numericValue = value.toString().replace(/\D/g, '');
+    // Add commas
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function parseNumberWithCommas(value) {
+    if (!value) return '';
+    // Remove commas to get the raw number
+    return value.toString().replace(/,/g, '');
+}
+
 function scoreLabel(total) {
     if (total >= 80) {
         return 'Excellent';
@@ -333,7 +347,34 @@ export default function Form() {
         setDraftMessage('Saving draft...');
 
         try {
-            await window.axios.post(route('application.draft'), data);
+            // Create FormData to handle file uploads
+            const formData = new FormData();
+            
+            // Add all form data
+            formData.append('personal_info', JSON.stringify(data.personal_info));
+            formData.append('financial_info', JSON.stringify(data.financial_info));
+            formData.append('guardian_info', JSON.stringify(data.guardian_info));
+            formData.append('essay', JSON.stringify(data.essay));
+            
+            // Add document files if they are File objects (newly uploaded)
+            if (data.documents.academic_documents && typeof data.documents.academic_documents !== 'string') {
+                formData.append('documents[academic_documents]', data.documents.academic_documents);
+            }
+            if (data.documents.national_id && typeof data.documents.national_id !== 'string') {
+                formData.append('documents[national_id]', data.documents.national_id);
+            }
+            if (data.documents.admission_form && typeof data.documents.admission_form !== 'string') {
+                formData.append('documents[admission_form]', data.documents.admission_form);
+            }
+            if (data.documents.provisional_results && typeof data.documents.provisional_results !== 'string') {
+                formData.append('documents[provisional_results]', data.documents.provisional_results);
+            }
+            
+            await window.axios.post(route('application.draft'), formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
             setDraftMessage(message);
         } catch {
             setDraftMessage('Unable to save draft right now. Please try again.');
@@ -386,6 +427,12 @@ export default function Form() {
             if (!data.personal_info.last_name?.trim()) {
                 errors['personal_info.last_name'] = 'Last name is required';
             }
+            if (!data.personal_info.phone?.trim()) {
+                errors['personal_info.phone'] = 'Phone number is required';
+            }
+            if (!data.personal_info.date_of_birth?.trim()) {
+                errors['personal_info.date_of_birth'] = 'Date of birth is required';
+            }
             if (!data.personal_info.gender) {
                 errors['personal_info.gender'] = 'Gender is required';
             }
@@ -430,6 +477,9 @@ export default function Form() {
             if (!data.financial_info.income_sources?.trim()) {
                 errors['financial_info.income_sources'] = 'Income sources is required';
             }
+            if (!data.financial_info.scholarship_type_requested) {
+                errors['financial_info.scholarship_type_requested'] = 'Scholarship type requested is required';
+            }
         } else if (step === 3) {
             // Guardian Info validation
             if (!data.guardian_info.guardian_name?.trim()) {
@@ -442,11 +492,16 @@ export default function Form() {
                 errors['guardian_info.guardian_relation'] = 'Guardian relation is required';
             }
         } else if (step === 4) {
-            // Documents validation
-            if (!data.documents.academic_documents) {
+            // Documents validation - check for both File objects and string paths (previously uploaded)
+            const hasAcademicDocs = data.documents.academic_documents && 
+                (typeof data.documents.academic_documents === 'string' || data.documents.academic_documents instanceof File);
+            const hasNationalId = data.documents.national_id && 
+                (typeof data.documents.national_id === 'string' || data.documents.national_id instanceof File);
+            
+            if (!hasAcademicDocs) {
                 errors['documents.academic_documents'] = 'Academic documents are required';
             }
-            if (!data.documents.national_id) {
+            if (!hasNationalId) {
                 errors['documents.national_id'] = 'National ID is required';
             }
         } else if (step === 5) {
@@ -482,6 +537,7 @@ export default function Form() {
         }
 
         setActiveStep((current) => current + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const previousStep = () => {
@@ -511,6 +567,30 @@ export default function Form() {
         return steps;
     }, [errors]);
 
+    // Check if a step is complete
+    const isStepComplete = (stepId) => {
+        // Step 6 (Review & Submit) is only complete when application is submitted
+        if (stepId === 6) {
+            return isLocked;
+        }
+        const errors = validateStep(stepId);
+        return Object.keys(errors).length === 0;
+    };
+
+    // Get step status color
+    const getStepStatusColor = (stepId) => {
+        if (stepId === activeStep) {
+            return 'border-emerald-500 bg-emerald-50';
+        }
+        if (stepsWithErrors.has(stepId)) {
+            return 'border-red-300 bg-red-50 hover:border-red-400';
+        }
+        if (isStepComplete(stepId)) {
+            return 'border-green-300 bg-green-50 hover:border-green-400';
+        }
+        return 'border-orange-300 bg-orange-50 hover:border-orange-400';
+    };
+
     const submit = (event) => {
         event.preventDefault();
 
@@ -519,8 +599,33 @@ export default function Form() {
             documentKeys: Object.keys(data.documents || {}),
         });
 
+        // Create a modified data object that only includes new file uploads
+        // Don't send document fields that are already uploaded (string paths)
+        const submitData = { ...data };
+        
+        // Only include documents that are File objects (newly uploaded)
+        // Skip documents that are strings (already uploaded)
+        const documentsToSubmit = {};
+        let hasNewDocuments = false;
+        
+        Object.keys(data.documents).forEach(key => {
+            const doc = data.documents[key];
+            if (doc && typeof doc !== 'string') {
+                // This is a new File object, include it
+                documentsToSubmit[key] = doc;
+                hasNewDocuments = true;
+            }
+        });
+        
+        if (hasNewDocuments) {
+            submitData.documents = documentsToSubmit;
+        } else {
+            // No new documents to upload, remove the documents field
+            delete submitData.documents;
+        }
+
         // Use FormData for file uploads
-        post(route('application.submit'), {
+        post(route('application.submit'), submitData, {
             forceFormData: true,
             preserveScroll: false,
             onSuccess: () => {
@@ -572,7 +677,7 @@ export default function Form() {
                             <div
                                 className="h-full rounded-full bg-emerald-600 transition-all duration-300"
                                 style={{
-                                    width: `${(activeStep / STEP_CONFIG.length) * 100}%`,
+                                    width: `${isLocked ? 100 : (activeStep / STEP_CONFIG.length) * 100}%`,
                                 }}
                             />
                         </div>
@@ -585,11 +690,7 @@ export default function Form() {
                                     onClick={() => goToStep(step.id)}
                                     className={
                                         'relative rounded-md border px-3 py-3 text-left transition ' +
-                                        (step.id === activeStep
-                                            ? 'border-emerald-500 bg-emerald-50'
-                                            : stepsWithErrors.has(step.id)
-                                              ? 'border-red-300 bg-red-50 hover:border-red-400'
-                                              : 'border-gray-200 hover:border-gray-300')
+                                        getStepStatusColor(step.id)
                                     }
                                 >
                                     {stepsWithErrors.has(step.id) && (
@@ -695,7 +796,7 @@ export default function Form() {
                                             </div>
 
                                             <div>
-                                                <InputLabel htmlFor="phone" value="Phone Number" />
+                                                <RequiredLabel htmlFor="phone" value="Phone Number" required />
                                                 <TextInput
                                                     id="phone"
                                                     className="mt-1 block w-full"
@@ -708,15 +809,16 @@ export default function Form() {
                                                         )
                                                     }
                                                     disabled={isLocked}
+                                                    required
                                                 />
                                                 <InputError
-                                                    message={errors['personal_info.phone']}
+                                                    message={errors['personal_info.phone'] || stepErrors['personal_info.phone']}
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             <div>
-                                                <InputLabel htmlFor="date_of_birth" value="Date of Birth" />
+                                                <RequiredLabel htmlFor="date_of_birth" value="Date of Birth" required />
                                                 <TextInput
                                                     id="date_of_birth"
                                                     type="date"
@@ -730,9 +832,10 @@ export default function Form() {
                                                         )
                                                     }
                                                     disabled={isLocked}
+                                                    required
                                                 />
                                                 <InputError
-                                                    message={errors['personal_info.date_of_birth']}
+                                                    message={errors['personal_info.date_of_birth'] || stepErrors['personal_info.date_of_birth']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -990,9 +1093,10 @@ export default function Form() {
                                             )}
 
                                             <div className="md:col-span-2">
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="refugee_or_displaced"
                                                     value="Are you a refugee or displaced person?"
+                                                    required
                                                 />
                                                 <select
                                                     id="refugee_or_displaced"
@@ -1014,7 +1118,7 @@ export default function Form() {
                                                     <option value="prefer_not_to_answer">Prefer Not to Answer</option>
                                                 </select>
                                                 <InputError
-                                                    message={errors['personal_info.refugee_or_displaced']}
+                                                    message={errors['personal_info.refugee_or_displaced'] || stepErrors['personal_info.refugee_or_displaced']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -1047,9 +1151,10 @@ export default function Form() {
                                             )}
 
                                             <div className="md:col-span-2">
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="residence_area"
                                                     value="Are you living in a Rural or Urban area?"
+                                                    required
                                                 />
                                                 <select
                                                     id="residence_area"
@@ -1070,7 +1175,7 @@ export default function Form() {
                                                     <option value="urban">Urban Area</option>
                                                 </select>
                                                 <InputError
-                                                    message={errors['personal_info.residence_area']}
+                                                    message={errors['personal_info.residence_area'] || stepErrors['personal_info.residence_area']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -1087,15 +1192,14 @@ export default function Form() {
                                                 />
                                                 <TextInput
                                                     id="household_income"
-                                                    type="number"
-                                                    min="0"
+                                                    type="text"
                                                     className="mt-1 block w-full"
-                                                    value={data.financial_info.household_income}
+                                                    value={formatNumberWithCommas(data.financial_info.household_income)}
                                                     onChange={(event) =>
                                                         updateSectionValue(
                                                             'financial_info',
                                                             'household_income',
-                                                            event.target.value,
+                                                            parseNumberWithCommas(event.target.value),
                                                         )
                                                     }
                                                     disabled={isLocked}
@@ -1142,51 +1246,51 @@ export default function Form() {
                                             </div>
 
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="estimated_tuition"
                                                     value="Estimated Tuition (UGX)"
+                                                    required
                                                 />
                                                 <TextInput
                                                     id="estimated_tuition"
-                                                    type="number"
-                                                    min="0"
+                                                    type="text"
                                                     className="mt-1 block w-full"
-                                                    value={data.financial_info.estimated_tuition}
+                                                    value={formatNumberWithCommas(data.financial_info.estimated_tuition)}
                                                     onChange={(event) =>
                                                         updateSectionValue(
                                                             'financial_info',
                                                             'estimated_tuition',
-                                                            event.target.value,
+                                                            parseNumberWithCommas(event.target.value),
                                                         )
                                                     }
                                                     disabled={isLocked}
                                                     required
                                                 />
                                                 <InputError
-                                                    message={errors['financial_info.estimated_tuition']}
+                                                    message={errors['financial_info.estimated_tuition'] || stepErrors['financial_info.estimated_tuition']}
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="estimated_living_expenses"
                                                     value="Estimated Living Expenses (UGX)"
+                                                    required
                                                 />
                                                 <TextInput
                                                     id="estimated_living_expenses"
-                                                    type="number"
-                                                    min="0"
+                                                    type="text"
                                                     className="mt-1 block w-full"
-                                                    value={
+                                                    value={formatNumberWithCommas(
                                                         data.financial_info
                                                             .estimated_living_expenses
-                                                    }
+                                                    )}
                                                     onChange={(event) =>
                                                         updateSectionValue(
                                                             'financial_info',
                                                             'estimated_living_expenses',
-                                                            event.target.value,
+                                                            parseNumberWithCommas(event.target.value),
                                                         )
                                                     }
                                                     disabled={isLocked}
@@ -1196,7 +1300,7 @@ export default function Form() {
                                                     message={
                                                         errors[
                                                             'financial_info.estimated_living_expenses'
-                                                        ]
+                                                        ] || stepErrors['financial_info.estimated_living_expenses']
                                                     }
                                                     className="mt-2"
                                                 />
@@ -1209,15 +1313,14 @@ export default function Form() {
                                                 />
                                                 <TextInput
                                                     id="other_expenses"
-                                                    type="number"
-                                                    min="0"
+                                                    type="text"
                                                     className="mt-1 block w-full"
-                                                    value={data.financial_info.other_expenses}
+                                                    value={formatNumberWithCommas(data.financial_info.other_expenses)}
                                                     onChange={(event) =>
                                                         updateSectionValue(
                                                             'financial_info',
                                                             'other_expenses',
-                                                            event.target.value,
+                                                            parseNumberWithCommas(event.target.value),
                                                         )
                                                     }
                                                     disabled={isLocked}
@@ -1235,15 +1338,14 @@ export default function Form() {
                                                 />
                                                 <TextInput
                                                     id="existing_support"
-                                                    type="number"
-                                                    min="0"
+                                                    type="text"
                                                     className="mt-1 block w-full"
-                                                    value={data.financial_info.existing_support}
+                                                    value={formatNumberWithCommas(data.financial_info.existing_support)}
                                                     onChange={(event) =>
                                                         updateSectionValue(
                                                             'financial_info',
                                                             'existing_support',
-                                                            event.target.value,
+                                                            parseNumberWithCommas(event.target.value),
                                                         )
                                                     }
                                                     disabled={isLocked}
@@ -1261,18 +1363,17 @@ export default function Form() {
                                                 />
                                                 <TextInput
                                                     id="requested_support_amount"
-                                                    type="number"
-                                                    min="0"
+                                                    type="text"
                                                     className="mt-1 block w-full"
-                                                    value={
+                                                    value={formatNumberWithCommas(
                                                         data.financial_info
                                                             .requested_support_amount
-                                                    }
+                                                    )}
                                                     onChange={(event) =>
                                                         updateSectionValue(
                                                             'financial_info',
                                                             'requested_support_amount',
-                                                            event.target.value,
+                                                            parseNumberWithCommas(event.target.value),
                                                         )
                                                     }
                                                     disabled={isLocked}
@@ -1288,9 +1389,10 @@ export default function Form() {
                                             </div>
 
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="scholarship_type_requested"
                                                     value="Scholarship Type Requested"
+                                                    required
                                                 />
                                                 <select
                                                     id="scholarship_type_requested"
@@ -1307,6 +1409,7 @@ export default function Form() {
                                                         )
                                                     }
                                                     disabled={isLocked}
+                                                    required
                                                 >
                                                     <option value="">Select option</option>
                                                     <option value="full">Full Scholarship</option>
@@ -1318,16 +1421,17 @@ export default function Form() {
                                                     message={
                                                         errors[
                                                             'financial_info.scholarship_type_requested'
-                                                        ]
+                                                        ] || stepErrors['financial_info.scholarship_type_requested']
                                                     }
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             <div className="md:col-span-2">
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="income_sources"
                                                     value="Income Sources"
+                                                    required
                                                 />
                                                 <textarea
                                                     id="income_sources"
@@ -1346,7 +1450,7 @@ export default function Form() {
                                                     placeholder="Describe household income sources and current financial constraints"
                                                 />
                                                 <InputError
-                                                    message={errors['financial_info.income_sources']}
+                                                    message={errors['financial_info.income_sources'] || stepErrors['financial_info.income_sources']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -1370,9 +1474,10 @@ export default function Form() {
                                     {activeStep === 3 && (
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="guardian_name"
-                                                    value="Parent / Guardian Name"
+                                                    value="Parent / Guardian Name / Next of Kin"
+                                                    required
                                                 />
                                                 <TextInput
                                                     id="guardian_name"
@@ -1389,19 +1494,20 @@ export default function Form() {
                                                     required
                                                 />
                                                 <InputError
-                                                    message={errors['guardian_info.guardian_name']}
+                                                    message={errors['guardian_info.guardian_name'] || stepErrors['guardian_info.guardian_name']}
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="guardian_relation"
                                                     value="Relation"
+                                                    required
                                                 />
-                                                <TextInput
+                                                <select
                                                     id="guardian_relation"
-                                                    className="mt-1 block w-full"
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                                     value={data.guardian_info.guardian_relation}
                                                     onChange={(event) =>
                                                         updateSectionValue(
@@ -1412,15 +1518,21 @@ export default function Form() {
                                                     }
                                                     disabled={isLocked}
                                                     required
-                                                />
+                                                >
+                                                    <option value="">Select relation</option>
+                                                    <option value="Parent">Parent</option>
+                                                    <option value="Guardian">Guardian</option>
+                                                    <option value="Spouse">Spouse</option>
+                                                    <option value="Sibling">Sibling</option>
+                                                </select>
                                                 <InputError
-                                                    message={errors['guardian_info.guardian_relation']}
+                                                    message={errors['guardian_info.guardian_relation'] || stepErrors['guardian_info.guardian_relation']}
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             <div>
-                                                <InputLabel htmlFor="guardian_phone" value="Phone" />
+                                                <RequiredLabel htmlFor="guardian_phone" value="Phone" required />
                                                 <TextInput
                                                     id="guardian_phone"
                                                     className="mt-1 block w-full"
@@ -1436,7 +1548,7 @@ export default function Form() {
                                                     required
                                                 />
                                                 <InputError
-                                                    message={errors['guardian_info.guardian_phone']}
+                                                    message={errors['guardian_info.guardian_phone'] || stepErrors['guardian_info.guardian_phone']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -1550,7 +1662,7 @@ export default function Form() {
                                                 />
                                                 {data.documents.academic_documents && (
                                                     <p className="mt-2 text-sm text-green-600">
-                                                        ✓ File selected: {data.documents.academic_documents.name || 'Uploaded'}
+                                                        ✓ File selected: {typeof data.documents.academic_documents === 'string' ? 'Previously uploaded' : data.documents.academic_documents.name}
                                                     </p>
                                                 )}
                                                 <InputError
@@ -1585,7 +1697,7 @@ export default function Form() {
                                                 />
                                                 {data.documents.national_id && (
                                                     <p className="mt-2 text-sm text-green-600">
-                                                        ✓ File selected: {data.documents.national_id.name || 'Uploaded'}
+                                                        ✓ File selected: {typeof data.documents.national_id === 'string' ? 'Previously uploaded' : data.documents.national_id.name}
                                                     </p>
                                                 )}
                                                 <InputError
@@ -1618,7 +1730,7 @@ export default function Form() {
                                                 />
                                                 {data.documents.admission_form && (
                                                     <p className="mt-2 text-sm text-green-600">
-                                                        ✓ File selected: {data.documents.admission_form.name || 'Uploaded'}
+                                                        ✓ File selected: {typeof data.documents.admission_form === 'string' ? 'Previously uploaded' : data.documents.admission_form.name}
                                                     </p>
                                                 )}
                                                 <InputError
@@ -1651,7 +1763,7 @@ export default function Form() {
                                                 />
                                                 {data.documents.provisional_results && (
                                                     <p className="mt-2 text-sm text-green-600">
-                                                        ✓ File selected: {data.documents.provisional_results.name || 'Uploaded'}
+                                                        ✓ File selected: {typeof data.documents.provisional_results === 'string' ? 'Previously uploaded' : data.documents.provisional_results.name}
                                                     </p>
                                                 )}
                                                 <InputError
@@ -1665,9 +1777,10 @@ export default function Form() {
                                     {activeStep === 5 && (
                                         <div className="space-y-5">
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="personal_statement"
                                                     value="Personal Essay (STEM Journey and Need)"
+                                                    required
                                                 />
                                                 <textarea
                                                     id="personal_statement"
@@ -1686,18 +1799,19 @@ export default function Form() {
                                                     placeholder="Share your academic path, financial context, and why this scholarship matters."
                                                 />
                                                 <div className="mt-1 text-xs text-gray-500">
-                                                    Word count: {countWords(data.essay.personal_statement)}
+                                                    Word count: {countWords(data.essay.personal_statement)} (minimum 100 words)
                                                 </div>
                                                 <InputError
-                                                    message={errors['essay.personal_statement']}
+                                                    message={errors['essay.personal_statement'] || stepErrors['essay.personal_statement']}
                                                     className="mt-2"
                                                 />
                                             </div>
 
                                             <div>
-                                                <InputLabel
+                                                <RequiredLabel
                                                     htmlFor="commitment"
                                                     value="Commitment to Teaching in Rural/Underserved Areas"
+                                                    required
                                                 />
                                                 <textarea
                                                     id="commitment"
@@ -1716,10 +1830,10 @@ export default function Form() {
                                                     placeholder="Explain how you will apply your STEM education in schools and communities with the greatest need."
                                                 />
                                                 <div className="mt-1 text-xs text-gray-500">
-                                                    Word count: {countWords(data.essay.commitment)}
+                                                    Word count: {countWords(data.essay.commitment)} (minimum 100 words)
                                                 </div>
                                                 <InputError
-                                                    message={errors['essay.commitment']}
+                                                    message={errors['essay.commitment'] || stepErrors['essay.commitment']}
                                                     className="mt-2"
                                                 />
                                             </div>
@@ -1987,7 +2101,7 @@ export default function Form() {
                                                         <dt className="font-medium text-gray-500">Academic Documents</dt>
                                                         <dd className="mt-1">
                                                             {data.documents.academic_documents ? 
-                                                                <span className="text-green-600">✓ {data.documents.academic_documents.name || 'Uploaded'}</span> : 
+                                                                <span className="text-green-600">✓ {typeof data.documents.academic_documents === 'string' ? 'Uploaded' : data.documents.academic_documents.name}</span> : 
                                                                 <span className="text-red-600">Not uploaded</span>
                                                             }
                                                         </dd>
@@ -1996,7 +2110,7 @@ export default function Form() {
                                                         <dt className="font-medium text-gray-500">National ID</dt>
                                                         <dd className="mt-1">
                                                             {data.documents.national_id ? 
-                                                                <span className="text-green-600">✓ {data.documents.national_id.name || 'Uploaded'}</span> : 
+                                                                <span className="text-green-600">✓ {typeof data.documents.national_id === 'string' ? 'Uploaded' : data.documents.national_id.name}</span> : 
                                                                 <span className="text-red-600">Not uploaded</span>
                                                             }
                                                         </dd>
@@ -2005,7 +2119,7 @@ export default function Form() {
                                                         <dt className="font-medium text-gray-500">Admission Form (Optional)</dt>
                                                         <dd className="mt-1">
                                                             {data.documents.admission_form ? 
-                                                                <span className="text-green-600">✓ {data.documents.admission_form.name || 'Uploaded'}</span> : 
+                                                                <span className="text-green-600">✓ {typeof data.documents.admission_form === 'string' ? 'Uploaded' : data.documents.admission_form.name}</span> : 
                                                                 <span className="text-gray-500">Not uploaded</span>
                                                             }
                                                         </dd>
@@ -2014,7 +2128,7 @@ export default function Form() {
                                                         <dt className="font-medium text-gray-500">Provisional Results (Optional)</dt>
                                                         <dd className="mt-1">
                                                             {data.documents.provisional_results ? 
-                                                                <span className="text-green-600">✓ {data.documents.provisional_results.name || 'Uploaded'}</span> : 
+                                                                <span className="text-green-600">✓ {typeof data.documents.provisional_results === 'string' ? 'Uploaded' : data.documents.provisional_results.name}</span> : 
                                                                 <span className="text-gray-500">Not uploaded</span>
                                                             }
                                                         </dd>
@@ -2060,8 +2174,14 @@ export default function Form() {
                                     )}
 
                                     {activeStep < STEP_CONFIG.length ? (
-                                        <PrimaryButton type="button" onClick={nextStep}>
-                                            Next Step
+                                        <PrimaryButton 
+                                            type="button" 
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                nextStep();
+                                            }}
+                                        >
+                                            {activeStep === 5 ? 'Proceed to Review & Submit' : 'Next Step'}
                                         </PrimaryButton>
                                     ) : (
                                         <PrimaryButton

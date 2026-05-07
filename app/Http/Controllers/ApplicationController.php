@@ -35,16 +35,81 @@ class ApplicationController extends Controller
      */
     public function draft(Request $request)
     {
-        $payload = $this->preparePayload($request);
+        // Parse JSON fields
+        $personalInfo = json_decode($request->input('personal_info', '{}'), true);
+        $financialInfo = json_decode($request->input('financial_info', '{}'), true);
+        $guardianInfo = json_decode($request->input('guardian_info', '{}'), true);
+        $essay = json_decode($request->input('essay', '{}'), true);
+
+        // Find existing draft
+        $application = Application::where('user_id', $request->user()->id)
+            ->where('status', 'draft')
+            ->first();
+
+        // Preserve existing documents if they exist
+        $existingDocuments = $application ? ($application->documents ?? []) : [];
+        
+        // Handle document uploads for draft
+        $documentPaths = $existingDocuments;
+        
+        // Generate applicant name for file naming
+        $firstName = strtolower(str_replace(' ', '_', $personalInfo['first_name'] ?? 'applicant'));
+        $lastName = strtolower(str_replace(' ', '_', $personalInfo['last_name'] ?? ''));
+        $applicantName = $firstName . ($lastName ? '_' . $lastName : '');
+        
+        // Handle new document uploads and replace existing ones
+        if ($request->hasFile('documents.academic_documents')) {
+            // Delete old file if exists
+            if (isset($existingDocuments['academic_documents'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($existingDocuments['academic_documents']);
+            }
+            $file = $request->file('documents.academic_documents');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $applicantName . '_academic_documents.' . $extension;
+            $documentPaths['academic_documents'] = $file->storeAs('applications/documents', $filename, 'public');
+        }
+        
+        if ($request->hasFile('documents.national_id')) {
+            // Delete old file if exists
+            if (isset($existingDocuments['national_id'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($existingDocuments['national_id']);
+            }
+            $file = $request->file('documents.national_id');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $applicantName . '_national_id.' . $extension;
+            $documentPaths['national_id'] = $file->storeAs('applications/documents', $filename, 'public');
+        }
+        
+        if ($request->hasFile('documents.admission_form')) {
+            // Delete old file if exists
+            if (isset($existingDocuments['admission_form'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($existingDocuments['admission_form']);
+            }
+            $file = $request->file('documents.admission_form');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $applicantName . '_admission_form.' . $extension;
+            $documentPaths['admission_form'] = $file->storeAs('applications/documents', $filename, 'public');
+        }
+        
+        if ($request->hasFile('documents.provisional_results')) {
+            // Delete old file if exists
+            if (isset($existingDocuments['provisional_results'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($existingDocuments['provisional_results']);
+            }
+            $file = $request->file('documents.provisional_results');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $applicantName . '_provisional_results.' . $extension;
+            $documentPaths['provisional_results'] = $file->storeAs('applications/documents', $filename, 'public');
+        }
 
         $application = Application::updateOrCreate(
             ['user_id' => $request->user()->id, 'status' => 'draft'],
             [
-                'personal_info' => $payload['personal_info'],
-                'financial_info' => $payload['financial_info'],
-                'guardian_info' => $payload['guardian_info'],
-                'essay' => $payload['essay'],
-                'documents' => $payload['documents'] ?? [],
+                'personal_info' => $personalInfo,
+                'financial_info' => $financialInfo,
+                'guardian_info' => $guardianInfo,
+                'essay' => $essay,
+                'documents' => $documentPaths,
             ]
         );
 
@@ -64,10 +129,20 @@ class ApplicationController extends Controller
             'documents_keys' => $request->has('documents') ? array_keys($request->input('documents', [])) : [],
         ]);
 
-        $request->validate([
+        // Get existing draft to check for previously uploaded documents
+        $existingDraft = Application::where('user_id', $request->user()->id)
+            ->where('status', 'draft')
+            ->first();
+        
+        $existingDocuments = $existingDraft ? ($existingDraft->documents ?? []) : [];
+        
+        // Build validation rules dynamically based on existing documents
+        $validationRules = [
             'personal_info' => 'required|array',
             'personal_info.first_name' => 'required|string|max:255',
             'personal_info.last_name' => 'required|string|max:255',
+            'personal_info.phone' => 'required|string|max:30',
+            'personal_info.date_of_birth' => 'required|date',
             'personal_info.gender' => 'required|string|max:100',
             'personal_info.has_disability' => 'required|string|in:yes,no,prefer_not_to_answer',
             'personal_info.disability_details' => 'required_if:personal_info.has_disability,yes|nullable|string|max:500',
@@ -85,6 +160,7 @@ class ApplicationController extends Controller
             'financial_info.estimated_living_expenses' => 'required|numeric|min:0',
             'financial_info.income_sources' => 'required|string',
             'financial_info.funding_gap' => 'required|numeric|min:0',
+            'financial_info.scholarship_type_requested' => 'required|string|in:full,partial',
             'guardian_info' => 'required|array',
             'guardian_info.guardian_name' => 'required|string|max:255',
             'guardian_info.guardian_phone' => 'required|string|max:30',
@@ -92,15 +168,32 @@ class ApplicationController extends Controller
             'essay' => 'required|array',
             'essay.personal_statement' => 'required|string|min:100',
             'essay.commitment' => 'required|string|min:100',
-            'documents' => 'required|array',
-            'documents.academic_documents' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'documents.national_id' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'documents.admission_form' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'documents.provisional_results' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ], [], [
+        ];
+        
+        // Only add document validation if the document is being uploaded now
+        // and doesn't already exist from a previous draft
+        if ($request->hasFile('documents.academic_documents') || !isset($existingDocuments['academic_documents'])) {
+            $validationRules['documents.academic_documents'] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
+        }
+        
+        if ($request->hasFile('documents.national_id') || !isset($existingDocuments['national_id'])) {
+            $validationRules['documents.national_id'] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
+        }
+        
+        if ($request->hasFile('documents.admission_form')) {
+            $validationRules['documents.admission_form'] = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120';
+        }
+        
+        if ($request->hasFile('documents.provisional_results')) {
+            $validationRules['documents.provisional_results'] = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120';
+        }
+
+        $request->validate($validationRules, [], [
             // Custom attribute names for better error messages
             'personal_info.first_name' => 'first name',
             'personal_info.last_name' => 'last name',
+            'personal_info.phone' => 'phone number',
+            'personal_info.date_of_birth' => 'date of birth',
             'personal_info.gender' => 'gender',
             'personal_info.has_disability' => 'disability status',
             'personal_info.disability_details' => 'disability details',
@@ -117,6 +210,7 @@ class ApplicationController extends Controller
             'financial_info.estimated_living_expenses' => 'estimated living expenses',
             'financial_info.income_sources' => 'income sources',
             'financial_info.funding_gap' => 'funding gap',
+            'financial_info.scholarship_type_requested' => 'scholarship type requested',
             'guardian_info.guardian_name' => 'guardian name',
             'guardian_info.guardian_phone' => 'guardian phone',
             'guardian_info.guardian_relation' => 'guardian relation',
@@ -135,10 +229,23 @@ class ApplicationController extends Controller
         $lastName = strtolower(str_replace(' ', '_', $payload['personal_info']['last_name'] ?? ''));
         $applicantName = $firstName . ($lastName ? '_' . $lastName : '');
         
+        // Validate that required documents exist (either uploaded now or previously)
+        if (!$request->hasFile('documents.academic_documents') && !isset($existingDocuments['academic_documents'])) {
+            return back()->withErrors(['documents.academic_documents' => 'Academic documents are required.'])->withInput();
+        }
+        
+        if (!$request->hasFile('documents.national_id') && !isset($existingDocuments['national_id'])) {
+            return back()->withErrors(['documents.national_id' => 'National ID is required.'])->withInput();
+        }
+        
         // Handle document uploads with custom naming
-        $documentPaths = [];
+        $documentPaths = $existingDocuments;
         
         if ($request->hasFile('documents.academic_documents')) {
+            // Delete old file if exists
+            if (isset($existingDocuments['academic_documents'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($existingDocuments['academic_documents']);
+            }
             $file = $request->file('documents.academic_documents');
             $extension = $file->getClientOriginalExtension();
             $filename = $applicantName . '_academic_documents.' . $extension;
@@ -146,6 +253,10 @@ class ApplicationController extends Controller
         }
         
         if ($request->hasFile('documents.national_id')) {
+            // Delete old file if exists
+            if (isset($existingDocuments['national_id'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($existingDocuments['national_id']);
+            }
             $file = $request->file('documents.national_id');
             $extension = $file->getClientOriginalExtension();
             $filename = $applicantName . '_national_id.' . $extension;
@@ -153,6 +264,10 @@ class ApplicationController extends Controller
         }
         
         if ($request->hasFile('documents.admission_form')) {
+            // Delete old file if exists
+            if (isset($existingDocuments['admission_form'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($existingDocuments['admission_form']);
+            }
             $file = $request->file('documents.admission_form');
             $extension = $file->getClientOriginalExtension();
             $filename = $applicantName . '_admission_form.' . $extension;
@@ -160,6 +275,10 @@ class ApplicationController extends Controller
         }
         
         if ($request->hasFile('documents.provisional_results')) {
+            // Delete old file if exists
+            if (isset($existingDocuments['provisional_results'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($existingDocuments['provisional_results']);
+            }
             $file = $request->file('documents.provisional_results');
             $extension = $file->getClientOriginalExtension();
             $filename = $applicantName . '_provisional_results.' . $extension;
