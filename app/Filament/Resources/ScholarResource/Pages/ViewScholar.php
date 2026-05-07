@@ -158,13 +158,22 @@ class ViewScholar extends ViewRecord
                                         Infolists\Components\RepeatableEntry::make('academicProgress')
                                             ->label('')
                                             ->schema([
+                                                Infolists\Components\TextEntry::make('academic_year')
+                                                    ->label('Academic Year')
+                                                    ->badge(),
                                                 Infolists\Components\TextEntry::make('semester')
                                                     ->label('Semester')
                                                     ->badge()
                                                     ->color('info'),
-                                                Infolists\Components\TextEntry::make('year')
-                                                    ->label('Year')
-                                                    ->badge(),
+                                                Infolists\Components\TextEntry::make('gpa')
+                                                    ->label('GPA')
+                                                    ->badge()
+                                                    ->color(fn ($state): string => match (true) {
+                                                        $state >= 3.5 => 'success',
+                                                        $state >= 3.0 => 'info',
+                                                        $state >= 2.5 => 'warning',
+                                                        default => 'danger',
+                                                    }),
                                                 Infolists\Components\TextEntry::make('cgpa')
                                                     ->label('CGPA')
                                                     ->badge()
@@ -174,13 +183,6 @@ class ViewScholar extends ViewRecord
                                                         $state >= 2.5 => 'warning',
                                                         default => 'danger',
                                                     }),
-                                                Infolists\Components\TextEntry::make('transcript_path')
-                                                    ->label('Transcript')
-                                                    ->placeholder('Not uploaded')
-                                                    ->formatStateUsing(fn ($state) => $state ? 'View Document' : 'Not uploaded')
-                                                    ->url(fn ($state) => $state ? asset('storage/' . $state) : null)
-                                                    ->openUrlInNewTab()
-                                                    ->color('primary'),
                                                 Infolists\Components\TextEntry::make('created_at')
                                                     ->label('Recorded On')
                                                     ->dateTime(),
@@ -200,41 +202,7 @@ class ViewScholar extends ViewRecord
                                     ->visible(fn ($record) => $record->academicProgress->count() === 0),
                             ]),
                         
-                        // Documents Tab
-                        Infolists\Components\Tabs\Tab::make('Documents')
-                            ->icon('heroicon-o-document-duplicate')
-                            ->schema([
-                                Infolists\Components\Section::make('Transcripts')
-                                    ->schema([
-                                        Infolists\Components\RepeatableEntry::make('academicProgress')
-                                            ->label('')
-                                            ->schema([
-                                                Infolists\Components\TextEntry::make('semester')
-                                                    ->label('Semester'),
-                                                Infolists\Components\TextEntry::make('year')
-                                                    ->label('Year'),
-                                                Infolists\Components\TextEntry::make('transcript_path')
-                                                    ->label('Document')
-                                                    ->placeholder('Not uploaded')
-                                                    ->formatStateUsing(fn ($state) => $state ? basename($state) : 'Not uploaded')
-                                                    ->url(fn ($state) => $state ? asset('storage/' . $state) : null)
-                                                    ->openUrlInNewTab()
-                                                    ->color('primary'),
-                                            ])
-                                            ->columns(3)
-                                            ->columnSpanFull(),
-                                    ])
-                                    ->visible(fn ($record) => $record->academicProgress->whereNotNull('transcript_path')->count() > 0),
-                                
-                                Infolists\Components\Section::make('No Documents')
-                                    ->schema([
-                                        Infolists\Components\TextEntry::make('no_documents')
-                                            ->label('')
-                                            ->default('No documents have been uploaded yet.')
-                                            ->color('warning'),
-                                    ])
-                                    ->visible(fn ($record) => $record->academicProgress->whereNotNull('transcript_path')->count() === 0),
-                            ]),
+                        // Documents Tab (removed - transcript upload not currently implemented)
                         
                         // Activity Tab
                         Infolists\Components\Tabs\Tab::make('Activity')
@@ -283,12 +251,7 @@ class ViewScholar extends ViewRecord
                                                 if ($avg >= 2.5) return 'warning';
                                                 return 'gray';
                                             }),
-                                        Infolists\Components\TextEntry::make('documents_count')
-                                            ->label('Uploaded Documents')
-                                            ->state(fn ($record) => $record->academicProgress->whereNotNull('transcript_path')->count())
-                                            ->badge()
-                                            ->color('primary'),
-                                    ])->columns(3),
+                                    ])->columns(2),
                             ]),
                     ])
                     ->columnSpanFull(),

@@ -14,10 +14,14 @@ class AcademicProgress extends Model
 
     protected $fillable = [
         'scholar_id',
+        'academic_year',
         'semester',
-        'year',
+        'gpa',
         'cgpa',
-        'transcript_path',
+        'courses_taken',
+        'achievements',
+        'challenges',
+        'notes',
     ];
 
     public function scholar(): BelongsTo

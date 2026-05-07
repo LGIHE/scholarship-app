@@ -19,10 +19,14 @@ class AcademicProgressFactory extends Factory
     {
         return [
             'scholar_id' => Scholar::factory(),
+            'academic_year' => fake()->randomElement(['2023/2024', '2024/2025', '2025/2026']),
             'semester' => fake()->randomElement(['Fall', 'Spring', 'Summer']),
-            'year' => fake()->numberBetween(2023, 2026),
+            'gpa' => fake()->randomFloat(2, 2.5, 4.0),
             'cgpa' => fake()->randomFloat(2, 2.5, 4.0),
-            'transcript_path' => null,
+            'courses_taken' => fake()->optional()->sentence(),
+            'achievements' => fake()->optional()->sentence(),
+            'challenges' => fake()->optional()->sentence(),
+            'notes' => fake()->optional()->sentence(),
         ];
     }
 }
