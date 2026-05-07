@@ -52,14 +52,71 @@ class ApplicationResource extends Resource
     {
         return $infolist
             ->schema([
+                Infolists\Components\Section::make('Application Status')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('status')
+                            ->label('Current Status')
+                            ->badge()
+                            ->color(fn ($state): string => match ($state) {
+                                'draft' => 'gray',
+                                'submitted' => 'primary',
+                                'under_review' => 'warning',
+                                'approved' => 'success',
+                                'rejected' => 'danger',
+                                default => 'secondary',
+                            })
+                            ->formatStateUsing(fn ($state) => ucwords(str_replace('_', ' ', $state))),
+                        Infolists\Components\TextEntry::make('created_at')
+                            ->label('Submitted On')
+                            ->dateTime(),
+                        Infolists\Components\TextEntry::make('updated_at')
+                            ->label('Last Updated')
+                            ->dateTime(),
+                    ])->columns(3),
+
                 Infolists\Components\Section::make('Applicant Information')
                     ->schema([
-                        Infolists\Components\TextEntry::make('user.name')->label('Account Name'),
-                        Infolists\Components\TextEntry::make('user.email')->label('Email Address'),
-                        Infolists\Components\TextEntry::make('personal_info.first_name')->label('First Name'),
-                        Infolists\Components\TextEntry::make('personal_info.last_name')->label('Last Name'),
-                        Infolists\Components\TextEntry::make('personal_info.phone')->label('Phone Number'),
-                        Infolists\Components\TextEntry::make('personal_info.address')->label('Address'),
+                        Infolists\Components\TextEntry::make('user.name')
+                            ->label('Account Name')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('user.email')
+                            ->label('Email Address')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.first_name')
+                            ->label('First Name')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.middle_name')
+                            ->label('Middle Name')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.last_name')
+                            ->label('Last Name')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.date_of_birth')
+                            ->label('Date of Birth')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.gender')
+                            ->label('Gender')
+                            ->placeholder('Not provided')
+                            ->formatStateUsing(fn ($state) => $state ? ucfirst($state) : 'Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.phone')
+                            ->label('Phone Number')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.address')
+                            ->label('Address')
+                            ->placeholder('Not provided')
+                            ->columnSpanFull(),
+                        Infolists\Components\TextEntry::make('personal_info.city')
+                            ->label('City')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.state')
+                            ->label('State/Province')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.country')
+                            ->label('Country')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.postal_code')
+                            ->label('Postal Code')
+                            ->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('personal_info.has_disability')
                             ->label('Person with Disability')
                             ->formatStateUsing(fn ($state) => match($state) {
@@ -72,7 +129,8 @@ class ApplicationResource extends Resource
                             ->color(fn ($state) => $state === 'yes' ? 'warning' : 'gray'),
                         Infolists\Components\TextEntry::make('personal_info.disability_details')
                             ->label('Disability Details')
-                            ->visible(fn ($record) => ($record->personal_info['has_disability'] ?? '') === 'yes'),
+                            ->placeholder('Not provided')
+                            ->columnSpanFull(),
                         Infolists\Components\TextEntry::make('personal_info.refugee_or_displaced')
                             ->label('Refugee or Displaced Person')
                             ->formatStateUsing(fn ($state) => match($state) {
@@ -85,7 +143,8 @@ class ApplicationResource extends Resource
                             ->color(fn ($state) => $state === 'yes' ? 'warning' : 'gray'),
                         Infolists\Components\TextEntry::make('personal_info.refugee_details')
                             ->label('Refugee/Displaced Details')
-                            ->visible(fn ($record) => ($record->personal_info['refugee_or_displaced'] ?? '') === 'yes'),
+                            ->placeholder('Not provided')
+                            ->columnSpanFull(),
                         Infolists\Components\TextEntry::make('personal_info.residence_area')
                             ->label('Residence Area')
                             ->formatStateUsing(fn ($state) => match($state) {
@@ -97,54 +156,172 @@ class ApplicationResource extends Resource
                             ->color(fn ($state) => $state === 'rural' ? 'success' : 'info'),
                     ])->columns(3),
                 
+                Infolists\Components\Section::make('Academic Information')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('personal_info.current_education_level')
+                            ->label('Current Education Level')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.institution_name')
+                            ->label('Institution Name')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.field_of_study')
+                            ->label('Field of Study')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.gpa')
+                            ->label('GPA/Grade')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.intended_university')
+                            ->label('Intended University')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.intended_course')
+                            ->label('Intended Course')
+                            ->placeholder('Not provided'),
+                    ])->columns(3)->collapsible(),
+                
                 Infolists\Components\Section::make('Financial Information')
                     ->schema([
-                        Infolists\Components\TextEntry::make('financial_info.household_income')->label('Household Income')->money('usd'),
-                        Infolists\Components\TextEntry::make('financial_info.number_of_dependents')->label('Dependents'),
-                    ])->columns(2),
+                        Infolists\Components\TextEntry::make('financial_info.household_income')
+                            ->label('Household Income')
+                            ->money('usd')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('financial_info.number_of_dependents')
+                            ->label('Number of Dependents')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('financial_info.employment_status')
+                            ->label('Employment Status')
+                            ->placeholder('Not provided')
+                            ->formatStateUsing(fn ($state) => $state ? ucwords(str_replace('_', ' ', $state)) : 'Not provided'),
+                        Infolists\Components\TextEntry::make('financial_info.other_scholarships')
+                            ->label('Other Scholarships')
+                            ->placeholder('Not provided')
+                            ->formatStateUsing(fn ($state) => $state === 'yes' ? 'Yes' : ($state === 'no' ? 'No' : 'Not provided')),
+                        Infolists\Components\TextEntry::make('financial_info.scholarship_details')
+                            ->label('Scholarship Details')
+                            ->placeholder('Not provided')
+                            ->columnSpanFull(),
+                        Infolists\Components\TextEntry::make('financial_info.financial_need_explanation')
+                            ->label('Financial Need Explanation')
+                            ->placeholder('Not provided')
+                            ->columnSpanFull(),
+                    ])->columns(2)->collapsible(),
 
                 Infolists\Components\Section::make('Guardian Information')
                     ->schema([
-                        Infolists\Components\TextEntry::make('guardian_info.guardian_name')->label('Name'),
-                        Infolists\Components\TextEntry::make('guardian_info.guardian_phone')->label('Phone'),
-                        Infolists\Components\TextEntry::make('guardian_info.guardian_relation')->label('Relation'),
-                    ])->columns(3),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_name')
+                            ->label('Guardian Name')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_phone')
+                            ->label('Guardian Phone')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_email')
+                            ->label('Guardian Email')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_relation')
+                            ->label('Relation to Applicant')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_address')
+                            ->label('Guardian Address')
+                            ->placeholder('Not provided')
+                            ->columnSpanFull(),
+                    ])->columns(2)->collapsible(),
 
                 Infolists\Components\Section::make('Essays / Statements')
                     ->schema([
-                        Infolists\Components\TextEntry::make('essay.personal_statement')->label('Personal Statement')->columnSpanFull()->html(),
-                        Infolists\Components\TextEntry::make('essay.commitment')->label('Commitment Essay')->columnSpanFull()->html(),
+                        Infolists\Components\TextEntry::make('essay.personal_statement')
+                            ->label('Personal Statement')
+                            ->placeholder('Not provided')
+                            ->columnSpanFull()
+                            ->html()
+                            ->formatStateUsing(fn ($state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">Not provided</em>'),
+                        Infolists\Components\TextEntry::make('essay.commitment')
+                            ->label('Commitment Essay')
+                            ->placeholder('Not provided')
+                            ->columnSpanFull()
+                            ->html()
+                            ->formatStateUsing(fn ($state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">Not provided</em>'),
+                        Infolists\Components\TextEntry::make('essay.career_goals')
+                            ->label('Career Goals')
+                            ->placeholder('Not provided')
+                            ->columnSpanFull()
+                            ->html()
+                            ->formatStateUsing(fn ($state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">Not provided</em>'),
                     ])->collapsible(),
 
                 Infolists\Components\Section::make('Uploaded Documents')
                     ->schema([
                         Infolists\Components\TextEntry::make('documents.academic_documents')
                             ->label('Academic Documents')
-                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : 'Not uploaded')
+                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
                         Infolists\Components\TextEntry::make('documents.national_id')
                             ->label('National ID')
-                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : 'Not uploaded')
+                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
                         Infolists\Components\TextEntry::make('documents.admission_form')
                             ->label('Admission Form')
-                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : 'Not uploaded')
+                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
                         Infolists\Components\TextEntry::make('documents.provisional_results')
                             ->label('Provisional Results')
-                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : 'Not uploaded')
+                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
+                            ->html(),
+                        Infolists\Components\TextEntry::make('documents.recommendation_letter')
+                            ->label('Recommendation Letter')
+                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
+                            ->html(),
+                        Infolists\Components\TextEntry::make('documents.proof_of_income')
+                            ->label('Proof of Income')
+                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
                     ])->columns(2)->collapsible(),
 
                 Infolists\Components\Section::make('Scoring Breakdown')
+                    ->description('Use the "Edit Scoring" button above to modify scores')
                     ->schema([
-                        Infolists\Components\TextEntry::make('scoring_breakdown.financial_need')->label('Financial Need (Max 30)'),
-                        Infolists\Components\TextEntry::make('scoring_breakdown.academic_merit')->label('Academic Merit (Max 25)'),
-                        Infolists\Components\TextEntry::make('scoring_breakdown.demographics')->label('Demographics (Max 15)'),
-                        Infolists\Components\TextEntry::make('scoring_breakdown.commitment')->label('Commitment (Max 15)'),
-                        Infolists\Components\TextEntry::make('scoring_breakdown.essay_quality')->label('Essay Quality (Max 15)'),
-                        Infolists\Components\TextEntry::make('scoring_breakdown.total')->label('Total Score')->weight('bold')->size('lg')->color('primary'),
-                    ])->columns(3)->collapsed(),
+                        Infolists\Components\TextEntry::make('scoring_breakdown.financial_need')
+                            ->label('Financial Need (Max 30)')
+                            ->placeholder('0')
+                            ->formatStateUsing(fn ($state) => $state ?? '0')
+                            ->badge()
+                            ->color('info'),
+                        Infolists\Components\TextEntry::make('scoring_breakdown.academic_merit')
+                            ->label('Academic Merit (Max 25)')
+                            ->placeholder('0')
+                            ->formatStateUsing(fn ($state) => $state ?? '0')
+                            ->badge()
+                            ->color('info'),
+                        Infolists\Components\TextEntry::make('scoring_breakdown.demographics')
+                            ->label('Demographics (Max 15)')
+                            ->placeholder('0')
+                            ->formatStateUsing(fn ($state) => $state ?? '0')
+                            ->badge()
+                            ->color('info'),
+                        Infolists\Components\TextEntry::make('scoring_breakdown.commitment')
+                            ->label('Commitment (Max 15)')
+                            ->placeholder('0')
+                            ->formatStateUsing(fn ($state) => $state ?? '0')
+                            ->badge()
+                            ->color('info'),
+                        Infolists\Components\TextEntry::make('scoring_breakdown.essay_quality')
+                            ->label('Essay Quality (Max 15)')
+                            ->placeholder('0')
+                            ->formatStateUsing(fn ($state) => $state ?? '0')
+                            ->badge()
+                            ->color('info'),
+                        Infolists\Components\TextEntry::make('scoring_breakdown.total')
+                            ->label('Total Score (Max 100)')
+                            ->placeholder('0')
+                            ->formatStateUsing(fn ($state) => ($state ?? '0') . ' / 100')
+                            ->weight('bold')
+                            ->size('lg')
+                            ->badge()
+                            ->color(fn ($state): string => match (true) {
+                                $state >= 80 => 'success',
+                                $state >= 60 => 'warning',
+                                $state < 60 => 'danger',
+                                default => 'secondary',
+                            }),
+                    ])->columns(3),
             ]);
     }
 
