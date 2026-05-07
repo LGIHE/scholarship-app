@@ -7,6 +7,7 @@ import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
+    const isScholar = user?.roles?.some(role => role.name === 'Scholar');
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -36,6 +37,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     My Application
                                 </NavLink>
+                                {isScholar && (
+                                    <NavLink
+                                        href={route('academic-progress.index')}
+                                        active={route().current('academic-progress.index')}
+                                    >
+                                        Academic Progress
+                                    </NavLink>
+                                )}
                             </div>
                         </div>
 
@@ -146,6 +155,14 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             My Application
                         </ResponsiveNavLink>
+                        {isScholar && (
+                            <ResponsiveNavLink
+                                href={route('academic-progress.index')}
+                                active={route().current('academic-progress.index')}
+                            >
+                                Academic Progress
+                            </ResponsiveNavLink>
+                        )}
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">
