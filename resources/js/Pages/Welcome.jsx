@@ -429,7 +429,7 @@ export default function Welcome({ auth }) {
                                     Ready to Transform Your Future?
                                 </h2>
                                 <p className="mt-6 text-lg leading-8 text-blue-50">
-                                    Join thousands of scholars who have changed their lives through the Luigi Giussani Foundation Scholarship. Take the first step today.
+                                    Take the first step today.
                                 </p>
                                 <div className="mt-10 flex items-center justify-center gap-x-6">
                                     {!auth.user && (
