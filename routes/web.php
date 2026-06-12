@@ -23,6 +23,18 @@ Route::get('/resources', function () {
     return Inertia::render('Resources');
 })->name('resources');
 
+Route::get('/resources/application-guide', function () {
+    return Inertia::render('Resources/ApplicationGuide');
+})->name('resources.application-guide');
+
+Route::get('/resources/essay-tips', function () {
+    return Inertia::render('Resources/EssayTips');
+})->name('resources.essay-tips');
+
+Route::get('/resources/document-checklist', function () {
+    return Inertia::render('Resources/DocumentChecklist');
+})->name('resources.document-checklist');
+
 Route::get('/faq', function () {
     return Inertia::render('FAQ');
 })->name('faq');

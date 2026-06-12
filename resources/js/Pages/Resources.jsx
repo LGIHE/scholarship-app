@@ -58,41 +58,27 @@ export default function Resources() {
                                         description:
                                             'Step-by-step instructions for completing your scholarship application.',
                                         icon: '📋',
+                                        route: 'resources.application-guide',
                                     },
                                     {
                                         title: 'Essay Writing Tips',
                                         description:
                                             'Learn how to craft a compelling essay that showcases your commitment.',
                                         icon: '✍️',
+                                        route: 'resources.essay-tips',
                                     },
                                     {
                                         title: 'Document Checklist',
                                         description:
                                             'Complete list of required documents and how to prepare them.',
                                         icon: '📄',
-                                    },
-                                    {
-                                        title: 'Financial Aid Calculator',
-                                        description:
-                                            'Estimate your funding needs and scholarship eligibility.',
-                                        icon: '💰',
-                                    },
-                                    {
-                                        title: 'Sample Applications',
-                                        description:
-                                            'Review successful applications from previous scholarship recipients.',
-                                        icon: '⭐',
-                                    },
-                                    {
-                                        title: 'Video Tutorials',
-                                        description:
-                                            'Watch guided walkthroughs of the application process.',
-                                        icon: '🎥',
+                                        route: 'resources.document-checklist',
                                     },
                                 ].map((item, index) => (
-                                    <div
+                                    <Link
                                         key={index}
-                                        className="group cursor-pointer rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-blue-200 hover:shadow-md"
+                                        href={route(item.route)}
+                                        className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-blue-200 hover:shadow-md"
                                     >
                                         <div className="text-4xl">{item.icon}</div>
                                         <h3 className="mt-4 font-bold text-gray-900 group-hover:text-[#035A7D]">
@@ -104,7 +90,7 @@ export default function Resources() {
                                         <div className="mt-4 text-sm font-semibold text-[#035A7D]">
                                             Learn more →
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </motion.section>
