@@ -199,7 +199,7 @@ export default function TermsOfService() {
         <>
             <Head title="Terms of Service" />
 
-            <div className="relative min-h-screen overflow-hidden bg-gray-50 text-gray-900 selection:bg-[#035A7D] selection:text-white">
+            <div className="relative min-h-screen bg-gray-50 text-gray-900 selection:bg-[#035A7D] selection:text-white">
                 <div
                     className="pointer-events-none absolute inset-x-0 -top-48 -z-10 transform-gpu overflow-hidden blur-3xl"
                     aria-hidden="true"
