@@ -4,6 +4,7 @@ export default function PublicHeader({ currentRoute = null }) {
     const { auth } = usePage().props;
     
     const navItems = [
+        { name: 'Home', route: 'home' },
         { name: 'About', route: 'about' },
         { name: 'Resources', route: 'resources' },
         { name: 'FAQ', route: 'faq' },
@@ -48,12 +49,7 @@ export default function PublicHeader({ currentRoute = null }) {
                         >
                             Log in
                         </Link>
-                        <Link
-                            href={route('register')}
-                            className="rounded-full bg-[#035A7D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#024a6b]"
-                        >
-                            Apply Now
-                        </Link>
+    
                     </>
                 )}
             </nav>

@@ -26,35 +26,21 @@ export default function Welcome({ auth }) {
                             />
                         </div>
 
-                        <div className="py-24 sm:py-32 lg:pb-40 text-center px-6">
+                        <div className="py-24 sm:py-32 lg:pb-16 text-center px-6">
                             <motion.div 
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.6 }}
                                 className="mx-auto max-w-2xl"
                             >
-                                <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-                                    Empowering the Leaders of <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#035A7D] to-[#4A90E2]">Tomorrow</span>
+                                <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+                                    LIT-Uganda Program Female STEM Student Teachers’ Scholarship 
+                                    {/* <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#035A7D] to-[#4A90E2]">Tomorrow</span> */}
                                 </h1>
                                 <p className="mt-6 text-lg leading-8 text-gray-600">
-                                    The Luigi Giussani Foundation Scholarship is committed to supporting exceptional students demonstrating financial need, academic merit, and a strong commitment to their communities.
+                                    The Female STEM Student Teachers’ Scholarship is committed to supporting exceptional students demonstrating financial need, academic merit, and a strong commitment to their communities.
                                 </p>
                                 <div className="mt-10 flex items-center justify-center gap-x-6">
-                                    {auth.user ? (
-                                        <Link
-                                            href={route('portal')}
-                                            className="rounded-full bg-[#035A7D] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#024a6b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#035A7D] transition"
-                                        >
-                                            Go to Dashboard
-                                        </Link>
-                                    ) : (
-                                        <Link
-                                            href={route('register')}
-                                            className="rounded-full bg-[#035A7D] px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-[#035A7D]/30 hover:shadow-[#024a6b]/40 hover:bg-[#024a6b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#035A7D] transition"
-                                        >
-                                            Start Your Application
-                                        </Link>
-                                    )}
                                     <a href="#benefits" className="text-sm font-semibold leading-6 text-gray-900 hover:text-[#035A7D] transition">
                                         Learn more <span aria-hidden="true">→</span>
                                     </a>
@@ -63,35 +49,138 @@ export default function Welcome({ auth }) {
                         </div>
                     </div>
 
-                    {/* Features section */}
-                    <div id="benefits" className="bg-white py-24 sm:py-32">
+                    {/* Overview section */}
+                    <div id="overview" className="bg-white py-18 sm:py-20">
                         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                            <div className="mx-auto max-w-2xl lg:text-center">
-                                <h2 className="text-base font-semibold leading-7 text-[#035A7D] uppercase tracking-widest">Why Apply?</h2>
+                            <div className="mx-auto max-w-6xl lg:text-center">
                                 <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                                    Comprehensive Support for Your Education
+                                    Program Overview
                                 </p>
                                 <p className="mt-6 text-lg leading-8 text-gray-600">
-                                    Our scholarship provides more than just financial assistance. We offer a holistic program designed to help you succeed academically and professionally.
+                                    The Leaders in Teaching Uganda program is a five-year Mastercard Foundation initiative aimed at transforming secondary education in Uganda. The program is implemented through a consortium of 10 partners: Luigi Giussani Foundation (LGF), UNICEF, British Council, VVOB, Edukans International, Brainwave Careers Uganda, STiR Education, PEAS Uganda, Teach for Uganda, and Forum for Education NGOs in Uganda (FENU). The initiative is implemented under the strategic leadership and oversight of the Ministry of Education and Sports, and is aligned with Mastercard Foundation’s Young Africa Works strategy, which seeks to enable 30 million young people across Africa to access dignified and fulfilling work by 2030, including a target of 4.3 million young people in Uganda.
+                                </p>
+                                <p className="mt-6 text-lg leading-8 text-gray-600">
+                                    To contribute to this vision, the program focuses on improving the quality of teaching and learning in secondary schools through inclusive, gender-responsive, and innovative approaches to education. Anchored on four core pillars; Recruit, Train, Lead, and Motivate, the program is implementing a range of interventions designed to increase both the quality and quantity of teachers in Uganda's secondary education system. One of these interventions is the provision of 1,000 scholarships for female students pursuing a Bachelor of Science with Education (BScEd) at selected universities and UNITE campuses across the country. 
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Objectives Section */}
+                    <div id="objectives" className="bg-gray-50 py-18 sm:py-20">
+                        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+                            <div className="mx-auto max-w-6xl">
+                                <div className="lg:text-center mb-12">
+                                    <h2 className="text-base font-semibold leading-7 text-[#035A7D] uppercase tracking-widest">Purpose</h2>
+                                    <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                                        Objective of the Scholarships Program
+                                    </p>
+                                    <p className="mt-6 text-lg leading-8 text-gray-600">
+                                        The scholarship program for 1,000 females pursuing a Bachelor of Science with Education (BScEd) under the Leaders in Teaching (LiT) Uganda Program is designed to:
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                                    {[
+                                        {
+                                            icon: '👩‍🔬',
+                                            title: 'Increase Female Participation in STEM Teaching',
+                                            description: 'Grow the number of women entering STEM teaching roles in secondary education across Uganda.',
+                                        },
+                                        {
+                                            icon: '⚖️',
+                                            title: 'Promote Equity and Inclusion in Education',
+                                            description: 'Break down barriers and create pathways that ensure every woman has equal access to quality education.',
+                                        },
+                                        {
+                                            icon: '🏫',
+                                            title: 'Expand the Supply of Female Qualified Science Teachers',
+                                            description: 'Address the critical shortage of qualified female science teachers in Uganda\'s secondary schools.',
+                                        },
+                                        {
+                                            icon: '🌟',
+                                            title: 'Empower Female Role Models in Education',
+                                            description: 'Inspire the next generation of girls by cultivating visible, confident female leaders in STEM education.',
+                                        },
+                                    ].map((objective, index) => (
+                                        <motion.div
+                                            key={objective.title}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            whileInView={{ opacity: 1, y: 0 }}
+                                            viewport={{ once: true }}
+                                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                                            className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition"
+                                        >
+                                            <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-blue-50 text-3xl mb-4">
+                                                {objective.icon}
+                                            </div>
+                                            <h3 className="text-base font-semibold text-gray-900 mb-2">{objective.title}</h3>
+                                            <p className="text-sm text-gray-600 leading-6">{objective.description}</p>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats Section */}
+                    <div className="bg-gradient-to-r from-[#035A7D] to-[#024a6b] py-24 sm:py-32">
+                        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+                            <div className="mb-12 text-center">
+                                <h2 className="text-3xl font-bold text-white">Our Vision & Goals</h2>
+                                <p className="mt-2 text-blue-100">Projected impact as we launch this transformative program</p>
+                            </div>
+                            <div className="grid grid-cols-1 gap-y-16 text-center sm:grid-cols-2 lg:grid-cols-4">
+                                {[
+                                    { stat: '1000', label: 'Scholars' },
+                                    { stat: '100%', label: 'Young women (18-35 years)' },
+                                    { stat: '7%', label: 'Refugees and Internally Displaced Persons' },
+                                    { stat: '5%', label: 'Persons with Disabilities' }
+                                ].map((item, i) => (
+                                    <motion.div 
+                                        key={item.label}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: i * 0.1 }}
+                                        className="text-white"
+                                    >
+                                        <div className="text-5xl font-bold">{item.stat}</div>
+                                        <div className="mt-2 text-blue-100">{item.label}</div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Features section */}
+                    <div id="benefits" className="bg-white py-18 sm:py-20">
+                        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+                            <div className="mx-auto max-w-2xl lg:text-center">
+                                <h2 className="text-base font-semibold leading-7 text-[#035A7D] uppercase tracking-widest">What's Covered</h2>
+                                <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                                    Scholarship Award Coverage
+                                </p>
+                                <p className="mt-6 text-lg leading-8 text-gray-600">
+                                    The scholarship award will cover tuition and functional fees, accommodation costs, and a laptop to support each program participant's academic studies.
                                 </p>
                             </div>
                             <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
                                 <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
                                     {[
                                         {
-                                            name: 'Full Tuition Coverage',
-                                            description: 'We cover 100% of your tuition fees for the duration of your chosen degree program, ensuring you graduate debt-free.',
+                                            name: 'Tuition & Functional Fees',
+                                            description: 'Full coverage of tuition and functional fees for the duration of the Bachelor of Science with Education (BScEd) program.',
                                             icon: '🎓'
                                         },
                                         {
-                                            name: 'Living Stipend',
-                                            description: 'Receive a monthly allowance to cover accommodation, books, and other living expenses so you can focus on your studies.',
-                                            icon: '💰'
+                                            name: 'Accommodation Costs',
+                                            description: 'Accommodation expenses are fully covered, giving you a safe and stable living environment to focus on your studies.',
+                                            icon: '🏠'
                                         },
                                         {
-                                            name: 'Mentorship & Networking',
-                                            description: 'Connect with industry professionals and alumni who will guide you through your academic journey and early career.',
-                                            icon: '🤝'
+                                            name: 'Laptop',
+                                            description: 'Each scholar receives a laptop to support their academic work and ensure access to digital learning resources throughout the program.',
+                                            icon: '💻'
                                         },
                                     ].map((feature, index) => (
                                         <motion.div 
@@ -117,38 +206,9 @@ export default function Welcome({ auth }) {
                             </div>
                         </div>
                     </div>
-                    {/* Stats Section */}
-                    <div className="bg-gradient-to-r from-[#035A7D] to-[#024a6b] py-24 sm:py-32">
-                        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                            <div className="mb-12 text-center">
-                                <h2 className="text-3xl font-bold text-white">Our Vision & Goals</h2>
-                                <p className="mt-2 text-blue-100">Projected impact as we launch this transformative program</p>
-                            </div>
-                            <div className="grid grid-cols-1 gap-y-16 text-center sm:grid-cols-2 lg:grid-cols-4">
-                                {[
-                                    { stat: '100+', label: 'Scholars (Year 1 Goal)' },
-                                    { stat: '$500K', label: 'Funding Target' },
-                                    { stat: '50+', label: 'Rural Schools to Serve' },
-                                    { stat: '5+', label: 'Partner Universities' }
-                                ].map((item, i) => (
-                                    <motion.div 
-                                        key={item.label}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        whileInView={{ opacity: 1, y: 0 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: i * 0.1 }}
-                                        className="text-white"
-                                    >
-                                        <div className="text-5xl font-bold">{item.stat}</div>
-                                        <div className="mt-2 text-blue-100">{item.label}</div>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
 
                     {/* Eligibility Section */}
-                    <div className="bg-white py-24 sm:py-32">
+                    <div className="bg-gray-50 py-24 sm:py-26">
                         <div className="mx-auto max-w-7xl px-6 lg:px-8">
                             <div className="mx-auto max-w-2xl lg:text-center mb-16">
                                 <h2 className="text-base font-semibold leading-7 text-[#035A7D] uppercase tracking-widest">Eligibility</h2>
@@ -156,38 +216,119 @@ export default function Welcome({ auth }) {
                                     Who Can Apply?
                                 </p>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                                {[
-                                    { title: 'Academic Requirements', items: ['Minimum GPA of 2.5', 'Active enrollment in an accredited institution', 'Pursuing undergraduate or graduate degree'] },
-                                    { title: 'Financial Need', items: ['Annual household income below $85,000', 'Demonstrated financial hardship', 'Unable to fully fund education without assistance'] },
-                                    { title: 'Character & Commitment', items: ['Strong moral character', 'Community engagement history', 'Clear career goals aligned with scholarship mission'] },
-                                    { title: 'Documentation', items: ['Valid identification', 'Academic transcripts', 'Financial documents & community references'] }
-                                ].map((section, idx) => (
-                                    <motion.div 
-                                        key={section.title}
-                                        initial={{ opacity: 0, x: idx % 2 === 0 ? -20 : 20 }}
-                                        whileInView={{ opacity: 1, x: 0 }}
-                                        viewport={{ once: true }}
-                                        transition={{ duration: 0.5, delay: idx * 0.1 }}
-                                        className="bg-gray-50 p-8 rounded-lg border border-gray-200"
-                                    >
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">{section.title}</h3>
-                                        <ul className="space-y-3">
-                                            {section.items.map((item) => (
-                                                <li key={item} className="flex items-start">
-                                                    <span className="text-[#035A7D] mr-3 font-bold">✓</span>
-                                                    <span className="text-gray-600">{item}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </motion.div>
-                                ))}
+
+                            <div className="max-w-5xl mx-auto space-y-8">
+
+                                {/* Primary Support Group */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5 }}
+                                    className="bg-gray-50 p-8 rounded-xl border border-gray-200"
+                                >
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">1. Primary Support Group</h3>
+                                    <p className="text-gray-600 mb-6">
+                                        Applicants must be female resident Ugandan citizens, females with Refugee Status, or female youth with disabilities in Uganda. The program places strong emphasis on equity and inclusion, reserving slots for marginalised groups with a focus on:
+                                    </p>
+                                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {[
+                                            { stat: '100%', label: 'Young women aged 18–35 years' },
+                                            { stat: '7%', label: 'Refugees and Internally Displaced Persons' },
+                                            { stat: '5%', label: 'Persons with Disabilities' },
+                                            { stat: '20%', label: 'Young female in-service science, technology and mathematics teachers intending to upgrade to a BScEd Degree' },
+                                        ].map((item) => (
+                                            <li key={item.label} className="flex items-start gap-3 bg-white rounded-lg border border-gray-100 px-4 py-3">
+                                                <span className="text-[#035A7D] font-bold text-sm mt-0.5 shrink-0">{item.stat}</span>
+                                                <span className="text-gray-600 text-sm">{item.label}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </motion.div>
+
+                                {/* Academic Eligibility */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: 0.1 }}
+                                    className="bg-gray-50 p-8 rounded-xl border border-gray-200"
+                                >
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">2. Academic Eligibility</h3>
+                                    <p className="text-gray-600 mb-4">
+                                        Candidates must hold an admission offer for a Bachelor of Science with Education (BScEd) from one of the following LiT partner universities:
+                                    </p>
+                                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
+                                        {[
+                                            'Makerere University',
+                                            'Kyambogo University',
+                                            'Busitema University',
+                                            'Islamic University in Uganda',
+                                            'Gulu University',
+                                            'Muni University',
+                                            'Mountains of the Moon University',
+                                            'Mbarara University of Science & Technology',
+                                            'Uganda Martyrs University',
+                                            'Kabale University',
+                                        ].map((uni) => (
+                                            <li key={uni} className="flex items-center gap-2">
+                                                <span className="text-[#035A7D] font-bold">✓</span>
+                                                <span className="text-gray-600 text-sm">{uni}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <p className="text-gray-600 mb-3 text-sm">
+                                        Or from one of the following Uganda National Institute for Teacher Education (UNITE) campuses:
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['Kabale', 'Kaliro', 'Mubende', 'Muni', 'Unyama'].map((campus) => (
+                                            <span key={campus} className="bg-blue-50 text-[#035A7D] text-sm font-medium px-3 py-1 rounded-full border border-blue-100">
+                                                {campus}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </motion.div>
+
+                                {/* Commitment to Education */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: 0.2 }}
+                                    className="bg-gray-50 p-8 rounded-xl border border-gray-200"
+                                >
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">3. Commitment to Education</h3>
+                                    <div className="flex items-start gap-3">
+                                        <span className="text-[#035A7D] font-bold mt-0.5">✓</span>
+                                        <p className="text-gray-600">
+                                            Applicants must demonstrate a strong, passionate commitment to entering and remaining in the teaching profession, particularly in secondary schools, and must be willing to serve in rural or underserved areas for at least <strong>2 years</strong>.
+                                        </p>
+                                    </div>
+                                </motion.div>
+
+                                {/* Financial Need */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: 0.3 }}
+                                    className="bg-gray-50 p-8 rounded-xl border border-gray-200"
+                                >
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">4. Financial Need</h3>
+                                    <div className="flex items-start gap-3">
+                                        <span className="text-[#035A7D] font-bold mt-0.5">✓</span>
+                                        <p className="text-gray-600">
+                                            Applicants must demonstrate genuine financial need.
+                                        </p>
+                                    </div>
+                                </motion.div>
+
                             </div>
                         </div>
                     </div>
 
                     {/* Application Timeline */}
-                    <div className="bg-gray-50 py-24 sm:py-32">
+                    {/* <div className="bg-gray-50 py-24 sm:py-32">
                         <div className="mx-auto max-w-7xl px-6 lg:px-8">
                             <div className="mx-auto max-w-2xl lg:text-center mb-16">
                                 <h2 className="text-base font-semibold leading-7 text-[#035A7D] uppercase tracking-widest">Process</h2>
@@ -230,10 +371,10 @@ export default function Welcome({ auth }) {
                                 ))}
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Testimonials Section */}
-                    <div className="bg-white py-24 sm:py-32">
+                    {/* <div className="bg-white py-24 sm:py-32">
                         <div className="mx-auto max-w-7xl px-6 lg:px-8">
                             <div className="mx-auto max-w-2xl lg:text-center mb-16">
                                 <h2 className="text-base font-semibold leading-7 text-[#035A7D] uppercase tracking-widest">Testimonials</h2>
@@ -269,41 +410,7 @@ export default function Welcome({ auth }) {
                                 ))}
                             </div>
                         </div>
-                    </div>
-
-                    {/* FAQ Section */}
-                    <div className="bg-gray-50 py-24 sm:py-32">
-                        <div className="mx-auto max-w-3xl px-6 lg:px-8">
-                            <div className="mx-auto max-w-2xl lg:text-center mb-16">
-                                <h2 className="text-base font-semibold leading-7 text-[#035A7D] uppercase tracking-widest">FAQ</h2>
-                                <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                                    Frequently Asked Questions
-                                </p>
-                            </div>
-                            <div className="space-y-6">
-                                {[
-                                    { q: 'Can I apply if I\'m already a full-time student?', a: 'Yes! We accept applications from current students, new enrollees, and those planning to enroll.' },
-                                    { q: 'Is there a deadline to apply?', a: 'Applications are accepted on a rolling basis until our annual deadline. Early applications are encouraged.' },
-                                    { q: 'Will the scholarship cover only tuition?', a: 'Our scholarship includes full tuition coverage plus a monthly living stipend to support your overall education.' },
-                                    { q: 'Can I apply if my GPA is below 2.5?', a: 'We require a minimum 2.5 GPA, but we also consider upward trends and personal circumstances.' },
-                                    { q: 'How long does the review process take?', a: 'Typically 4-6 weeks from submission to final decision. You\'ll receive email updates throughout.' },
-                                    { q: 'What if I\'m denied? Can I reapply?', a: 'Yes, you can reapply in the next cycle. We encourage you to reach out for feedback to strengthen your application.' }
-                                ].map((item, idx) => (
-                                    <motion.div 
-                                        key={item.q}
-                                        initial={{ opacity: 0 }}
-                                        whileInView={{ opacity: 1 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        className="bg-white p-6 rounded-lg border border-gray-200"
-                                    >
-                                        <h3 className="font-semibold text-gray-900 mb-2">{item.q}</h3>
-                                        <p className="text-gray-600">{item.a}</p>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    </div> */}
 
                     {/* Final CTA Section */}
                     <div className="relative bg-gradient-to-r from-[#035A7D] via-[#024a6b] to-[#4A90E2] py-24 sm:py-32 overflow-hidden">
