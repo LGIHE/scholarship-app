@@ -50,7 +50,7 @@ export default function PublicHeader({ currentRoute = null }) {
                         <Link
                             key={item.route}
                             href={route(item.route)}
-                            className={`text-sm font-semibold transition ${
+                            className={`text-m font-semibold transition ${
                                 isActive(item.route)
                                     ? 'text-[#035A7D]'
                                     : 'text-gray-700 hover:text-[#035A7D]'
@@ -69,7 +69,7 @@ export default function PublicHeader({ currentRoute = null }) {
                     ) : (
                         <Link
                             href={route('login')}
-                            className="rounded-full px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-gray-300 transition hover:bg-white hover:text-[#035A7D]"
+                            className="rounded-full px-4 py-2 text-m font-semibold text-gray-700 ring-1 ring-gray-300 transition hover:bg-white hover:text-[#035A7D]"
                         >
                             Log in
                         </Link>

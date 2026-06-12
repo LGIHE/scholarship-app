@@ -76,10 +76,10 @@ export default function Contact({ status }) {
                                     Send us an email and we'll respond within 24 hours.
                                 </p>
                                 <a
-                                    href="mailto:scholarship@lgf.org"
+                                    href="mailto:info@lgf.org"
                                     className="mt-3 block text-sm font-semibold text-[#035A7D] hover:underline"
                                 >
-                                    scholarships@lgfug.org
+                                    info@lgfug.org
                                 </a>
                             </div>
 

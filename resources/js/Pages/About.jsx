@@ -189,44 +189,6 @@ export default function About() {
                         </div>
                     </motion.section> */}
 
-                    {/* ── Who it's for ── */}
-                    <motion.section
-                        {...fadeUp(0.25)}
-                        className="mt-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
-                        aria-labelledby="about-who"
-                    >
-                        <h2 id="about-who" className="text-2xl font-bold text-gray-900">
-                            Who is the Scholarship Program for?
-                        </h2>
-                        <p className="mt-3 text-gray-600 leading-relaxed">
-                            The scholarship is for female Ugandan citizens — including those with refugee
-                            status and persons with disabilities — who are enrolled in or seeking
-                            admission to a BScEd programme at a LiT partner institution. The programme
-                            places particular emphasis on reaching those most in need, with dedicated
-                            slots reserved for marginalised groups.
-                        </p>
-                        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            {[
-                                { stat: '1,000', label: 'Scholarship places available' },
-                                { stat: '100%', label: 'Young women aged 18–35' },
-                                { stat: '7%', label: 'Refugees & Internally Displaced Persons' },
-                                { stat: '5%', label: 'Persons with Disabilities' },
-                            ].map((item) => (
-                                <div
-                                    key={item.label}
-                                    className="rounded-xl bg-gradient-to-br from-[#035A7D]/5 to-blue-50 border border-blue-100 p-5 text-center"
-                                >
-                                    <p className="text-3xl font-bold text-[#035A7D]">{item.stat}</p>
-                                    <p className="mt-1 text-sm text-gray-600">{item.label}</p>
-                                </div>
-                            ))}
-                        </div>
-                        <p className="mt-5 text-sm text-gray-500">
-                            An additional 20% of places are reserved for female in-service science,
-                            technology, and mathematics teachers who want to upgrade to a full BScEd degree.
-                        </p>
-                    </motion.section>
-
                     {/* ── Programme Participants ── */}
                     <motion.section
                         {...fadeUp(0.28)}
@@ -285,6 +247,44 @@ export default function About() {
                                 school across the programme's implementation area.
                             </p>
                         </div>
+                    </motion.section>
+
+                    {/* ── Who it's for ── */}
+                    <motion.section
+                        {...fadeUp(0.25)}
+                        className="mt-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+                        aria-labelledby="about-who"
+                    >
+                        <h2 id="about-who" className="text-2xl font-bold text-gray-900">
+                            Who is the Scholarship Program for?
+                        </h2>
+                        <p className="mt-3 text-gray-600 leading-relaxed">
+                            The scholarship is for female Ugandan citizens — including those with refugee
+                            status and persons with disabilities — who are enrolled in or seeking
+                            admission to a BScEd programme at a LiT partner institution. The programme
+                            places particular emphasis on reaching those most in need, with dedicated
+                            slots reserved for marginalised groups.
+                        </p>
+                        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            {[
+                                { stat: '1,000', label: 'Scholarship places available' },
+                                { stat: '100%', label: 'Young women aged 18–35' },
+                                { stat: '7%', label: 'Refugees & Internally Displaced Persons' },
+                                { stat: '5%', label: 'Persons with Disabilities' },
+                            ].map((item) => (
+                                <div
+                                    key={item.label}
+                                    className="rounded-xl bg-gradient-to-br from-[#035A7D]/5 to-blue-50 border border-blue-100 p-5 text-center"
+                                >
+                                    <p className="text-3xl font-bold text-[#035A7D]">{item.stat}</p>
+                                    <p className="mt-1 text-sm text-gray-600">{item.label}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="mt-5 text-sm text-gray-500">
+                            An additional 20% of places are reserved for female in-service science,
+                            technology, and mathematics teachers who want to upgrade to a full BScEd degree.
+                        </p>
                     </motion.section>
 
                     {/* ── Key Outcomes ── */}
