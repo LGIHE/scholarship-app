@@ -14,6 +14,81 @@ const faqs = [
                     'The Leaders in Teaching (LiT) Uganda Programme is a five-year Mastercard Foundation initiative aimed at transforming secondary education in Uganda. As part of this, the programme is providing 1,000 scholarships to female students pursuing a Bachelor of Science with Education (BScEd) at selected universities and Uganda National Institute for Teacher Education (UNITE) campuses. The scholarship covers tuition and functional fees, accommodation, and a laptop.',
             },
             {
+                question: 'What is the Leaders in Teaching Program about?',
+                answer:
+                    'Leaders in Teaching Uganda Program is a Mastercard Foundation flagship initiative that aims to elevate the quality of secondary school education in Uganda by supporting teachers, school leaders, and learning institutions.',
+            },
+            {
+                question: 'What does the program focus on?',
+                answer:
+                    'Leaders in Teaching focuses on strengthening Uganda\'s secondary school education system with a goal to improve teacher quality, school leadership, and student learning outcomes especially for girls, youth with disabilities, and underserved schools.',
+            },
+            {
+                question: 'How will the program be implemented?',
+                answer:
+                    'Leaders in Teaching is implemented through a 10-partner consortium, working closely with the Ministry of Education and Sports to ensure full integration into Uganda\'s national education system.',
+            },
+            {
+                question: 'Who are the 10 Consortium Partners?',
+                answerNode: (
+                    <ul className="space-y-1.5">
+                        {[
+                            'Luigi Giussani Foundation (Consortium Lead)',
+                            'UNICEF (Consortium Co-lead)',
+                            'Forum for Education NGOs in Uganda (FENU)',
+                            'Teach For Uganda (T4U)',
+                            'British Council',
+                            'Edukans International Uganda',
+                            'Brainwave Careers Uganda',
+                            'VVOB – education for development',
+                            'Promoting Equality in African Schools (PEAS)',
+                            'STiR Education',
+                        ].map((p) => (
+                            <li key={p} className="flex items-start gap-2 text-gray-600 text-sm">
+                                <span className="mt-1 shrink-0 h-1.5 w-1.5 rounded-full bg-[#035A7D]" aria-hidden="true" />
+                                {p}
+                            </li>
+                        ))}
+                    </ul>
+                ),
+            },
+            {
+                question: 'What areas does the program focus on?',
+                answer:
+                    'To strengthen the quality of teaching and learning, the Leaders in Teaching focuses on four pillars: (1) Teacher Recruitment, (2) Teacher Training, (3) Education Leadership Management, and (4) Teacher Motivation.',
+            },
+            {
+                question: 'Which partners support each program pillar?',
+                answerNode: (
+                    <div className="space-y-4 text-sm text-gray-600">
+                        {[
+                            { pillar: 'Recruit Pillar', partners: ['Forum for Education NGOs in Uganda (FENU) – Pillar Lead', 'Teach For Uganda'] },
+                            { pillar: 'Train Pillar', partners: ['British Council – Pillar Lead', 'Edukans International Uganda', 'Brainwave Careers Uganda'] },
+                            { pillar: 'Lead Pillar', partners: ['VVOB – education for development – Pillar Lead', 'Promoting Equality in African Schools (PEAS)'] },
+                            { pillar: 'Motivate Pillar', partners: ['STiR Education'] },
+                            { pillar: 'ICT Integration', partners: ['UNICEF – Leads on ICT integration in teaching and learning across the program'] },
+                        ].map(({ pillar, partners }) => (
+                            <div key={pillar}>
+                                <p className="font-semibold text-gray-800 mb-1">{pillar}</p>
+                                <ul className="space-y-1 pl-1">
+                                    {partners.map((p) => (
+                                        <li key={p} className="flex items-start gap-2">
+                                            <span className="mt-1.5 shrink-0 h-1.5 w-1.5 rounded-full bg-[#035A7D]" aria-hidden="true" />
+                                            {p}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+                ),
+            },
+            {
+                question: 'What is the duration of the program?',
+                answer:
+                    'Leaders in Teaching is a five-year program, running from June 2025 to July 2030.',
+            },
+            {
                 question: 'Who implements the programme?',
                 answer:
                     'The programme is implemented by a consortium of ten organisations under the strategic leadership and oversight of the Ministry of Education and Sports. The consortium comprises: Luigi Giussani Foundation (LGF), UNICEF, British Council, VVOB, Edukans International, Brainwave Careers Uganda, STiR Education, PEAS Uganda, Teach For Uganda, and the Forum for Education NGOs in Uganda (FENU).',
@@ -27,6 +102,53 @@ const faqs = [
                 question: 'How does this scholarship relate to the Mastercard Foundation\'s Young Africa Works strategy?',
                 answer:
                     'The Young Africa Works strategy aims to enable 30 million young Africans to access dignified and fulfilling work by 2030, including 4.3 million in Uganda. By training and placing qualified female STEM teachers, the LiT-Uganda programme directly contributes to this goal while tackling the shortage of science teachers in Uganda\'s secondary schools.',
+            },
+            {
+                question: 'What systemic changes does the program aim to achieve?',
+                answerNode: (
+                    <div className="space-y-2 text-sm text-gray-600">
+                        <p className="leading-relaxed">Leaders in Teaching seeks to transform secondary education at the individual, school, and system levels through:</p>
+                        <ul className="space-y-2 mt-2">
+                            {[
+                                'Increased number of qualified and gender-inclusive teachers contributing to improved learning outcomes and equitable access to quality education.',
+                                'Improved teacher competencies and practices for effective Competency-Based Education delivery in Ugandan secondary schools.',
+                                'Improved utilisation of effective leadership practices by school leaders for a better teaching and learning environment.',
+                                'Improved teacher motivation reflected in increased satisfaction, professional growth, and retention enabled by recognition, mentorship, and career development pathways.',
+                            ].map((p) => (
+                                <li key={p} className="flex items-start gap-2">
+                                    <span className="mt-1.5 shrink-0 h-1.5 w-1.5 rounded-full bg-[#035A7D]" aria-hidden="true" />
+                                    {p}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ),
+            },
+            {
+                question: 'How will communities and districts be engaged?',
+                answer:
+                    'Implementation of Leaders in Teaching will be in collaboration with District Local Governments, teacher training institutions, and community structures to ensure local ownership, coordination, and oversight of program activities.',
+            },
+            {
+                question: 'How will the Leaders in Teaching ensure sustainability after the program ends?',
+                answerNode: (
+                    <div className="space-y-2 text-sm text-gray-600">
+                        <p className="leading-relaxed">Sustainability will be built through:</p>
+                        <ul className="space-y-1.5 mt-2">
+                            {[
+                                'Strengthening national systems rather than creating parallel structures',
+                                'Building capacity within the Ministry of Education and Sports and district education offices',
+                                'Embedding training programs within national institutions',
+                                'Supporting long-term policy reforms',
+                            ].map((p) => (
+                                <li key={p} className="flex items-start gap-2">
+                                    <span className="mt-1.5 shrink-0 h-1.5 w-1.5 rounded-full bg-[#035A7D]" aria-hidden="true" />
+                                    {p}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ),
             },
         ],
     },
@@ -42,6 +164,42 @@ const faqs = [
                 question: 'Are there reserved places for specific groups?',
                 answer:
                     'Yes. The programme places strong emphasis on equity and inclusion. Dedicated slots are reserved for: 7% Refugees and Internally Displaced Persons (IDPs), 5% Persons with Disabilities, and 20% for female in-service science, technology, and mathematics teachers wishing to upgrade to a full BScEd degree.',
+            },
+            {
+                question: 'Which schools and regions are covered by the Program?',
+                answer:
+                    'Leaders in Teaching will be implemented in 2,091 secondary schools across Uganda, including 1,000 public and 1,091 private schools.',
+            },
+            {
+                question: 'How were the schools participating in the program selected?',
+                answer:
+                    'Selection focused on schools that have consistently performed poorly in Uganda Certificate of Education examinations over several years. Priority was also given to schools that host refugees, Special Needs Education schools, and those located in rural and peri-urban communities. In addition, the selection considered the type of ownership, with preference for government, NGO-supported schools not benefiting from a previous intervention, and community-based schools.',
+            },
+            {
+                question: 'Who are the primary participants in the Program?',
+                answerNode: (
+                    <div className="space-y-2 text-sm text-gray-600">
+                        <p className="leading-relaxed">Leaders in Teaching directly targets:</p>
+                        <ul className="space-y-1.5 mt-2">
+                            {[
+                                '67,000 in-service teachers',
+                                '7,500 pre-service teachers',
+                                '300 tutors from 10 universities and five teacher training institutions',
+                                '6,273 school leaders nationwide',
+                            ].map((p) => (
+                                <li key={p} className="flex items-start gap-2">
+                                    <span className="mt-1.5 shrink-0 h-1.5 w-1.5 rounded-full bg-[#035A7D]" aria-hidden="true" />
+                                    {p}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ),
+            },
+            {
+                question: 'How were the universities on the program selected?',
+                answer:
+                    'Using data from the National Council for Higher Education, the team evaluated universities based on STEM enrollment, support for Special Needs Education, strength in education leadership, affordability, laboratory facilities, and ownership. The selection ensured regional balance across Central, Eastern, Northern, and Western Uganda, with extra attention to underserved regions like Eastern and Northern, and included both public and faith-based institutions.',
             },
             {
                 question: 'Which universities are eligible?',
@@ -69,9 +227,86 @@ const faqs = [
         category: 'Scholarship Benefits',
         questions: [
             {
+                question: 'Will the program offer scholarships?',
+                answer:
+                    'Yes. Leaders in Teaching will provide 1,000 scholarships to academically talented, economically disadvantaged female student teachers — including 5% with disabilities and 7% refugees or marginalised women — to train as STEM and ICT teachers.',
+            },
+            {
                 question: 'What does the scholarship cover?',
                 answer:
                     'Each scholarship award covers three key areas: (1) Tuition and functional fees for the full duration of the BScEd programme, (2) Accommodation costs at or near the institution, and (3) A laptop to support digital learning and academic work throughout the programme.',
+            },
+            {
+                question: 'Are the services offered by the Program free of charge?',
+                answer:
+                    'Yes. All services, support, and capacity-building opportunities provided under the Leaders in Teaching program are offered at no cost to participating schools, teachers, tutors, institutions, and student teachers.',
+            },
+            {
+                question: 'How will the program ensure inclusion in education?',
+                answerNode: (
+                    <div className="space-y-2 text-sm text-gray-600">
+                        <p className="leading-relaxed">Leaders in Teaching prioritizes inclusion by:</p>
+                        <ul className="space-y-1.5 mt-2">
+                            {[
+                                'Providing scholarship opportunities for marginalised female students',
+                                'Supporting teachers with gender-responsive pedagogy training',
+                                'Ensuring participation of individuals with disabilities and refugees',
+                                'Building safer and more inclusive learning environments',
+                            ].map((p) => (
+                                <li key={p} className="flex items-start gap-2">
+                                    <span className="mt-1.5 shrink-0 h-1.5 w-1.5 rounded-full bg-[#035A7D]" aria-hidden="true" />
+                                    {p}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ),
+            },
+            {
+                question: 'How will the program support in-service teachers?',
+                answerNode: (
+                    <div className="space-y-2 text-sm text-gray-600">
+                        <p className="leading-relaxed">Teachers will receive training on:</p>
+                        <ul className="space-y-1.5 mt-2">
+                            {[
+                                'Competency-Based Curriculum',
+                                'Gender-responsive pedagogy',
+                                'Career Guidance and Counseling',
+                                'Integrating ICT in teaching and learning',
+                            ].map((p) => (
+                                <li key={p} className="flex items-start gap-2">
+                                    <span className="mt-1.5 shrink-0 h-1.5 w-1.5 rounded-full bg-[#035A7D]" aria-hidden="true" />
+                                    {p}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ),
+            },
+            {
+                question: 'How will the program support STEM education?',
+                answerNode: (
+                    <div className="space-y-2 text-sm text-gray-600">
+                        <p className="leading-relaxed">Leaders in Teaching will integrate and support STEM education by:</p>
+                        <ul className="space-y-1.5 mt-2">
+                            {[
+                                'Strengthening the skills of in-service STEM teachers',
+                                'Increasing the number of qualified STEM educators through scholarship opportunities to pre-service teachers',
+                                'Enhancing access to ICT for teaching and learning in secondary schools',
+                            ].map((p) => (
+                                <li key={p} className="flex items-start gap-2">
+                                    <span className="mt-1.5 shrink-0 h-1.5 w-1.5 rounded-full bg-[#035A7D]" aria-hidden="true" />
+                                    {p}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ),
+            },
+            {
+                question: 'How will the program support school leaders?',
+                answer:
+                    'Leaders in Teaching will co-design and deliver a blended, accredited school leader certification program for four cohorts, equipping leaders with effective management skills, Competency-Based Curriculum aligned instructional leadership practices, and tools to use gender-disaggregated data for school improvement.',
             },
             {
                 question: 'How long does the scholarship last?',
@@ -97,6 +332,11 @@ const faqs = [
                 question: 'How do I apply?',
                 answer:
                     'Applications are submitted online through this platform. Create an account, complete the multi-step application form covering your personal information, academic background, financial situation, and commitment to teaching, then upload all required supporting documents before submitting.',
+            },
+            {
+                question: 'How many learners will benefit from the program?',
+                answer:
+                    'Leaders in Teaching is expected to indirectly reach at least 627,300 learners, based on an estimated 300 students per participating school.',
             },
             {
                 question: 'What is the deadline for the current call?',
@@ -303,9 +543,13 @@ export default function FAQ() {
                                                             transition={{ duration: 0.25, ease: 'easeInOut' }}
                                                         >
                                                             <div className="border-t border-gray-100 bg-gray-50 px-6 py-5">
-                                                                <p className="text-gray-600 leading-relaxed">
-                                                                    {item.answer}
-                                                                </p>
+                                                                {item.answerNode ? (
+                                                                    item.answerNode
+                                                                ) : (
+                                                                    <p className="text-gray-600 leading-relaxed">
+                                                                        {item.answer}
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         </motion.div>
                                                     )}
