@@ -39,9 +39,16 @@ Route::get('/terms', function () {
     return Inertia::render('TermsOfService');
 })->name('terms');
 
-Route::get('/scholarship', function () {
-    return Inertia::render('Scholarship');
-})->name('scholarship');
+Route::get('/scholarships', function () {
+    return Inertia::render('Scholarships');
+})->name('scholarships');
+
+Route::get('/scholarships/{year}', function (string $year) {
+    return Inertia::render('ScholarshipCall', ['year' => $year]);
+})->name('scholarship.call');
+
+// Legacy redirect — keep old /scholarship URL working
+Route::redirect('/scholarship', '/scholarships', 301);
 
 Route::post('/contact', function (\Illuminate\Http\Request $request) {
     $validated = $request->validate([

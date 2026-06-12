@@ -26,7 +26,7 @@ export default function PublicFooter() {
                             </li>
                             <li>
                                 <Link
-                                    href={route('scholarship')}
+                                    href={route('scholarships')}
                                     className="hover:text-white transition"
                                 >
                                     Scholarships

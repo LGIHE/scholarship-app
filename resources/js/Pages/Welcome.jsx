@@ -434,15 +434,15 @@ export default function Welcome({ auth }) {
                                 <div className="mt-10 flex items-center justify-center gap-x-6">
                                     {!auth.user && (
                                         <Link
-                                            href={route('register')}
+                                            href={route('scholarships')}
                                             className="rounded-full bg-white px-8 py-3 text-lg font-semibold text-[#035A7D] shadow-lg hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition"
                                         >
                                             Start Your Application
                                         </Link>
                                     )}
-                                    <a href="#benefits" className="text-lg font-semibold leading-6 text-white hover:text-blue-100 transition">
+                                    {/* <a href="#benefits" className="text-lg font-semibold leading-6 text-white hover:text-blue-100 transition">
                                         Learn More <span aria-hidden="true">→</span>
-                                    </a>
+                                    </a> */}
                                 </div>
                             </motion.div>
                         </div>
