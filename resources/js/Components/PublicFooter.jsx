@@ -74,18 +74,13 @@ export default function PublicFooter() {
                         <h3 className="text-white font-semibold mb-4">Legal</h3>
                         <ul className="space-y-2 text-sm">
                             <li>
-                                <a href="#" className="hover:text-white transition">
+                                <Link href={route('privacy')} className="hover:text-white transition">
                                     Privacy Policy
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="#" className="hover:text-white transition">
+                                <Link href={route('terms')} className="hover:text-white transition">
                                     Terms of Service
-                                </a>
-                            </li>
-                            <li>
-                                <Link href={route('login')} className="hover:text-white transition">
-                                    Scholar Login
                                 </Link>
                             </li>
                         </ul>
