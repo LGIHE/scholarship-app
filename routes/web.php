@@ -31,6 +31,10 @@ Route::get('/contact', function () {
     return Inertia::render('Contact');
 })->name('contact');
 
+Route::get('/scholarship', function () {
+    return Inertia::render('Scholarship');
+})->name('scholarship');
+
 Route::post('/contact', function (\Illuminate\Http\Request $request) {
     $validated = $request->validate([
         'name' => 'required|string|max:255',

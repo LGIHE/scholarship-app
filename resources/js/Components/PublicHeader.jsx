@@ -6,6 +6,7 @@ export default function PublicHeader({ currentRoute = null }) {
     const navItems = [
         { name: 'Home', route: 'home' },
         { name: 'About', route: 'about' },
+        { name: 'Scholarship', route: 'scholarship' },
         { name: 'Resources', route: 'resources' },
         { name: 'FAQ', route: 'faq' },
         { name: 'Contact', route: 'contact' },
