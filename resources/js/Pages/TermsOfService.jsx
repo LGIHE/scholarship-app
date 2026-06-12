@@ -72,7 +72,7 @@ const sections = [
             },
             {
                 subtitle: '4.4 No Guarantee of Award',
-                text: 'Submission of a complete application does not guarantee the award of a scholarship. Decisions are made at the Foundation's sole discretion based on the selection criteria for the relevant programme cycle.',
+                text: "Submission of a complete application does not guarantee the award of a scholarship. Decisions are made at the Foundation's sole discretion based on the selection criteria for the relevant programme cycle.",
             },
         ],
     },

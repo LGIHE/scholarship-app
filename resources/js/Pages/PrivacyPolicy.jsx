@@ -14,7 +14,7 @@ const sections = [
             },
             {
                 subtitle: '1.2 Information Collected Automatically',
-                text: 'When you access our platform, we may automatically collect certain technical information, including your IP address, browser type and version, operating system, pages visited and time spent, referring URLs, and device identifiers. This data is used solely to improve our platform's performance and user experience.',
+                text: "When you access our platform, we may automatically collect certain technical information, including your IP address, browser type and version, operating system, pages visited and time spent, referring URLs, and device identifiers. This data is used solely to improve our platform's performance and user experience.",
             },
             {
                 subtitle: '1.3 Information from Third Parties',
