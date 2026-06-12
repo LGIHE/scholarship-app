@@ -227,9 +227,157 @@ export default function About() {
                         </p>
                     </motion.section>
 
-                    {/* ── CTA ── */}
+                    {/* ── Programme Participants ── */}
+                    <motion.section
+                        {...fadeUp(0.28)}
+                        className="mt-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+                        aria-labelledby="about-participants"
+                    >
+                        <h2 id="about-participants" className="text-2xl font-bold text-gray-900">
+                            Programme Participants
+                        </h2>
+                        <p className="mt-2 text-gray-600">
+                            The LiT-Uganda programme reaches educators and learners at every level of
+                            the secondary education system.
+                        </p>
+
+                        {/* Direct reach */}
+                        <h3 className="mt-7 text-xs font-semibold uppercase tracking-widest text-[#035A7D]">
+                            Direct Reach
+                        </h3>
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            {[
+                                { stat: '67,000', label: 'In-service teachers' },
+                                { stat: '7,500',  label: 'Pre-service teachers' },
+                                { stat: '300',    label: 'University tutors across 10 universities & 5 teacher training institutions' },
+                                { stat: '6,273',  label: 'School leaders nationwide' },
+                            ].map((item) => (
+                                <div
+                                    key={item.label}
+                                    className="rounded-xl border border-gray-100 bg-gray-50 p-5 text-center"
+                                >
+                                    <p className="text-3xl font-bold text-[#035A7D]">{item.stat}</p>
+                                    <p className="mt-1 text-sm text-gray-600 leading-snug">{item.label}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Scholarships */}
+                        <h3 className="mt-8 text-xs font-semibold uppercase tracking-widest text-[#035A7D]">
+                            Scholarships
+                        </h3>
+                        <div className="mt-4 rounded-xl border border-blue-100 bg-gradient-to-br from-[#035A7D]/5 to-blue-50 p-6">
+                            <p className="text-gray-700 leading-relaxed">
+                                <strong className="text-gray-900">1,000 female student teachers</strong> — including{' '}
+                                <strong>5%</strong> with disabilities and <strong>7%</strong> who are refugees
+                                or from marginalised communities — are supported to train as STEM and ICT teachers.
+                            </p>
+                        </div>
+
+                        {/* Indirect reach */}
+                        <h3 className="mt-8 text-xs font-semibold uppercase tracking-widest text-[#035A7D]">
+                            Indirect Reach
+                        </h3>
+                        <div className="mt-4 flex items-center gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
+                            <p className="text-4xl font-bold text-[#035A7D] shrink-0">627,300+</p>
+                            <p className="text-gray-600 text-sm leading-relaxed">
+                                Students reached indirectly — estimated at 300 students per targeted
+                                school across the programme's implementation area.
+                            </p>
+                        </div>
+                    </motion.section>
+
+                    {/* ── Key Outcomes ── */}
                     <motion.section
                         {...fadeUp(0.3)}
+                        className="mt-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+                        aria-labelledby="about-outcomes"
+                    >
+                        <h2 id="about-outcomes" className="text-2xl font-bold text-gray-900">
+                            Key Outcomes for Teachers and School Leaders
+                        </h2>
+                        <p className="mt-2 text-gray-600">
+                            The programme is designed to deliver four main outcomes across Uganda's
+                            secondary education system.
+                        </p>
+                        <ol className="mt-6 space-y-4" role="list">
+                            {[
+                                {
+                                    num: '01',
+                                    text: 'Increased number of qualified and gender-inclusive teachers contributing to improved learning outcomes and equitable access to quality education.',
+                                },
+                                {
+                                    num: '02',
+                                    text: 'Improved teacher competencies and practices for effective Competency-Based Education delivery in Ugandan secondary schools.',
+                                },
+                                {
+                                    num: '03',
+                                    text: 'Improved utilisation of effective leadership practices by school leaders for a better teaching and learning environment.',
+                                },
+                                {
+                                    num: '04',
+                                    text: 'Improved teacher motivation reflected in increased satisfaction, professional growth, and retention — enabled by recognition, mentorship, and career development pathways.',
+                                },
+                            ].map((item, i) => (
+                                <motion.li
+                                    key={item.num}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.35, delay: i * 0.07 }}
+                                    className="flex items-start gap-4 rounded-xl border border-gray-100 bg-gray-50 p-5"
+                                >
+                                    <span className="shrink-0 text-2xl font-bold text-[#035A7D]/30 leading-none tabular-nums">
+                                        {item.num}
+                                    </span>
+                                    <p className="text-gray-700 leading-relaxed">{item.text}</p>
+                                </motion.li>
+                            ))}
+                        </ol>
+                    </motion.section>
+
+                    {/* ── Implementation Area ── */}
+                    <motion.section
+                        {...fadeUp(0.32)}
+                        className="mt-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+                        aria-labelledby="about-implementation"
+                    >
+                        <h2 id="about-implementation" className="text-2xl font-bold text-gray-900">
+                            Implementation Area
+                        </h2>
+                        <p className="mt-3 text-gray-600 leading-relaxed">
+                            The programme operates in <strong>2,091 secondary schools across Uganda</strong>,
+                            spanning both government and private institutions.
+                        </p>
+                        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                            {[
+                                { stat: '1,000', label: 'Government schools across Uganda' },
+                                { stat: '1,091', label: 'Private schools across Uganda' },
+                            ].map((item) => (
+                                <div
+                                    key={item.label}
+                                    className="rounded-xl border border-gray-100 bg-gray-50 p-6 text-center"
+                                >
+                                    <p className="text-4xl font-bold text-[#035A7D]">{item.stat}</p>
+                                    <p className="mt-1 text-sm text-gray-600">{item.label}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* No fees notice */}
+                        <div className="mt-6 flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-5">
+                            <span className="shrink-0 text-green-600 text-xl" aria-hidden="true">✅</span>
+                            <p className="text-sm text-green-800 leading-relaxed">
+                                <strong>All services are free of charge.</strong> There are no fees associated
+                                with registration, trainings, scholarships, or any other service provided
+                                under the Leaders in Teaching programme.
+                            </p>
+                        </div>
+                    </motion.section>
+
+                    {/* ── CTA ── */}
+                    <motion.section
+                        {...fadeUp(0.35)}
                         className="mt-8 rounded-2xl border border-gray-200 bg-gradient-to-br from-blue-50 to-[#035A7D]/5 p-8 text-center shadow-sm"
                         aria-labelledby="about-cta"
                     >
