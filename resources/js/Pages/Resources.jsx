@@ -109,7 +109,7 @@ export default function Resources() {
                             </div>
                         </motion.section>
 
-                        <motion.section
+                        {/* <motion.section
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.45, delay: 0.2 }}
@@ -161,9 +161,9 @@ export default function Resources() {
                                     </div>
                                 ))}
                             </div>
-                        </motion.section>
+                        </motion.section> */}
 
-                        <motion.section
+                        {/* <motion.section
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.45, delay: 0.3 }}
@@ -218,7 +218,7 @@ export default function Resources() {
                                     </div>
                                 ))}
                             </div>
-                        </motion.section>
+                        </motion.section> */}
 
                         <motion.section
                             initial={{ opacity: 0, y: 16 }}
