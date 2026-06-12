@@ -188,7 +188,7 @@ const sections = [
             },
             {
                 subtitle: 'Luigi Giussani Foundation',
-                text: 'Email: info@lgfug.org\nPhone: +256 (704) 567-890\nWebsite: lgfug.org',
+                text: 'Email: info@lgfug.org\nPhone: (+256) 764 078712\nWebsite: lgfug.org',
             },
         ],
     },

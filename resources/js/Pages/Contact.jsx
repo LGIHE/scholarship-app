@@ -92,10 +92,10 @@ export default function Contact({ status }) {
                                     Speak with our team Monday to Friday, 9am-5pm.
                                 </p>
                                 <a
-                                    href="tel:+256704567890"
+                                    href="tel:+256764078712"
                                     className="mt-3 block text-sm font-semibold text-[#035A7D] hover:underline"
                                 >
-                                    +256 (704) 567-890
+                                    (+256) 764 078712
                                 </a>
                             </div>
 

@@ -375,7 +375,7 @@ export default function Scholarship() {
                                             <p><span className="font-semibold">Name:</span> Mr. Ian Murari Buteera (IT Officer)</p>
                                             <p>
                                                 <span className="font-semibold">Phone:</span>{' '}
-                                                <a href="tel:+256782940777" className="text-[#035A7D] hover:underline">+256 782 940 777</a>
+                                                <a href="tel:+256764078712" className="text-[#035A7D] hover:underline">(+256) 764 078712</a>
                                             </p>
                                             <p>
                                                 <span className="font-semibold">Email:</span>{' '}

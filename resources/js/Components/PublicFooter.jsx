@@ -59,7 +59,7 @@ export default function PublicFooter() {
                         <h3 className="text-white font-semibold mb-4">Contact</h3>
                         <ul className="space-y-2 text-sm">
                             <li>Email: info@lgfug.org</li>
-                            <li>Phone: +256 (704) 567-890</li>
+                            <li>Phone: (+256) 764 078712</li>
                             <li>
                                 <Link
                                     href={route('contact')}

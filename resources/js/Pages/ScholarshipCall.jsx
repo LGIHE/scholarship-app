@@ -434,10 +434,10 @@ export default function ScholarshipCall() {
                                                     <p>
                                                         <span className="font-semibold">Phone:</span>{' '}
                                                         <a
-                                                            href="tel:+256782940777"
+                                                            href="tel:+256764078712"
                                                             className="text-[#035A7D] hover:underline"
                                                         >
-                                                            +256 782 940 777
+                                                            (+256) 764 078712
                                                         </a>
                                                     </p>
                                                     <p>
