@@ -1,3 +1,105 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ─── Accessibility Widget ──────────────────────────────────────────────────── */
+
+/* OpenDyslexic — loaded only when the class is applied */
+@font-face {
+    font-family: 'OpenDyslexic';
+    src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/OpenDyslexic-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Letter spacing custom property (set by JS) */
+:root {
+    --a11y-letter-spacing: 0px;
+}
+
+/* Apply letter spacing globally when set */
+html[style*="--a11y-letter-spacing"] body,
+html[style*="--a11y-letter-spacing"] p,
+html[style*="--a11y-letter-spacing"] a,
+html[style*="--a11y-letter-spacing"] span,
+html[style*="--a11y-letter-spacing"] li,
+html[style*="--a11y-letter-spacing"] td,
+html[style*="--a11y-letter-spacing"] th,
+html[style*="--a11y-letter-spacing"] label,
+html[style*="--a11y-letter-spacing"] button {
+    letter-spacing: var(--a11y-letter-spacing) !important;
+}
+
+/* Line height */
+html.a11y-line-relaxed body { line-height: 1.75 !important; }
+html.a11y-line-loose body   { line-height: 2.2 !important; }
+
+/* Dyslexia font */
+html.a11y-dyslexia,
+html.a11y-dyslexia body,
+html.a11y-dyslexia p,
+html.a11y-dyslexia a,
+html.a11y-dyslexia span,
+html.a11y-dyslexia li,
+html.a11y-dyslexia h1,
+html.a11y-dyslexia h2,
+html.a11y-dyslexia h3,
+html.a11y-dyslexia h4,
+html.a11y-dyslexia h5,
+html.a11y-dyslexia h6,
+html.a11y-dyslexia td,
+html.a11y-dyslexia th,
+html.a11y-dyslexia label,
+html.a11y-dyslexia button,
+html.a11y-dyslexia input,
+html.a11y-dyslexia textarea {
+    font-family: 'OpenDyslexic', sans-serif !important;
+}
+
+/* High contrast */
+html.a11y-high-contrast {
+    filter: none;
+}
+html.a11y-high-contrast body {
+    background-color: #000 !important;
+    color: #ffff00 !important;
+}
+html.a11y-high-contrast a { color: #00ffff !important; }
+html.a11y-high-contrast button:not([class*="a11y"]) { border: 2px solid #ffff00 !important; }
+html.a11y-high-contrast img { opacity: 0.85 !important; filter: contrast(1.3) !important; }
+
+/* Inverted colours */
+html.a11y-inverted {
+    filter: invert(1) hue-rotate(180deg);
+}
+html.a11y-inverted img,
+html.a11y-inverted video,
+html.a11y-inverted [style*="background-image"] {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+/* Hide images */
+html.a11y-hide-images img,
+html.a11y-hide-images svg:not([aria-hidden]):not([class*="a11y"]),
+html.a11y-hide-images [role="img"] {
+    visibility: hidden !important;
+}
+
+/* Enhanced focus outline */
+html.a11y-focus-outline *:focus,
+html.a11y-focus-outline *:focus-visible {
+    outline: 3px solid #035A7D !important;
+    outline-offset: 3px !important;
+    border-radius: 2px;
+}
+
+/* Reduced motion */
+html.a11y-reduced-motion *,
+html.a11y-reduced-motion *::before,
+html.a11y-reduced-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}
