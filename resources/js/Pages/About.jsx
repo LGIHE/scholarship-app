@@ -159,7 +159,7 @@ export default function About() {
                     </motion.section>
 
                     {/* ── Who delivers it ── */}
-                    <motion.section
+                    {/* <motion.section
                         {...fadeUp(0.2)}
                         className="mt-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
                         aria-labelledby="about-consortium"
@@ -187,7 +187,7 @@ export default function About() {
                                 </div>
                             ))}
                         </div>
-                    </motion.section>
+                    </motion.section> */}
 
                     {/* ── Who it's for ── */}
                     <motion.section
@@ -196,7 +196,7 @@ export default function About() {
                         aria-labelledby="about-who"
                     >
                         <h2 id="about-who" className="text-2xl font-bold text-gray-900">
-                            Who Is It For?
+                            Who is the Scholarship Program for?
                         </h2>
                         <p className="mt-3 text-gray-600 leading-relaxed">
                             The scholarship is for female Ugandan citizens — including those with refugee

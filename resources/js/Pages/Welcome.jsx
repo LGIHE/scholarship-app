@@ -41,7 +41,7 @@ export default function Welcome({ auth }) {
                                     The Female STEM Student Teachers’ Scholarship is committed to supporting exceptional students demonstrating financial need, academic merit, and a strong commitment to their communities.
                                 </p>
                                 <div className="mt-10 flex items-center justify-center gap-x-6">
-                                    <a href="#benefits" className="text-sm font-semibold leading-6 text-gray-900 hover:text-[#035A7D] transition">
+                                    <a href="#overview" className="text-sm font-semibold leading-6 text-gray-900 hover:text-[#035A7D] transition">
                                         Learn more <span aria-hidden="true">→</span>
                                     </a>
                                 </div>
