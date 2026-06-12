@@ -26,6 +26,14 @@ export default function PublicFooter() {
                             </li>
                             <li>
                                 <Link
+                                    href={route('scholarship')}
+                                    className="hover:text-white transition"
+                                >
+                                    Scholarships
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
                                     href={route('resources')}
                                     className="hover:text-white transition"
                                 >
@@ -50,8 +58,8 @@ export default function PublicFooter() {
                     <div>
                         <h3 className="text-white font-semibold mb-4">Contact</h3>
                         <ul className="space-y-2 text-sm">
-                            <li>Email: scholarship@lgf.org</li>
-                            <li>Phone: +1 (234) 567-890</li>
+                            <li>Email: info@lgfug.org</li>
+                            <li>Phone: +256 (704) 567-890</li>
                             <li>
                                 <Link
                                     href={route('contact')}
