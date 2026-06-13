@@ -3,7 +3,7 @@
 
 Dear {{ $application->user->name ?? 'Applicant' }},
 
-We are thrilled to inform you that your application for the Luigi Giussani Foundation Scholarship has been **APPROVED**. 
+We are thrilled to inform you that your application for the LIT-Uganda Female STEM Student Teachers' Scholarship has been **APPROVED**. 
 
 You are now officially a Scholar and will find new resources available on your Dashboard.
 

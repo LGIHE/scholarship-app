@@ -3,7 +3,7 @@
 
 Dear {{ $application->user->name ?? 'Applicant' }},
 
-Your Luigi Giussani Foundation Scholarship application status has been updated.
+Your LIT-Uganda Female STEM Student Teachers' Scholarship application status has been updated.
 
 **Previous Status:** {{ ucfirst(str_replace('_', ' ', $oldStatus)) }}  
 **New Status:** {{ ucfirst(str_replace('_', ' ', $newStatus)) }}

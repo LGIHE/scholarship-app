@@ -3,7 +3,7 @@
 
 Dear {{ $application->user->name ?? 'Applicant' }},
 
-We have successfully received your application for the Luigi Giussani Foundation Scholarship.
+We have successfully received your application for the LIT-Uganda Female STEM Student Teachers' Scholarship.
 
 Our committee will review your detailed application. We will reach out once a decision has been made.
 

@@ -1,9 +1,9 @@
 <x-mail::message>
-# Welcome to Luigi Giussani Foundation!
+# Welcome to LIT-Uganda Female STEM Student Teachers' Scholarship!
 
 Dear {{ $user->name }},
 
-Thank you for registering with the Luigi Giussani Foundation Scholarship Program. We're excited to have you join us!
+Thank you for registering with the LIT-Uganda Female STEM Student Teachers' Scholarship Program. We're excited to have you join us!
 
 To complete your registration, please verify your email address by clicking the button below:
 

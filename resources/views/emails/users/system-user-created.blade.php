@@ -1,9 +1,9 @@
 <x-mail::message>
-# Welcome to LGF Admin System
+# Welcome to LIT-Uganda Program Admin System
 
 Dear {{ $user->name }},
 
-Your administrator account has been created for the Luigi Giussani Foundation admin panel.
+Your administrator account has been created for the LIT-Uganda Female STEM Student Teachers' Scholarship admin panel.
 
 **Email:** {{ $user->email }}
 
