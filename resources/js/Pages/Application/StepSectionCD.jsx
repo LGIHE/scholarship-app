@@ -12,7 +12,7 @@ export default function StepSectionCD({ data, errors, stepErrors, updateSection,
             {/* ── Section C ──────────────────────────────────────────────── */}
             <div className="rounded-md border border-gray-200 p-4">
                 <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
-                    Section C – To Be Completed by Parent/Legal Guardian
+                    To Be Completed by Parent/Legal Guardian
                 </h4>
                 <p className="text-xs text-gray-500 mb-4 italic">
                     Person so far responsible for financing the education of the applicant.
@@ -83,7 +83,7 @@ export default function StepSectionCD({ data, errors, stepErrors, updateSection,
             {/* ── Section D ──────────────────────────────────────────────── */}
             <div className="rounded-md border border-gray-200 p-4">
                 <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
-                    Section D – Criminal Offence Declaration
+                    Criminal Offence Declaration
                 </h4>
                 <div className="space-y-4">
                     <div>

@@ -14,7 +14,7 @@ export default function StepSectionB6({ data, errors, stepErrors, updateSection,
         <div className="space-y-6">
             <div className="rounded-md border border-gray-200 p-4">
                 <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
-                    Section B6 – Motivation Statement
+                    Motivation Statement
                 </h4>
                 <div>
                     <RequiredLabel

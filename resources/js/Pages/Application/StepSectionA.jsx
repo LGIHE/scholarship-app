@@ -15,7 +15,7 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
         <div className="space-y-8">
             <div className="rounded-md border border-gray-200 p-4">
                 <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
-                    Section A – Applicant Background Information
+                    Applicant Background Information
                 </h4>
                 <p className="text-xs text-gray-500 mb-4 italic">
                     Complete all questions using BLOCK letters only. Your application will not be processed if you leave any questions unanswered.
@@ -219,10 +219,10 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                     ))}
                 </div>
 
-                {/* ── Section B1 – Education ────────────────────────────── */}
+                {/* ── Information on Education ────────────────────────────── */}
                 <div className="mt-6">
                     <h4 className="font-semibold text-gray-800 text-base border-b pb-2 mb-4">
-                        Section B1 – Information on Education
+                        Information on Education
                     </h4>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

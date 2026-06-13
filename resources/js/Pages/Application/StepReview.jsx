@@ -20,7 +20,7 @@ export default function StepReview({ data }) {
 
             {/* Personal Info */}
             <div className="rounded-md border border-gray-200 p-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Section A – Personal Information</h4>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Personal Information</h4>
                 <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
                     <SummaryItem label="Full Name" value={[pi.surname, pi.other_names].filter(Boolean).join(', ')} />
                     <SummaryItem label="Date of Birth" value={pi.date_of_birth} />
@@ -33,7 +33,7 @@ export default function StepReview({ data }) {
                     <SummaryItem label="Disability"
                         value={
                             pi.has_disability === 'yes'
-                                ? `Yes – ${pi.disability_specify || 'specified in Section B2'}`
+                                ? `Yes – ${pi.disability_specify || 'specified in Step 2'}`
                                 : pi.has_disability === 'no' ? 'No' : null
                         } />
                     <SummaryItem label="Place of Residence"
@@ -43,7 +43,7 @@ export default function StepReview({ data }) {
 
             {/* Education */}
             <div className="rounded-md border border-gray-200 p-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Section B1 – Education</h4>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Information on Education</h4>
                 <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
                     <SummaryItem label="Academic Programme" value={pi.academic_programme} />
                     <SummaryItem label="Institution" value={pi.institution} />
@@ -55,7 +55,7 @@ export default function StepReview({ data }) {
 
             {/* Motivation */}
             <div className="rounded-md border border-gray-200 p-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Section B6 – Motivation</h4>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Motivation</h4>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
                     {data.essay.motivation || <span className="text-gray-400 italic">Not provided</span>}
                 </p>
@@ -89,7 +89,7 @@ export default function StepReview({ data }) {
 
             {/* Guardian */}
             <div className="rounded-md border border-gray-200 p-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Section C – Guardian/Parent</h4>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Guardian/Parent</h4>
                 <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
                     <SummaryItem label="Name"
                         value={[gi.guardian_surname, gi.guardian_other_names].filter(Boolean).join(', ')} />

@@ -9,7 +9,7 @@ export default function StepSectionB2({ data, updateSection, isLocked }) {
         <div className="space-y-6">
             <div className="rounded-md border border-gray-200 p-4">
                 <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
-                    Section B2 – For Students with Disabilities
+                    For Students with Disabilities
                 </h4>
                 <p className="text-sm text-gray-500 mb-4 italic">
                     Complete this section only if you indicated that you have a disability. If you have no disability, you may proceed to the next section.

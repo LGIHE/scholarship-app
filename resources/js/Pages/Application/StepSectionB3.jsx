@@ -8,7 +8,7 @@ export default function StepSectionB3({ data, updateSection, isLocked }) {
         <div className="space-y-6">
             <div className="rounded-md border border-gray-200 p-4">
                 <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
-                    Section B3 – To Be Filled by Applicants with Dependants
+                    To Be Filled by Applicants with Dependants
                 </h4>
 
                 {/* 19a – Spouse */}
