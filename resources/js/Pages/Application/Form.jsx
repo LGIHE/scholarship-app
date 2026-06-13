@@ -6,22 +6,22 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useFormDefaults } from './useFormDefaults';
-import StepSectionA  from './StepSectionA';
-import StepSectionB2 from './StepSectionB2';
-import StepSectionB3 from './StepSectionB3';
-import StepSectionB6 from './StepSectionB6';
-import StepDocuments from './StepDocuments';
-import StepSectionCD from './StepSectionCD';
-import StepReview    from './StepReview';
+import Step1PersonalInfo        from './Step1PersonalInfo';
+import Step2Disability          from './Step2Disability';
+import Step3Dependants          from './Step3Dependants';
+import Step4Motivation          from './Step4Motivation';
+import Step5Documents           from './Step5Documents';
+import Step6GuardianDeclaration from './Step6GuardianDeclaration';
+import Step7Review              from './Step7Review';
 
 const STEP_CONFIG = [
-    { id: 1, title: 'Section A',    description: 'Personal background & education info' },
-    { id: 2, title: 'Section B2',   description: 'Disability information' },
-    { id: 3, title: 'Section B3',   description: 'Dependants information' },
-    { id: 4, title: 'Section B6',   description: 'Motivation essay' },
-    { id: 5, title: 'Documents',    description: 'Upload required documents' },
-    { id: 6, title: 'Section C & D', description: 'Parent/guardian & declaration' },
-    { id: 7, title: 'Review & Submit', description: 'Summary and final submission' },
+    { id: 1, title: 'Step 1',  description: 'Personal background & education info' },
+    { id: 2, title: 'Step 2',  description: 'Disability information' },
+    { id: 3, title: 'Step 3',  description: 'Dependants information' },
+    { id: 4, title: 'Step 4',  description: 'Motivation essay' },
+    { id: 5, title: 'Step 5',  description: 'Upload required documents' },
+    { id: 6, title: 'Step 6',  description: 'Parent/guardian & declaration' },
+    { id: 7, title: 'Step 7',  description: 'Summary and final submission' },
 ];
 
 function countWords(text) {
@@ -322,13 +322,13 @@ export default function Form() {
                                     transition={{ duration: 0.2 }}
                                     className="space-y-6"
                                 >
-                                    {activeStep === 1 && <StepSectionA  {...stepProps} updateNextOfKin={updateNextOfKin} />}
-                                    {activeStep === 2 && <StepSectionB2 {...stepProps} />}
-                                    {activeStep === 3 && <StepSectionB3 {...stepProps} />}
-                                    {activeStep === 4 && <StepSectionB6 {...stepProps} />}
-                                    {activeStep === 5 && <StepDocuments {...stepProps} setData={setData} hasChanged={hasChanged} />}
-                                    {activeStep === 6 && <StepSectionCD {...stepProps} />}
-                                    {activeStep === 7 && <StepReview    data={data} />}
+                                    {activeStep === 1 && <Step1PersonalInfo        {...stepProps} updateNextOfKin={updateNextOfKin} />}
+                                    {activeStep === 2 && <Step2Disability          {...stepProps} />}
+                                    {activeStep === 3 && <Step3Dependants          {...stepProps} />}
+                                    {activeStep === 4 && <Step4Motivation          {...stepProps} />}
+                                    {activeStep === 5 && <Step5Documents           {...stepProps} setData={setData} hasChanged={hasChanged} />}
+                                    {activeStep === 6 && <Step6GuardianDeclaration {...stepProps} />}
+                                    {activeStep === 7 && <Step7Review              data={data} />}
                                 </motion.div>
                             </AnimatePresence>
 
@@ -351,7 +351,7 @@ export default function Form() {
                                     )}
                                     {activeStep < STEP_CONFIG.length ? (
                                         <PrimaryButton type="button" onClick={(e) => { e.preventDefault(); nextStep(); }}>
-                                            {activeStep === 6 ? 'Proceed to Review & Submit' : 'Next Step'}
+                                            {activeStep === 6 ? 'Review & Submit' : 'Next Step'}
                                         </PrimaryButton>
                                     ) : (
                                         <PrimaryButton type="submit" disabled={processing || isLocked}>
