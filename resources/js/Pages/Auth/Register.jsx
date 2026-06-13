@@ -42,7 +42,7 @@ export default function Register() {
 
                 <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
                     <Link href="/" className="text-xl font-bold text-[#035A7D]">
-                        LGF Scholarship
+                        LIT-Uganda Female STEM Student Teachers' Scholarship
                     </Link>
                     <Link
                         href={route('login')}
@@ -67,7 +67,7 @@ export default function Register() {
                                 Start your scholarship application journey
                             </h1>
                             <p className="mt-4 text-gray-600">
-                                Create your account to begin the 5-step LGF scholarship form with draft saving, scoring preview, and committee review.
+                                Create your account to begin the 5-step LIT-Uganda Female STEM Student Teachers' Scholarship form with draft saving, scoring preview, and committee review.
                             </p>
 
                             <div className="mt-8 space-y-3">

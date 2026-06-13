@@ -42,7 +42,7 @@ export default function Login({ status, canResetPassword }) {
 
                 <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
                     <Link href="/" className="text-xl font-bold text-[#035A7D]">
-                        LGF Scholarship
+                        LIT-Uganda Female STEM Student Teachers' Scholarship
                     </Link>
                     <Link
                         href={route('register')}
