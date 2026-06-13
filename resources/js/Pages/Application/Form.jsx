@@ -10,98 +10,62 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 // Helper component for required labels
 const RequiredLabel = ({ htmlFor, value, required = false }) => (
-    <InputLabel 
-        htmlFor={htmlFor} 
+    <InputLabel
+        htmlFor={htmlFor}
         value={
             <span>
                 {value}
                 {required && <span className="ml-1 text-red-500">*</span>}
             </span>
-        } 
+        }
     />
 );
 
+// Reusable checkbox component
+const CheckboxField = ({ id, label, checked, onChange, disabled }) => (
+    <label className="flex items-center gap-2 cursor-pointer">
+        <input
+            type="checkbox"
+            id={id}
+            checked={!!checked}
+            onChange={(e) => onChange(e.target.checked)}
+            disabled={disabled}
+            className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+        />
+        <span className="text-sm text-gray-700">{label}</span>
+    </label>
+);
+
+// Reusable radio component
+const RadioField = ({ name, value, label, checked, onChange, disabled }) => (
+    <label className="flex items-center gap-2 cursor-pointer">
+        <input
+            type="radio"
+            name={name}
+            value={value}
+            checked={checked}
+            onChange={() => onChange(value)}
+            disabled={disabled}
+            className="h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500"
+        />
+        <span className="text-sm text-gray-700">{label}</span>
+    </label>
+);
+
 const STEP_CONFIG = [
-    {
-        id: 1,
-        title: 'Personal Info',
-        description: 'Demographics, program, CGPA, schools',
-    },
-    {
-        id: 2,
-        title: 'Finances',
-        description: 'Expenses, income sources, funding gap',
-    },
-    {
-        id: 3,
-        title: 'Guardian Info',
-        description: 'Parent or guardian details',
-    },
-    {
-        id: 4,
-        title: 'Documents',
-        description: 'Upload required documents',
-    },
-    {
-        id: 5,
-        title: 'Essay & Commitment',
-        description: 'STEM teaching narrative and commitment',
-    },
-    {
-        id: 6,
-        title: 'Review & Submit',
-        description: 'Summary and final submission',
-    },
+    { id: 1, title: 'Section A', description: 'Personal background & education info' },
+    { id: 2, title: 'Section B2', description: 'Disability information' },
+    { id: 3, title: 'Section B3', description: 'Dependants information' },
+    { id: 4, title: 'Section B6', description: 'Motivation essay' },
+    { id: 5, title: 'Documents', description: 'Upload required documents' },
+    { id: 6, title: 'Section C & D', description: 'Parent/guardian & declaration' },
+    { id: 7, title: 'Review & Submit', description: 'Summary and final submission' },
 ];
-
-function toNumber(value) {
-    const parsed = Number(value);
-
-    return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function countWords(text) {
     const normalized = (text || '').trim();
-
-    if (!normalized) {
-        return 0;
-    }
-
+    if (!normalized) return 0;
     return normalized.split(/\s+/).length;
-}
-
-function formatCurrency(value) {
-    return new Intl.NumberFormat('en-UG', {
-        style: 'currency',
-        currency: 'UGX',
-        maximumFractionDigits: 0,
-    }).format(toNumber(value));
-}
-
-function formatNumberWithCommas(value) {
-    if (!value) return '';
-    // Remove any non-digit characters
-    const numericValue = value.toString().replace(/\D/g, '');
-    // Add commas
-    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
-function parseNumberWithCommas(value) {
-    if (!value) return '';
-    // Remove commas to get the raw number
-    return value.toString().replace(/,/g, '');
-}
-
-function scoreLabel(total) {
-    if (total >= 80) {
-        return 'Excellent';
-    }
-
-    if (total >= 65) {
-        return 'Strong';
-    }
-
-    return 'Needs Review';
 }
 
 export default function Form() {
@@ -111,87 +75,122 @@ export default function Form() {
     const defaultFirstName = nameParts[0] || '';
     const defaultLastName = nameParts.slice(1).join(' ');
 
-    const defaults = useMemo(
-        () => ({
-            personal_info: {
-                first_name: defaultFirstName,
-                last_name: defaultLastName,
-                phone: '',
-                date_of_birth: '',
-                gender: '',
-                nationality: '',
-                has_disability: '',
-                disability_details: '',
-                refugee_or_displaced: '',
-                refugee_details: '',
-                residence_area: '',
-                university: '',
-                program_of_study: '',
-                year_of_study: '',
-                cgpa: '',
-                high_school: '',
-                current_school: '',
-            },
-            financial_info: {
-                household_income: '',
-                number_of_dependents: '',
-                estimated_tuition: '',
-                estimated_living_expenses: '',
-                other_expenses: '',
-                income_sources: '',
-                existing_support: '',
-                funding_gap: 0,
-                requested_support_amount: '',
-                scholarship_type_requested: '',
-            },
-            guardian_info: {
-                guardian_name: '',
-                guardian_relation: '',
-                guardian_phone: '',
-                guardian_email: '',
-                guardian_occupation: '',
-                guardian_address: '',
-            },
-            essay: {
-                personal_statement: '',
-                commitment: '',
-                additional_information: '',
-            },
-            documents: {
-                academic_documents: null,
-                national_id: null,
-                admission_form: null,
-                provisional_results: null,
-            },
-        }),
-        [defaultFirstName, defaultLastName],
-    );
+    const defaults = useMemo(() => ({
+        personal_info: {
+            // Section A - Personal Information
+            surname: defaultLastName,
+            other_names: defaultFirstName,
+            date_of_birth: '',
+            nin: '',
+            has_disability: '',
+            disability_specify: '',
+            phone: '',
+            email: auth?.user?.email || '',
+            marital_status: '',
+            // Next of kin
+            next_of_kin: [
+                { name: '', relationship: '', telephone: '' },
+                { name: '', relationship: '', telephone: '' },
+            ],
+            // Nationality
+            is_ugandan: '',
+            non_ugandan_explanation: '',
+            // Place of birth
+            birth_village: '', birth_district: '', birth_region: '', birth_country: '',
+            // Place of origin
+            origin_village: '', origin_district: '', origin_region: '', origin_country: '',
+            // Place of residence
+            residence_village: '', residence_district: '', residence_region: '', residence_country: '',
+            // Study info
+            academic_programme: '',
+            teaching_subjects_1: '',
+            teaching_subjects_2: '',
+            institution: '',
+            student_admission_number: '',
+            // Schools attended
+            primary_school_name: '', primary_school_district: '', primary_school_dates: '', primary_school_responsible: '',
+            olevel_school_name: '', olevel_school_district: '', olevel_school_dates: '', olevel_school_responsible: '',
+            alevel_school_name: '', alevel_school_district: '', alevel_school_dates: '', alevel_school_responsible: '',
+            university_name: '', university_district: '', university_dates: '', university_responsible: '',
+            // Admission mode
+            alevel_school_exam: '', alevel_year: '', alevel_index: '', alevel_points: '',
+            diploma_school: '', diploma_year: '', diploma_index: '', diploma_cgpa: '',
+            heac_school: '', heac_year: '', heac_index: '', heac_points: '',
+            mature_school: '', mature_year: '', mature_index: '', mature_points: '',
+        },
+        disability_info: {
+            // Section B2
+            difficulty_walking: false,
+            difficulty_seeing: false,
+            difficulty_hearing: false,
+            difficulty_communicating: false,
+            difficulty_picking: false,
+            difficulty_self_care: false,
+            difficulty_emotions: false,
+            functionality_level: '',
+            family_disability_father: false,
+            family_disability_mother: false,
+            family_disability_siblings: false,
+            siblings_female_count: '',
+            siblings_male_count: '',
+            assistive_support: '',
+        },
+        dependants_info: {
+            // Section B3
+            // Spouse info
+            spouse_surname: '',
+            spouse_other_names: '',
+            spouse_education_level: '',
+            spouse_occupation: '',
+            marriage_balance_plan: '',
+            // Children info
+            num_children: '',
+            oldest_child_age: '',
+            youngest_child_age: '',
+            childcare_plan: '',
+            spouse_support: '',
+            non_financial_support_needed: '',
+        },
+        essay: {
+            // Section B6
+            motivation: '',
+        },
+        guardian_info: {
+            // Section C
+            guardian_surname: '',
+            guardian_other_names: '',
+            guardian_address: '',
+            guardian_telephone: '',
+            guardian_district: '',
+            guardian_region: '',
+            guardian_occupation: '',
+            guardian_relation: '',
+        },
+        declaration_info: {
+            // Section D
+            criminal_offence: '',
+            criminal_details: '',
+        },
+        documents: {
+            exam_results: null,
+            national_id: null,
+            birth_certificate: null,
+            admission_letter: null,
+            recommendation_lc1: null,
+            recommendation_school: null,
+            refugee_number: null,
+        },
+    }), [defaultFirstName, defaultLastName, auth]);
 
-    const initialData = useMemo(
-        () => ({
-            personal_info: {
-                ...defaults.personal_info,
-                ...(application?.personal_info || {}),
-            },
-            financial_info: {
-                ...defaults.financial_info,
-                ...(application?.financial_info || {}),
-            },
-            guardian_info: {
-                ...defaults.guardian_info,
-                ...(application?.guardian_info || {}),
-            },
-            essay: {
-                ...defaults.essay,
-                ...(application?.essay || {}),
-            },
-            documents: {
-                ...defaults.documents,
-                ...(application?.documents || {}),
-            },
-        }),
-        [application, defaults],
-    );
+    const initialData = useMemo(() => ({
+        personal_info: { ...defaults.personal_info, ...(application?.personal_info || {}) },
+        disability_info: { ...defaults.disability_info, ...(application?.disability_info || {}) },
+        dependants_info: { ...defaults.dependants_info, ...(application?.dependants_info || {}) },
+        essay: { ...defaults.essay, ...(application?.essay || {}) },
+        guardian_info: { ...defaults.guardian_info, ...(application?.guardian_info || {}) },
+        declaration_info: { ...defaults.declaration_info, ...(application?.declaration_info || {}) },
+        documents: { ...defaults.documents, ...(application?.documents || {}) },
+    }), [application, defaults]);
 
     const { data, setData, post, processing, errors } = useForm(initialData);
 
@@ -203,177 +202,50 @@ export default function Form() {
     const initialRender = useRef(true);
     const hasChanged = useRef(false);
 
-    const isLocked = ['submitted', 'under_review', 'approved', 'rejected'].includes(
-        application?.status,
-    );
+    const isLocked = ['submitted', 'under_review', 'approved', 'rejected'].includes(application?.status);
 
     const statusLabels = {
-        draft: 'Draft',
-        submitted: 'Submitted',
-        under_review: 'Under Review',
-        approved: 'Approved',
-        rejected: 'Rejected',
+        draft: 'Draft', submitted: 'Submitted', under_review: 'Under Review',
+        approved: 'Approved', rejected: 'Rejected',
     };
 
-    const fundingGap = useMemo(() => {
-        const totalExpenses =
-            toNumber(data.financial_info.estimated_tuition) +
-            toNumber(data.financial_info.estimated_living_expenses) +
-            toNumber(data.financial_info.other_expenses);
-
-        const totalFunding =
-            toNumber(data.financial_info.household_income) +
-            toNumber(data.financial_info.existing_support);
-
-        return Math.max(0, totalExpenses - totalFunding);
-    }, [
-        data.financial_info.estimated_living_expenses,
-        data.financial_info.estimated_tuition,
-        data.financial_info.existing_support,
-        data.financial_info.household_income,
-        data.financial_info.other_expenses,
-    ]);
-
-    useEffect(() => {
-        if (toNumber(data.financial_info.funding_gap) === fundingGap) {
-            return;
-        }
-
-        setData('financial_info', {
-            ...data.financial_info,
-            funding_gap: fundingGap,
-        });
-    }, [data.financial_info, fundingGap, setData]);
-
-    const scorePreview = useMemo(() => {
-        let financialNeed = 0;
-        const income = toNumber(data.financial_info.household_income);
-
-        if (income < 20000) {
-            financialNeed += 20;
-        } else if (income < 40000) {
-            financialNeed += 15;
-        } else if (income < 60000) {
-            financialNeed += 10;
-        } else if (income < 80000) {
-            financialNeed += 5;
-        }
-
-        financialNeed += Math.min(
-            10,
-            toNumber(data.financial_info.number_of_dependents) * 2,
-        );
-
-        // Handle optional CGPA - give base points if not provided
-        const cgpa = toNumber(data.personal_info.cgpa);
-        const academicMerit = cgpa === 0 
-            ? 10 // Base points for first-year students without CGPA
-            : Math.max(0, Math.min(25, (cgpa / 4) * 25));
-
-        let demographics = 5;
-
-        if ((data.personal_info.gender || '').toLowerCase() === 'female') {
-            demographics += 5;
-        }
-
-        if (data.personal_info.residence_area === 'rural') {
-            demographics += 5;
-        }
-
-        demographics = Math.max(0, Math.min(15, demographics));
-
-        const commitment = Math.max(
-            0,
-            Math.min(15, (countWords(data.essay.commitment) / 100) * 15),
-        );
-
-        const essayQuality = Math.max(
-            0,
-            Math.min(15, (countWords(data.essay.personal_statement) / 300) * 15),
-        );
-
-        const total = Math.round(
-            financialNeed +
-                academicMerit +
-                demographics +
-                commitment +
-                essayQuality,
-        );
-
-        return {
-            financial_need: Math.round(financialNeed),
-            academic_merit: Math.round(academicMerit),
-            demographics: Math.round(demographics),
-            commitment: Math.round(commitment),
-            essay_quality: Math.round(essayQuality),
-            total,
-            label: scoreLabel(total),
-        };
-    }, [
-        data.essay.commitment,
-        data.essay.personal_statement,
-        data.financial_info.household_income,
-        data.financial_info.number_of_dependents,
-        data.personal_info.cgpa,
-        data.personal_info.gender,
-        data.personal_info.residence_area,
-    ]);
-
-    const updateSectionValue = (section, field, value) => {
+    const updateSection = (section, field, value) => {
         hasChanged.current = true;
-
-        setData(section, {
-            ...data[section],
-            [field]: value,
-        });
-
-        // Clear step errors for this field when user starts typing
+        setData(section, { ...data[section], [field]: value });
         const fieldKey = `${section}.${field}`;
         if (stepErrors[fieldKey]) {
-            setStepErrors(prev => {
-                const newErrors = { ...prev };
-                delete newErrors[fieldKey];
-                return newErrors;
-            });
+            setStepErrors((prev) => { const n = { ...prev }; delete n[fieldKey]; return n; });
         }
+    };
+
+    const updateNextOfKin = (index, field, value) => {
+        hasChanged.current = true;
+        const updated = [...(data.personal_info.next_of_kin || [{ name: '', relationship: '', telephone: '' }, { name: '', relationship: '', telephone: '' }])];
+        updated[index] = { ...updated[index], [field]: value };
+        setData('personal_info', { ...data.personal_info, next_of_kin: updated });
     };
 
     const saveDraft = async (message = 'Draft saved successfully.') => {
-        if (isLocked) {
-            return;
-        }
-
+        if (isLocked) return;
         setSavingDraft(true);
         setDraftMessage('Saving draft...');
-
         try {
-            // Create FormData to handle file uploads
             const formData = new FormData();
-            
-            // Add all form data
             formData.append('personal_info', JSON.stringify(data.personal_info));
-            formData.append('financial_info', JSON.stringify(data.financial_info));
-            formData.append('guardian_info', JSON.stringify(data.guardian_info));
+            formData.append('disability_info', JSON.stringify(data.disability_info));
+            formData.append('dependants_info', JSON.stringify(data.dependants_info));
             formData.append('essay', JSON.stringify(data.essay));
-            
-            // Add document files if they are File objects (newly uploaded)
-            if (data.documents.academic_documents && typeof data.documents.academic_documents !== 'string') {
-                formData.append('documents[academic_documents]', data.documents.academic_documents);
-            }
-            if (data.documents.national_id && typeof data.documents.national_id !== 'string') {
-                formData.append('documents[national_id]', data.documents.national_id);
-            }
-            if (data.documents.admission_form && typeof data.documents.admission_form !== 'string') {
-                formData.append('documents[admission_form]', data.documents.admission_form);
-            }
-            if (data.documents.provisional_results && typeof data.documents.provisional_results !== 'string') {
-                formData.append('documents[provisional_results]', data.documents.provisional_results);
-            }
-            
+            formData.append('guardian_info', JSON.stringify(data.guardian_info));
+            formData.append('declaration_info', JSON.stringify(data.declaration_info));
+
+            const docFields = ['exam_results','national_id','birth_certificate','admission_letter','recommendation_lc1','recommendation_school','refugee_number'];
+            docFields.forEach((key) => {
+                const doc = data.documents[key];
+                if (doc && typeof doc !== 'string') formData.append(`documents[${key}]`, doc);
+            });
+
             await window.axios.post(route('application.draft'), formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
             setDraftMessage(message);
         } catch {
@@ -384,288 +256,157 @@ export default function Form() {
     };
 
     useEffect(() => {
-        if (isLocked) {
-            return;
-        }
-
-        if (initialRender.current) {
-            initialRender.current = false;
-            return;
-        }
-
-        if (!hasChanged.current) {
-            return;
-        }
-
-        const timer = setTimeout(() => {
-            void saveDraft('Draft auto-saved.');
-        }, 1200);
-
+        if (isLocked) return;
+        if (initialRender.current) { initialRender.current = false; return; }
+        if (!hasChanged.current) return;
+        const timer = setTimeout(() => { void saveDraft('Draft auto-saved.'); }, 1200);
         return () => clearTimeout(timer);
-    }, [
-        data.essay,
-        data.financial_info,
-        data.guardian_info,
-        data.personal_info,
-        data.documents,
-        isLocked,
-    ]);
+    }, [data.essay, data.disability_info, data.dependants_info, data.guardian_info, data.personal_info, data.declaration_info, data.documents, isLocked]);
 
-    const goToStep = (stepId) => {
-        setActiveStep(stepId);
-    };
-
-    // Validate current step before moving forward
     const validateStep = (step) => {
-        const errors = {};
-
+        const errs = {};
         if (step === 1) {
-            // Personal Info validation
-            if (!data.personal_info.first_name?.trim()) {
-                errors['personal_info.first_name'] = 'First name is required';
-            }
-            if (!data.personal_info.last_name?.trim()) {
-                errors['personal_info.last_name'] = 'Last name is required';
-            }
-            if (!data.personal_info.phone?.trim()) {
-                errors['personal_info.phone'] = 'Phone number is required';
-            }
-            if (!data.personal_info.date_of_birth?.trim()) {
-                errors['personal_info.date_of_birth'] = 'Date of birth is required';
-            }
-            if (!data.personal_info.gender) {
-                errors['personal_info.gender'] = 'Gender is required';
-            }
-            if (!data.personal_info.has_disability) {
-                errors['personal_info.has_disability'] = 'Disability status is required';
-            }
-            if (data.personal_info.has_disability === 'yes' && !data.personal_info.disability_details?.trim()) {
-                errors['personal_info.disability_details'] = 'Disability details are required';
-            }
-            if (!data.personal_info.refugee_or_displaced) {
-                errors['personal_info.refugee_or_displaced'] = 'Refugee/displaced status is required';
-            }
-            if (data.personal_info.refugee_or_displaced === 'yes' && !data.personal_info.refugee_details?.trim()) {
-                errors['personal_info.refugee_details'] = 'Refugee/displaced details are required';
-            }
-            if (!data.personal_info.residence_area) {
-                errors['personal_info.residence_area'] = 'Residence area is required';
-            }
-            if (!data.personal_info.university?.trim()) {
-                errors['personal_info.university'] = 'University is required';
-            }
-            if (!data.personal_info.program_of_study?.trim()) {
-                errors['personal_info.program_of_study'] = 'Program of study is required';
-            }
-            if (!data.personal_info.high_school?.trim()) {
-                errors['personal_info.high_school'] = 'High school is required';
-            }
-        } else if (step === 2) {
-            // Financial Info validation
-            if (!data.financial_info.household_income || data.financial_info.household_income === '') {
-                errors['financial_info.household_income'] = 'Household income is required';
-            }
-            if (!data.financial_info.number_of_dependents && data.financial_info.number_of_dependents !== 0) {
-                errors['financial_info.number_of_dependents'] = 'Number of dependents is required';
-            }
-            if (!data.financial_info.estimated_tuition || data.financial_info.estimated_tuition === '') {
-                errors['financial_info.estimated_tuition'] = 'Estimated tuition is required';
-            }
-            if (!data.financial_info.estimated_living_expenses || data.financial_info.estimated_living_expenses === '') {
-                errors['financial_info.estimated_living_expenses'] = 'Estimated living expenses is required';
-            }
-            if (!data.financial_info.income_sources?.trim()) {
-                errors['financial_info.income_sources'] = 'Income sources is required';
-            }
-            if (!data.financial_info.scholarship_type_requested) {
-                errors['financial_info.scholarship_type_requested'] = 'Scholarship type requested is required';
-            }
-        } else if (step === 3) {
-            // Guardian Info validation
-            if (!data.guardian_info.guardian_name?.trim()) {
-                errors['guardian_info.guardian_name'] = 'Guardian name is required';
-            }
-            if (!data.guardian_info.guardian_phone?.trim()) {
-                errors['guardian_info.guardian_phone'] = 'Guardian phone is required';
-            }
-            if (!data.guardian_info.guardian_relation?.trim()) {
-                errors['guardian_info.guardian_relation'] = 'Guardian relation is required';
-            }
-        } else if (step === 4) {
-            // Documents validation - check for both File objects and string paths (previously uploaded)
-            const hasAcademicDocs = data.documents.academic_documents && 
-                (typeof data.documents.academic_documents === 'string' || data.documents.academic_documents instanceof File);
-            const hasNationalId = data.documents.national_id && 
-                (typeof data.documents.national_id === 'string' || data.documents.national_id instanceof File);
-            
-            if (!hasAcademicDocs) {
-                errors['documents.academic_documents'] = 'Academic documents are required';
-            }
-            if (!hasNationalId) {
-                errors['documents.national_id'] = 'National ID is required';
-            }
+            if (!data.personal_info.surname?.trim()) errs['personal_info.surname'] = 'Surname is required';
+            if (!data.personal_info.other_names?.trim()) errs['personal_info.other_names'] = 'Other name(s) are required';
+            if (!data.personal_info.date_of_birth?.trim()) errs['personal_info.date_of_birth'] = 'Date of birth is required';
+            if (!data.personal_info.phone?.trim()) errs['personal_info.phone'] = 'Telephone number is required';
+            if (!data.personal_info.marital_status) errs['personal_info.marital_status'] = 'Marital status is required';
+            if (!data.personal_info.is_ugandan) errs['personal_info.is_ugandan'] = 'Nationality is required';
+            if (!data.personal_info.academic_programme?.trim()) errs['personal_info.academic_programme'] = 'Academic programme is required';
+            if (!data.personal_info.institution?.trim()) errs['personal_info.institution'] = 'Institution is required';
         } else if (step === 5) {
-            // Essay validation
-            if (!data.essay.personal_statement?.trim() || countWords(data.essay.personal_statement) < 100) {
-                errors['essay.personal_statement'] = 'Personal statement is required (minimum 100 words)';
+            const docFields = ['exam_results','national_id'];
+            docFields.forEach((key) => {
+                const doc = data.documents[key];
+                const has = doc && (typeof doc === 'string' || doc instanceof File);
+                if (!has) errs[`documents.${key}`] = `${key.replace(/_/g,' ')} is required`;
+            });
+        } else if (step === 4) {
+            if (!data.essay.motivation?.trim() || countWords(data.essay.motivation) < 50) {
+                errs['essay.motivation'] = 'Motivation essay is required (minimum 50 words, target 250 words)';
             }
-            if (!data.essay.commitment?.trim() || countWords(data.essay.commitment) < 100) {
-                errors['essay.commitment'] = 'Teaching commitment is required (minimum 100 words)';
-            }
+        } else if (step === 6) {
+            if (!data.guardian_info.guardian_surname?.trim()) errs['guardian_info.guardian_surname'] = 'Guardian surname is required';
+            if (!data.guardian_info.guardian_telephone?.trim()) errs['guardian_info.guardian_telephone'] = 'Guardian telephone is required';
+            if (!data.guardian_info.guardian_relation?.trim()) errs['guardian_info.guardian_relation'] = 'Guardian relationship is required';
         }
-
-        return errors;
+        return errs;
     };
 
-    const nextStep = () => {
-        if (activeStep === STEP_CONFIG.length) {
-            return;
-        }
-
-        // Validate current step
-        const errors = validateStep(activeStep);
-        setStepErrors(errors);
-
-        if (Object.keys(errors).length > 0) {
-            setDraftMessage('Please fill in all required fields before proceeding.');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
-
-        if (!isLocked) {
-            void saveDraft('Draft saved.');
-        }
-
-        setActiveStep((current) => current + 1);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    const isStepComplete = (stepId) => {
+        if (stepId === 7) return isLocked;
+        return Object.keys(validateStep(stepId)).length === 0;
     };
 
-    const previousStep = () => {
-        if (activeStep === 1) {
-            return;
-        }
-
-        setActiveStep((current) => current - 1);
-    };
-
-    // Helper function to determine which step has errors
-    const getStepWithErrors = (errorKey) => {
-        if (errorKey.startsWith('personal_info.')) return 1;
-        if (errorKey.startsWith('financial_info.')) return 2;
-        if (errorKey.startsWith('guardian_info.')) return 3;
-        if (errorKey.startsWith('documents.')) return 4;
-        if (errorKey.startsWith('essay.')) return 5;
-        return 6;
-    };
-
-    // Get steps that have errors
     const stepsWithErrors = useMemo(() => {
         const steps = new Set();
         Object.keys(errors).forEach((key) => {
-            steps.add(getStepWithErrors(key));
+            if (key.startsWith('personal_info.') || key.startsWith('personal_info[')) steps.add(1);
+            else if (key.startsWith('disability_info.')) steps.add(2);
+            else if (key.startsWith('dependants_info.')) steps.add(3);
+            else if (key.startsWith('essay.')) steps.add(4);
+            else if (key.startsWith('documents.')) steps.add(5);
+            else if (key.startsWith('guardian_info.') || key.startsWith('declaration_info.')) steps.add(6);
         });
         return steps;
     }, [errors]);
 
-    // Check if a step is complete
-    const isStepComplete = (stepId) => {
-        // Step 6 (Review & Submit) is only complete when application is submitted
-        if (stepId === 6) {
-            return isLocked;
-        }
-        const errors = validateStep(stepId);
-        return Object.keys(errors).length === 0;
+    const getStepStatusColor = (stepId) => {
+        if (stepId === activeStep) return 'border-emerald-500 bg-emerald-50';
+        if (stepsWithErrors.has(stepId)) return 'border-red-300 bg-red-50 hover:border-red-400';
+        if (isStepComplete(stepId)) return 'border-green-300 bg-green-50 hover:border-green-400';
+        return 'border-orange-300 bg-orange-50 hover:border-orange-400';
     };
 
-    // Get step status color
-    const getStepStatusColor = (stepId) => {
-        if (stepId === activeStep) {
-            return 'border-emerald-500 bg-emerald-50';
+    const nextStep = () => {
+        if (activeStep === STEP_CONFIG.length) return;
+        const errs = validateStep(activeStep);
+        setStepErrors(errs);
+        if (Object.keys(errs).length > 0) {
+            setDraftMessage('Please fill in all required fields before proceeding.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
         }
-        if (stepsWithErrors.has(stepId)) {
-            return 'border-red-300 bg-red-50 hover:border-red-400';
-        }
-        if (isStepComplete(stepId)) {
-            return 'border-green-300 bg-green-50 hover:border-green-400';
-        }
-        return 'border-orange-300 bg-orange-50 hover:border-orange-400';
+        if (!isLocked) void saveDraft('Draft saved.');
+        setActiveStep((c) => c + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const previousStep = () => {
+        if (activeStep === 1) return;
+        setActiveStep((c) => c - 1);
     };
 
     const submit = (event) => {
         event.preventDefault();
-
-        console.log('Submitting application...', {
-            hasDocuments: !!data.documents,
-            documentKeys: Object.keys(data.documents || {}),
-        });
-
-        // Create a modified data object that only includes new file uploads
-        // Don't send document fields that are already uploaded (string paths)
         const submitData = { ...data };
-        
-        // Only include documents that are File objects (newly uploaded)
-        // Skip documents that are strings (already uploaded)
-        const documentsToSubmit = {};
-        let hasNewDocuments = false;
-        
-        Object.keys(data.documents).forEach(key => {
+        const docFields = ['exam_results','national_id','birth_certificate','admission_letter','recommendation_lc1','recommendation_school','refugee_number'];
+        const newDocs = {};
+        let hasNew = false;
+        docFields.forEach((key) => {
             const doc = data.documents[key];
-            if (doc && typeof doc !== 'string') {
-                // This is a new File object, include it
-                documentsToSubmit[key] = doc;
-                hasNewDocuments = true;
-            }
+            if (doc && typeof doc !== 'string') { newDocs[key] = doc; hasNew = true; }
         });
-        
-        if (hasNewDocuments) {
-            submitData.documents = documentsToSubmit;
-        } else {
-            // No new documents to upload, remove the documents field
-            delete submitData.documents;
-        }
+        if (hasNew) submitData.documents = newDocs;
+        else delete submitData.documents;
 
-        // Use FormData for file uploads
         post(route('application.submit'), submitData, {
             forceFormData: true,
             preserveScroll: false,
-            onSuccess: () => {
-                console.log('Application submitted successfully');
-                setDraftMessage('Application submitted successfully.');
-            },
-            onError: (errors) => {
-                console.error('Submission errors:', errors);
+            onSuccess: () => setDraftMessage('Application submitted successfully.'),
+            onError: () => {
                 setDraftMessage('Error submitting application. Please check all required fields.');
-                // Scroll to top to show error summary
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             },
         });
     };
 
+    // ─── Shorthand helpers ──────────────────────────────────────────────────────
+    const pi = data.personal_info;
+    const di = data.disability_info;
+    const dep = data.dependants_info;
+    const gi = data.guardian_info;
+    const decl = data.declaration_info;
+    const docs = data.documents;
+
+    const nokList = pi.next_of_kin || [
+        { name: '', relationship: '', telephone: '' },
+        { name: '', relationship: '', telephone: '' },
+    ];
+
     return (
         <AuthenticatedLayout
             header={
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Scholarship Application
-                    </h2>
+                    <div>
+                        <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                            Leaders in Teaching – Scholarship Application Form
+                        </h2>
+                        <p className="text-sm text-gray-500">Female STEM Student Teachers' Scholarship 2026/2027</p>
+                    </div>
                     <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">
                         Status: {statusLabels[application?.status || 'draft'] || 'Draft'}
                     </span>
                 </div>
             }
         >
-            <Head title="My Application" />
+            <Head title="Scholarship Application" />
 
             <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
+                    {/* Guiding note */}
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                        <p className="font-semibold mb-1">Guiding Note</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>Complete every section of the Application Form in CAPITAL LETTERS.</li>
+                            <li>Provide clear addresses, e-mail address and telephone numbers through which you can be easily reached.</li>
+                            <li><strong>SUBMIT YOUR APPLICATION NOT LATER THAN 15th July 2026.</strong> No applications will be accepted after this date.</li>
+                        </ul>
+                    </div>
+
                     <div className="overflow-hidden rounded-lg bg-white p-6 shadow-sm">
-                        <div className="mb-6 flex flex-col gap-2">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                Multi-Step Application Form
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                                Complete all five steps and submit once every required field is filled.
-                            </p>
+                        <div className="mb-4 flex flex-col gap-1">
+                            <h3 className="text-lg font-semibold text-gray-900">University Education Scholarships – Application Form</h3>
                             {isLocked && (
                                 <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                                     This application is already submitted. You can review details but cannot edit fields.
@@ -673,70 +414,45 @@ export default function Form() {
                             )}
                         </div>
 
-                        <div className="mb-6 h-2 w-full rounded-full bg-gray-200">
+                        {/* Progress bar */}
+                        <div className="mb-4 h-2 w-full rounded-full bg-gray-200">
                             <div
                                 className="h-full rounded-full bg-emerald-600 transition-all duration-300"
-                                style={{
-                                    width: `${isLocked ? 100 : (activeStep / STEP_CONFIG.length) * 100}%`,
-                                }}
+                                style={{ width: `${isLocked ? 100 : (activeStep / STEP_CONFIG.length) * 100}%` }}
                             />
                         </div>
 
-                        <div className="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+                        {/* Step tabs */}
+                        <div className="mb-8 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
                             {STEP_CONFIG.map((step) => (
                                 <button
                                     key={step.id}
                                     type="button"
-                                    onClick={() => goToStep(step.id)}
-                                    className={
-                                        'relative rounded-md border px-3 py-3 text-left transition ' +
-                                        getStepStatusColor(step.id)
-                                    }
+                                    onClick={() => setActiveStep(step.id)}
+                                    className={'relative rounded-md border px-3 py-3 text-left transition ' + getStepStatusColor(step.id)}
                                 >
                                     {stepsWithErrors.has(step.id) && (
-                                        <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                                            !
-                                        </div>
+                                        <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">!</div>
                                     )}
-                                    <div className={
-                                        'text-xs font-semibold uppercase tracking-wide ' +
-                                        (stepsWithErrors.has(step.id) ? 'text-red-600' : 'text-gray-500')
-                                    }>
+                                    <div className={`text-xs font-semibold uppercase tracking-wide ${stepsWithErrors.has(step.id) ? 'text-red-600' : 'text-gray-500'}`}>
                                         Step {step.id}
                                     </div>
-                                    <div className="text-sm font-semibold text-gray-900">
-                                        {step.title}
-                                    </div>
-                                    <div className="mt-1 text-xs text-gray-600">
-                                        {step.description}
-                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900">{step.title}</div>
+                                    <div className="mt-1 text-xs text-gray-600">{step.description}</div>
                                 </button>
                             ))}
                         </div>
 
                         <form onSubmit={submit}>
-                            {/* Error Summary Banner */}
+                            {/* Error summary */}
                             {(Object.keys(errors).length > 0 || Object.keys(stepErrors).length > 0) && (
                                 <div className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4">
-                                    <div className="flex items-start">
-                                        <div className="flex-shrink-0">
-                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <div className="ml-3 flex-1">
-                                            <h3 className="text-sm font-semibold text-red-800">
-                                                Please fix the following errors before proceeding:
-                                            </h3>
-                                            <div className="mt-2 text-sm text-red-700">
-                                                <ul className="list-disc space-y-1 pl-5">
-                                                    {Object.entries({...errors, ...stepErrors}).map(([key, message]) => (
-                                                        <li key={key}>{message}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <h3 className="text-sm font-semibold text-red-800">Please fix the following errors:</h3>
+                                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700">
+                                        {Object.entries({ ...errors, ...stepErrors }).map(([key, message]) => (
+                                            <li key={key}>{message}</li>
+                                        ))}
+                                    </ul>
                                 </div>
                             )}
 
@@ -749,1450 +465,892 @@ export default function Form() {
                                     transition={{ duration: 0.2 }}
                                     className="space-y-6"
                                 >
+                                    {/* ══════════════════════════════════════════
+                                        STEP 1 – SECTION A: PERSONAL & EDUCATION
+                                    ══════════════════════════════════════════ */}
                                     {activeStep === 1 && (
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <div>
-                                                <RequiredLabel htmlFor="first_name" value="First Name" required />
-                                                <TextInput
-                                                    id="first_name"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.first_name}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'first_name',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.first_name'] || stepErrors['personal_info.first_name']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel htmlFor="last_name" value="Last Name" required />
-                                                <TextInput
-                                                    id="last_name"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.last_name}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'last_name',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.last_name'] || stepErrors['personal_info.last_name']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel htmlFor="phone" value="Phone Number" required />
-                                                <TextInput
-                                                    id="phone"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.phone}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'phone',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.phone'] || stepErrors['personal_info.phone']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel htmlFor="date_of_birth" value="Date of Birth" required />
-                                                <TextInput
-                                                    id="date_of_birth"
-                                                    type="date"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.date_of_birth}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'date_of_birth',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.date_of_birth'] || stepErrors['personal_info.date_of_birth']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel htmlFor="gender" value="Gender" required />
-                                                <select
-                                                    id="gender"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={data.personal_info.gender}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'gender',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                >
-                                                    <option value="">Select gender</option>
-                                                    <option value="Female">Female</option>
-                                                    <option value="Male">Male</option>
-                                                    <option value="Prefer not to say">
-                                                        Prefer not to say
-                                                    </option>
-                                                </select>
-                                                <InputError
-                                                    message={errors['personal_info.gender'] || stepErrors['personal_info.gender']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel htmlFor="nationality" value="Nationality" />
-                                                <TextInput
-                                                    id="nationality"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.nationality}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'nationality',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.nationality']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel htmlFor="university" value="University" required />
-                                                <TextInput
-                                                    id="university"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.university}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'university',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.university'] || stepErrors['personal_info.university']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="program_of_study"
-                                                    value="Program of Study"
-                                                    required
-                                                />
-                                                <TextInput
-                                                    id="program_of_study"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.program_of_study}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'program_of_study',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.program_of_study'] || stepErrors['personal_info.program_of_study']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel htmlFor="year_of_study" value="Year of Study" />
-                                                <TextInput
-                                                    id="year_of_study"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.year_of_study}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'year_of_study',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.year_of_study']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel htmlFor="cgpa" value="Current CGPA (Optional)" />
-                                                <TextInput
-                                                    id="cgpa"
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    max="5"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.cgpa}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'cgpa',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <p className="mt-1 text-xs text-gray-600">
-                                                    Leave blank if you're a first-year student
-                                                </p>
-                                                <InputError
-                                                    message={errors['personal_info.cgpa']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel htmlFor="high_school" value="High School" required />
-                                                <TextInput
-                                                    id="high_school"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.high_school}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'high_school',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.high_school'] || stepErrors['personal_info.high_school']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="current_school"
-                                                    value="Current School / Campus"
-                                                />
-                                                <TextInput
-                                                    id="current_school"
-                                                    className="mt-1 block w-full"
-                                                    value={data.personal_info.current_school}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'current_school',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <InputError
-                                                    message={errors['personal_info.current_school']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div className="md:col-span-2">
-                                                <RequiredLabel
-                                                    htmlFor="has_disability"
-                                                    value="Are you a person with disability?"
-                                                    required
-                                                />
-                                                <select
-                                                    id="has_disability"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={data.personal_info.has_disability}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'has_disability',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                >
-                                                    <option value="">Select an option</option>
-                                                    <option value="yes">Yes</option>
-                                                    <option value="no">No</option>
-                                                    <option value="prefer_not_to_answer">Prefer Not to Answer</option>
-                                                </select>
-                                                <InputError
-                                                    message={errors['personal_info.has_disability'] || stepErrors['personal_info.has_disability']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            {data.personal_info.has_disability === 'yes' && (
-                                                <div className="md:col-span-2">
-                                                    <RequiredLabel
-                                                        htmlFor="disability_details"
-                                                        value="Please specify your disability"
-                                                        required
-                                                    />
-                                                    <TextInput
-                                                        id="disability_details"
-                                                        className="mt-1 block w-full"
-                                                        value={data.personal_info.disability_details}
-                                                        onChange={(event) =>
-                                                            updateSectionValue(
-                                                                'personal_info',
-                                                                'disability_details',
-                                                                event.target.value,
-                                                            )
-                                                        }
-                                                        disabled={isLocked}
-                                                        placeholder="Please describe your disability"
-                                                    />
-                                                    <InputError
-                                                        message={errors['personal_info.disability_details'] || stepErrors['personal_info.disability_details']}
-                                                        className="mt-2"
-                                                    />
-                                                </div>
-                                            )}
-
-                                            <div className="md:col-span-2">
-                                                <RequiredLabel
-                                                    htmlFor="refugee_or_displaced"
-                                                    value="Are you a refugee or displaced person?"
-                                                    required
-                                                />
-                                                <select
-                                                    id="refugee_or_displaced"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={data.personal_info.refugee_or_displaced}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'refugee_or_displaced',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                >
-                                                    <option value="">Select an option</option>
-                                                    <option value="yes">Yes</option>
-                                                    <option value="no">No</option>
-                                                    <option value="prefer_not_to_answer">Prefer Not to Answer</option>
-                                                </select>
-                                                <InputError
-                                                    message={errors['personal_info.refugee_or_displaced'] || stepErrors['personal_info.refugee_or_displaced']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            {data.personal_info.refugee_or_displaced === 'yes' && (
-                                                <div className="md:col-span-2">
-                                                    <InputLabel
-                                                        htmlFor="refugee_details"
-                                                        value="Please provide details"
-                                                    />
-                                                    <TextInput
-                                                        id="refugee_details"
-                                                        className="mt-1 block w-full"
-                                                        value={data.personal_info.refugee_details}
-                                                        onChange={(event) =>
-                                                            updateSectionValue(
-                                                                'personal_info',
-                                                                'refugee_details',
-                                                                event.target.value,
-                                                            )
-                                                        }
-                                                        disabled={isLocked}
-                                                        placeholder="Please provide details about your refugee or displaced status"
-                                                    />
-                                                    <InputError
-                                                        message={errors['personal_info.refugee_details']}
-                                                        className="mt-2"
-                                                    />
-                                                </div>
-                                            )}
-
-                                            <div className="md:col-span-2">
-                                                <RequiredLabel
-                                                    htmlFor="residence_area"
-                                                    value="Are you living in a Rural or Urban area?"
-                                                    required
-                                                />
-                                                <select
-                                                    id="residence_area"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={data.personal_info.residence_area}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'personal_info',
-                                                            'residence_area',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                >
-                                                    <option value="">Select an option</option>
-                                                    <option value="rural">Rural Area</option>
-                                                    <option value="urban">Urban Area</option>
-                                                </select>
-                                                <InputError
-                                                    message={errors['personal_info.residence_area'] || stepErrors['personal_info.residence_area']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {activeStep === 2 && (
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="household_income"
-                                                    value="Household Income (UGX)"
-                                                    required
-                                                />
-                                                <TextInput
-                                                    id="household_income"
-                                                    type="text"
-                                                    className="mt-1 block w-full"
-                                                    value={formatNumberWithCommas(data.financial_info.household_income)}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'financial_info',
-                                                            'household_income',
-                                                            parseNumberWithCommas(event.target.value),
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['financial_info.household_income'] || stepErrors['financial_info.household_income']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="number_of_dependents"
-                                                    value="Number of Dependents"
-                                                />
-                                                <TextInput
-                                                    id="number_of_dependents"
-                                                    type="number"
-                                                    min="0"
-                                                    className="mt-1 block w-full"
-                                                    value={
-                                                        data.financial_info
-                                                            .number_of_dependents
-                                                    }
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'financial_info',
-                                                            'number_of_dependents',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors[
-                                                            'financial_info.number_of_dependents'
-                                                        ]
-                                                    }
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="estimated_tuition"
-                                                    value="Estimated Tuition (UGX)"
-                                                    required
-                                                />
-                                                <TextInput
-                                                    id="estimated_tuition"
-                                                    type="text"
-                                                    className="mt-1 block w-full"
-                                                    value={formatNumberWithCommas(data.financial_info.estimated_tuition)}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'financial_info',
-                                                            'estimated_tuition',
-                                                            parseNumberWithCommas(event.target.value),
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['financial_info.estimated_tuition'] || stepErrors['financial_info.estimated_tuition']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="estimated_living_expenses"
-                                                    value="Estimated Living Expenses (UGX)"
-                                                    required
-                                                />
-                                                <TextInput
-                                                    id="estimated_living_expenses"
-                                                    type="text"
-                                                    className="mt-1 block w-full"
-                                                    value={formatNumberWithCommas(
-                                                        data.financial_info
-                                                            .estimated_living_expenses
-                                                    )}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'financial_info',
-                                                            'estimated_living_expenses',
-                                                            parseNumberWithCommas(event.target.value),
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors[
-                                                            'financial_info.estimated_living_expenses'
-                                                        ] || stepErrors['financial_info.estimated_living_expenses']
-                                                    }
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="other_expenses"
-                                                    value="Other Estimated Expenses (UGX)"
-                                                />
-                                                <TextInput
-                                                    id="other_expenses"
-                                                    type="text"
-                                                    className="mt-1 block w-full"
-                                                    value={formatNumberWithCommas(data.financial_info.other_expenses)}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'financial_info',
-                                                            'other_expenses',
-                                                            parseNumberWithCommas(event.target.value),
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <InputError
-                                                    message={errors['financial_info.other_expenses']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="existing_support"
-                                                    value="Existing Funding Support (UGX)"
-                                                />
-                                                <TextInput
-                                                    id="existing_support"
-                                                    type="text"
-                                                    className="mt-1 block w-full"
-                                                    value={formatNumberWithCommas(data.financial_info.existing_support)}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'financial_info',
-                                                            'existing_support',
-                                                            parseNumberWithCommas(event.target.value),
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <InputError
-                                                    message={errors['financial_info.existing_support']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="requested_support_amount"
-                                                    value="Requested Scholarship Amount (UGX)"
-                                                />
-                                                <TextInput
-                                                    id="requested_support_amount"
-                                                    type="text"
-                                                    className="mt-1 block w-full"
-                                                    value={formatNumberWithCommas(
-                                                        data.financial_info
-                                                            .requested_support_amount
-                                                    )}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'financial_info',
-                                                            'requested_support_amount',
-                                                            parseNumberWithCommas(event.target.value),
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors[
-                                                            'financial_info.requested_support_amount'
-                                                        ]
-                                                    }
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="scholarship_type_requested"
-                                                    value="Scholarship Type Requested"
-                                                    required
-                                                />
-                                                <select
-                                                    id="scholarship_type_requested"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={
-                                                        data.financial_info
-                                                            .scholarship_type_requested
-                                                    }
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'financial_info',
-                                                            'scholarship_type_requested',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                >
-                                                    <option value="">Select option</option>
-                                                    <option value="full">Full Scholarship</option>
-                                                    <option value="partial">
-                                                        Partial Scholarship
-                                                    </option>
-                                                </select>
-                                                <InputError
-                                                    message={
-                                                        errors[
-                                                            'financial_info.scholarship_type_requested'
-                                                        ] || stepErrors['financial_info.scholarship_type_requested']
-                                                    }
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div className="md:col-span-2">
-                                                <RequiredLabel
-                                                    htmlFor="income_sources"
-                                                    value="Income Sources"
-                                                    required
-                                                />
-                                                <textarea
-                                                    id="income_sources"
-                                                    rows={4}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={data.financial_info.income_sources}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'financial_info',
-                                                            'income_sources',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                    placeholder="Describe household income sources and current financial constraints"
-                                                />
-                                                <InputError
-                                                    message={errors['financial_info.income_sources'] || stepErrors['financial_info.income_sources']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div className="md:col-span-2 rounded-md border border-emerald-200 bg-emerald-50 p-4">
-                                                <div className="text-sm text-emerald-800">
-                                                    <span className="font-semibold">Funding Gap:</span>{' '}
-                                                    {formatCurrency(fundingGap)}
-                                                </div>
-                                                <div className="mt-1 text-xs text-emerald-700">
-                                                    Automatically calculated from estimated expenses minus available funding.
-                                                </div>
-                                                <InputError
-                                                    message={errors['financial_info.funding_gap']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {activeStep === 3 && (
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="guardian_name"
-                                                    value="Parent / Guardian Name / Next of Kin"
-                                                    required
-                                                />
-                                                <TextInput
-                                                    id="guardian_name"
-                                                    className="mt-1 block w-full"
-                                                    value={data.guardian_info.guardian_name}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'guardian_info',
-                                                            'guardian_name',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['guardian_info.guardian_name'] || stepErrors['guardian_info.guardian_name']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="guardian_relation"
-                                                    value="Relation"
-                                                    required
-                                                />
-                                                <select
-                                                    id="guardian_relation"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={data.guardian_info.guardian_relation}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'guardian_info',
-                                                            'guardian_relation',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                >
-                                                    <option value="">Select relation</option>
-                                                    <option value="Parent">Parent</option>
-                                                    <option value="Guardian">Guardian</option>
-                                                    <option value="Spouse">Spouse</option>
-                                                    <option value="Sibling">Sibling</option>
-                                                </select>
-                                                <InputError
-                                                    message={errors['guardian_info.guardian_relation'] || stepErrors['guardian_info.guardian_relation']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <RequiredLabel htmlFor="guardian_phone" value="Phone" required />
-                                                <TextInput
-                                                    id="guardian_phone"
-                                                    className="mt-1 block w-full"
-                                                    value={data.guardian_info.guardian_phone}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'guardian_info',
-                                                            'guardian_phone',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                <InputError
-                                                    message={errors['guardian_info.guardian_phone'] || stepErrors['guardian_info.guardian_phone']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel htmlFor="guardian_email" value="Email" />
-                                                <TextInput
-                                                    id="guardian_email"
-                                                    type="email"
-                                                    className="mt-1 block w-full"
-                                                    value={data.guardian_info.guardian_email}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'guardian_info',
-                                                            'guardian_email',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <InputError
-                                                    message={errors['guardian_info.guardian_email']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="guardian_occupation"
-                                                    value="Occupation"
-                                                />
-                                                <TextInput
-                                                    id="guardian_occupation"
-                                                    className="mt-1 block w-full"
-                                                    value={data.guardian_info.guardian_occupation}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'guardian_info',
-                                                            'guardian_occupation',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <InputError
-                                                    message={errors['guardian_info.guardian_occupation']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="guardian_address"
-                                                    value="Address"
-                                                />
-                                                <TextInput
-                                                    id="guardian_address"
-                                                    className="mt-1 block w-full"
-                                                    value={data.guardian_info.guardian_address}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'guardian_info',
-                                                            'guardian_address',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                <InputError
-                                                    message={errors['guardian_info.guardian_address']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {activeStep === 4 && (
-                                        <div className="space-y-5">
-                                            <div className="rounded-md border border-blue-200 bg-blue-50 p-4 mb-4">
-                                                <h4 className="text-sm font-semibold text-blue-900">
-                                                    Required Documents
+                                        <div className="space-y-8">
+                                            <div className="rounded-md border border-gray-200 p-4">
+                                                <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
+                                                    Section A – Applicant Background Information
                                                 </h4>
-                                                <p className="mt-1 text-xs text-blue-700">
-                                                    Please upload clear, legible copies of the required documents. Accepted formats: PDF, JPG, PNG (Max 5MB per file)
+                                                <p className="text-xs text-gray-500 mb-4 italic">
+                                                    Complete all questions using BLOCK letters only. Your application will not be processed if you leave any questions unanswered.
                                                 </p>
-                                            </div>
 
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="academic_documents"
-                                                    value="Academic Documents"
-                                                    required
-                                                />
-                                                <p className="mt-1 text-xs text-gray-600 mb-2">
-                                                    Upload transcripts, certificates, or other academic records as a single PDF document
-                                                </p>
-                                                <input
-                                                    id="academic_documents"
-                                                    type="file"
-                                                    accept=".pdf,.jpg,.jpeg,.png"
-                                                    className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'documents',
-                                                            'academic_documents',
-                                                            event.target.files[0],
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                {data.documents.academic_documents && (
-                                                    <p className="mt-2 text-sm text-green-600">
-                                                        ✓ File selected: {typeof data.documents.academic_documents === 'string' ? 'Previously uploaded' : data.documents.academic_documents.name}
-                                                    </p>
-                                                )}
-                                                <InputError
-                                                    message={errors['documents.academic_documents'] || stepErrors['documents.academic_documents']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
+                                                {/* Personal Information */}
+                                                <h5 className="font-semibold text-gray-700 mb-3">1. Personal Information</h5>
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                    <div>
+                                                        <RequiredLabel htmlFor="surname" value="Surname" required />
+                                                        <TextInput id="surname" className="mt-1 block w-full uppercase"
+                                                            value={pi.surname}
+                                                            onChange={(e) => updateSection('personal_info', 'surname', e.target.value)}
+                                                            disabled={isLocked} required />
+                                                        <InputError message={errors['personal_info.surname'] || stepErrors['personal_info.surname']} className="mt-2" />
+                                                    </div>
+                                                    <div>
+                                                        <RequiredLabel htmlFor="other_names" value="Other Name(s)" required />
+                                                        <TextInput id="other_names" className="mt-1 block w-full uppercase"
+                                                            value={pi.other_names}
+                                                            onChange={(e) => updateSection('personal_info', 'other_names', e.target.value)}
+                                                            disabled={isLocked} required />
+                                                        <InputError message={errors['personal_info.other_names'] || stepErrors['personal_info.other_names']} className="mt-2" />
+                                                    </div>
+                                                    <div>
+                                                        <RequiredLabel htmlFor="date_of_birth" value="Date of Birth (e.g. 20 May 1996)" required />
+                                                        <TextInput id="date_of_birth" type="date" className="mt-1 block w-full"
+                                                            value={pi.date_of_birth}
+                                                            onChange={(e) => updateSection('personal_info', 'date_of_birth', e.target.value)}
+                                                            disabled={isLocked} required />
+                                                        <InputError message={errors['personal_info.date_of_birth'] || stepErrors['personal_info.date_of_birth']} className="mt-2" />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="nin" value="National Identification Number (NIN)" />
+                                                        <TextInput id="nin" className="mt-1 block w-full uppercase tracking-widest"
+                                                            maxLength={14}
+                                                            placeholder="e.g. CM9100012345ABCD"
+                                                            value={pi.nin}
+                                                            onChange={(e) => updateSection('personal_info', 'nin', e.target.value)}
+                                                            disabled={isLocked} />
+                                                        <InputError message={errors['personal_info.nin']} className="mt-2" />
+                                                    </div>
+                                                </div>
 
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="national_id"
-                                                    value="National ID"
-                                                    required
-                                                />
-                                                <p className="mt-1 text-xs text-gray-600 mb-2">
-                                                    Upload a clear copy of your National ID card (both sides if applicable)
-                                                </p>
-                                                <input
-                                                    id="national_id"
-                                                    type="file"
-                                                    accept=".pdf,.jpg,.jpeg,.png"
-                                                    className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'documents',
-                                                            'national_id',
-                                                            event.target.files[0],
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                />
-                                                {data.documents.national_id && (
-                                                    <p className="mt-2 text-sm text-green-600">
-                                                        ✓ File selected: {typeof data.documents.national_id === 'string' ? 'Previously uploaded' : data.documents.national_id.name}
-                                                    </p>
-                                                )}
-                                                <InputError
-                                                    message={errors['documents.national_id']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
+                                                {/* Disability quick question (Section A Q3) */}
+                                                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                    <div>
+                                                        <RequiredLabel htmlFor="has_disability_a" value="3. Do you have any Disability?" required />
+                                                        <div className="mt-2 flex gap-6">
+                                                            <RadioField name="has_disability_a" value="yes" label="YES"
+                                                                checked={pi.has_disability === 'yes'} onChange={(v) => updateSection('personal_info', 'has_disability', v)} disabled={isLocked} />
+                                                            <RadioField name="has_disability_a" value="no" label="NO"
+                                                                checked={pi.has_disability === 'no'} onChange={(v) => updateSection('personal_info', 'has_disability', v)} disabled={isLocked} />
+                                                        </div>
+                                                        <InputError message={errors['personal_info.has_disability'] || stepErrors['personal_info.has_disability']} className="mt-2" />
+                                                    </div>
+                                                    {pi.has_disability === 'yes' && (
+                                                        <div>
+                                                            <InputLabel htmlFor="disability_specify" value="If yes, specify:" />
+                                                            <TextInput id="disability_specify" className="mt-1 block w-full"
+                                                                value={pi.disability_specify}
+                                                                onChange={(e) => updateSection('personal_info', 'disability_specify', e.target.value)}
+                                                                disabled={isLocked} />
+                                                        </div>
+                                                    )}
+                                                </div>
 
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="admission_form"
-                                                    value="Admission Letter (Optional)"
-                                                />
-                                                <p className="mt-1 text-xs text-gray-600 mb-2">
-                                                    Upload your university admission letter or form if available
-                                                </p>
-                                                <input
-                                                    id="admission_form"
-                                                    type="file"
-                                                    accept=".pdf,.jpg,.jpeg,.png"
-                                                    className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'documents',
-                                                            'admission_form',
-                                                            event.target.files[0],
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                {data.documents.admission_form && (
-                                                    <p className="mt-2 text-sm text-green-600">
-                                                        ✓ File selected: {typeof data.documents.admission_form === 'string' ? 'Previously uploaded' : data.documents.admission_form.name}
-                                                    </p>
-                                                )}
-                                                <InputError
-                                                    message={errors['documents.admission_form']}
-                                                    className="mt-2"
-                                                />
-                                            </div>
+                                                {/* Contact */}
+                                                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                    <div>
+                                                        <RequiredLabel htmlFor="phone" value="4. Telephone No(s)" required />
+                                                        <TextInput id="phone" className="mt-1 block w-full"
+                                                            value={pi.phone}
+                                                            onChange={(e) => updateSection('personal_info', 'phone', e.target.value)}
+                                                            disabled={isLocked} required />
+                                                        <InputError message={errors['personal_info.phone'] || stepErrors['personal_info.phone']} className="mt-2" />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="email" value="Email" />
+                                                        <TextInput id="email" type="email" className="mt-1 block w-full"
+                                                            value={pi.email}
+                                                            onChange={(e) => updateSection('personal_info', 'email', e.target.value)}
+                                                            disabled={isLocked} />
+                                                        <InputError message={errors['personal_info.email']} className="mt-2" />
+                                                    </div>
+                                                    <div>
+                                                        <RequiredLabel htmlFor="marital_status" value="Marital Status" required />
+                                                        <div className="mt-2 flex flex-wrap gap-4">
+                                                            {['Single','Married','Cohabiting / living with a partner'].map((ms) => (
+                                                                <RadioField key={ms} name="marital_status" value={ms} label={ms}
+                                                                    checked={pi.marital_status === ms}
+                                                                    onChange={(v) => updateSection('personal_info', 'marital_status', v)}
+                                                                    disabled={isLocked} />
+                                                            ))}
+                                                        </div>
+                                                        <InputError message={errors['personal_info.marital_status'] || stepErrors['personal_info.marital_status']} className="mt-2" />
+                                                    </div>
+                                                </div>
 
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="provisional_results"
-                                                    value="Provisional Result Statement (Optional)"
-                                                />
-                                                <p className="mt-1 text-xs text-gray-600 mb-2">
-                                                    Upload your most recent provisional results if available
-                                                </p>
-                                                <input
-                                                    id="provisional_results"
-                                                    type="file"
-                                                    accept=".pdf,.jpg,.jpeg,.png"
-                                                    className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'documents',
-                                                            'provisional_results',
-                                                            event.target.files[0],
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                />
-                                                {data.documents.provisional_results && (
-                                                    <p className="mt-2 text-sm text-green-600">
-                                                        ✓ File selected: {typeof data.documents.provisional_results === 'string' ? 'Previously uploaded' : data.documents.provisional_results.name}
-                                                    </p>
-                                                )}
-                                                <InputError
-                                                    message={errors['documents.provisional_results']}
-                                                    className="mt-2"
-                                                />
+                                                {/* Next of Kin */}
+                                                <div className="mt-6">
+                                                    <h5 className="font-semibold text-gray-700 mb-3">5. Next of Kin</h5>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="min-w-full border border-gray-200 text-sm">
+                                                            <thead className="bg-gray-50">
+                                                                <tr>
+                                                                    <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">#</th>
+                                                                    <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Name</th>
+                                                                    <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Relationship</th>
+                                                                    <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Telephone</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {[0, 1].map((i) => (
+                                                                    <tr key={i}>
+                                                                        <td className="border border-gray-200 px-3 py-2 text-center font-medium text-gray-500">{i + 1}.</td>
+                                                                        <td className="border border-gray-200 px-2 py-1">
+                                                                            <TextInput className="block w-full border-0 shadow-none focus:ring-0"
+                                                                                value={nokList[i]?.name || ''}
+                                                                                onChange={(e) => updateNextOfKin(i, 'name', e.target.value)}
+                                                                                disabled={isLocked} />
+                                                                        </td>
+                                                                        <td className="border border-gray-200 px-2 py-1">
+                                                                            <TextInput className="block w-full border-0 shadow-none focus:ring-0"
+                                                                                value={nokList[i]?.relationship || ''}
+                                                                                onChange={(e) => updateNextOfKin(i, 'relationship', e.target.value)}
+                                                                                disabled={isLocked} />
+                                                                        </td>
+                                                                        <td className="border border-gray-200 px-2 py-1">
+                                                                            <TextInput className="block w-full border-0 shadow-none focus:ring-0"
+                                                                                value={nokList[i]?.telephone || ''}
+                                                                                onChange={(e) => updateNextOfKin(i, 'telephone', e.target.value)}
+                                                                                disabled={isLocked} />
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                                {/* Nationality */}
+                                                <div className="mt-6">
+                                                    <h5 className="font-semibold text-gray-700 mb-3">Nationality and Address</h5>
+                                                    <div className="mb-4">
+                                                        <RequiredLabel htmlFor="is_ugandan" value="6. Are you a Ugandan?" required />
+                                                        <div className="mt-2 flex gap-6">
+                                                            <RadioField name="is_ugandan" value="yes" label="YES"
+                                                                checked={pi.is_ugandan === 'yes'} onChange={(v) => updateSection('personal_info', 'is_ugandan', v)} disabled={isLocked} />
+                                                            <RadioField name="is_ugandan" value="no" label="NO"
+                                                                checked={pi.is_ugandan === 'no'} onChange={(v) => updateSection('personal_info', 'is_ugandan', v)} disabled={isLocked} />
+                                                        </div>
+                                                        <InputError message={errors['personal_info.is_ugandan'] || stepErrors['personal_info.is_ugandan']} className="mt-2" />
+                                                    </div>
+                                                    {pi.is_ugandan === 'no' && (
+                                                        <div className="mb-4">
+                                                            <InputLabel htmlFor="non_ugandan_explanation" value="If NO, explain:" />
+                                                            <textarea rows={2} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                                                value={pi.non_ugandan_explanation}
+                                                                onChange={(e) => updateSection('personal_info', 'non_ugandan_explanation', e.target.value)}
+                                                                disabled={isLocked} />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Place of Birth */}
+                                                    <div className="mb-4">
+                                                        <InputLabel value="7. Place of Birth" className="font-medium" />
+                                                        <div className="grid grid-cols-2 gap-3 mt-2 md:grid-cols-4">
+                                                            {[['birth_village','Village/Parish/Sub-county'],['birth_district','District'],['birth_region','Region'],['birth_country','Country']].map(([field, label]) => (
+                                                                <div key={field}>
+                                                                    <InputLabel value={label} className="text-xs text-gray-500" />
+                                                                    <TextInput className="mt-1 block w-full text-sm uppercase"
+                                                                        value={pi[field] || ''}
+                                                                        onChange={(e) => updateSection('personal_info', field, e.target.value)}
+                                                                        disabled={isLocked} />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Place of Origin */}
+                                                    <div className="mb-4">
+                                                        <InputLabel value="8. Place of Origin" className="font-medium" />
+                                                        <div className="grid grid-cols-2 gap-3 mt-2 md:grid-cols-4">
+                                                            {[['origin_village','Village/Parish/Sub-county'],['origin_district','District'],['origin_region','Region'],['origin_country','Country']].map(([field, label]) => (
+                                                                <div key={field}>
+                                                                    <InputLabel value={label} className="text-xs text-gray-500" />
+                                                                    <TextInput className="mt-1 block w-full text-sm uppercase"
+                                                                        value={pi[field] || ''}
+                                                                        onChange={(e) => updateSection('personal_info', field, e.target.value)}
+                                                                        disabled={isLocked} />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Place of Residence */}
+                                                    <div className="mb-4">
+                                                        <InputLabel value="9. Place of Residence" className="font-medium" />
+                                                        <div className="grid grid-cols-2 gap-3 mt-2 md:grid-cols-4">
+                                                            {[['residence_village','Village/Parish/Sub-county'],['residence_district','District'],['residence_region','Region'],['residence_country','Country']].map(([field, label]) => (
+                                                                <div key={field}>
+                                                                    <InputLabel value={label} className="text-xs text-gray-500" />
+                                                                    <TextInput className="mt-1 block w-full text-sm uppercase"
+                                                                        value={pi[field] || ''}
+                                                                        onChange={(e) => updateSection('personal_info', field, e.target.value)}
+                                                                        disabled={isLocked} />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Section B1 – Education */}
+                                                <div className="mt-6">
+                                                    <h4 className="font-semibold text-gray-800 text-base border-b pb-2 mb-4">
+                                                        Section B1 – Information on Education
+                                                    </h4>
+
+                                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                        <div>
+                                                            <RequiredLabel htmlFor="academic_programme" value="11. Academic Programme of Study" required />
+                                                            <TextInput id="academic_programme" className="mt-1 block w-full uppercase"
+                                                                value={pi.academic_programme}
+                                                                onChange={(e) => updateSection('personal_info', 'academic_programme', e.target.value)}
+                                                                disabled={isLocked} required />
+                                                            <InputError message={errors['personal_info.academic_programme'] || stepErrors['personal_info.academic_programme']} className="mt-2" />
+                                                        </div>
+                                                        <div>
+                                                            <RequiredLabel htmlFor="institution" value="13. Institution (University/UNITE Campus)" required />
+                                                            <TextInput id="institution" className="mt-1 block w-full uppercase"
+                                                                value={pi.institution}
+                                                                onChange={(e) => updateSection('personal_info', 'institution', e.target.value)}
+                                                                disabled={isLocked} required />
+                                                            <InputError message={errors['personal_info.institution'] || stepErrors['personal_info.institution']} className="mt-2" />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel htmlFor="teaching_subjects_1" value="Teaching Subject 1 of Interest" />
+                                                            <TextInput id="teaching_subjects_1" className="mt-1 block w-full uppercase"
+                                                                value={pi.teaching_subjects_1}
+                                                                onChange={(e) => updateSection('personal_info', 'teaching_subjects_1', e.target.value)}
+                                                                disabled={isLocked} />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel htmlFor="teaching_subjects_2" value="Teaching Subject 2 of Interest" />
+                                                            <TextInput id="teaching_subjects_2" className="mt-1 block w-full uppercase"
+                                                                value={pi.teaching_subjects_2}
+                                                                onChange={(e) => updateSection('personal_info', 'teaching_subjects_2', e.target.value)}
+                                                                disabled={isLocked} />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel htmlFor="student_admission_number" value="Student Admission Number" />
+                                                            <TextInput id="student_admission_number" className="mt-1 block w-full uppercase tracking-widest"
+                                                                value={pi.student_admission_number}
+                                                                onChange={(e) => updateSection('personal_info', 'student_admission_number', e.target.value)}
+                                                                disabled={isLocked} />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Schools attended – Q14 */}
+                                                    <div className="mt-6">
+                                                        <h5 className="font-semibold text-gray-700 mb-3">14. Schools Attended</h5>
+                                                        <div className="overflow-x-auto">
+                                                            <table className="min-w-full border border-gray-200 text-sm">
+                                                                <thead className="bg-gray-50">
+                                                                    <tr>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Level</th>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Name of School</th>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">District/Country</th>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Dates of Attendance</th>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Who was responsible for education & upkeep?</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {[
+                                                                        ['Primary School', 'primary_school'],
+                                                                        ["O'Level", 'olevel_school'],
+                                                                        ["A'Level", 'alevel_school'],
+                                                                        ['University / Institution', 'university'],
+                                                                    ].map(([label, prefix]) => (
+                                                                        <tr key={prefix}>
+                                                                            <td className="border border-gray-200 px-3 py-2 font-medium text-gray-600 whitespace-nowrap">{label}</td>
+                                                                            {['name','district','dates','responsible'].map((col) => (
+                                                                                <td key={col} className="border border-gray-200 px-2 py-1">
+                                                                                    <TextInput
+                                                                                        className="block w-full border-0 shadow-none focus:ring-0 uppercase text-sm min-w-[120px]"
+                                                                                        value={pi[`${prefix}_${col}`] || ''}
+                                                                                        onChange={(e) => updateSection('personal_info', `${prefix}_${col}`, e.target.value)}
+                                                                                        disabled={isLocked}
+                                                                                        placeholder={col === 'dates' ? 'e.g. 2010-2013' : ''}
+                                                                                    />
+                                                                                </td>
+                                                                            ))}
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Admission mode – Q15 */}
+                                                    <div className="mt-6">
+                                                        <h5 className="font-semibold text-gray-700 mb-1">15. Mode of Admission to University</h5>
+                                                        <p className="text-xs text-gray-500 mb-3 italic">
+                                                            Use the aggregate that your admission into the University was based on. For Diploma holders provide the CGPA obtained.
+                                                        </p>
+                                                        <div className="overflow-x-auto">
+                                                            <table className="min-w-full border border-gray-200 text-sm">
+                                                                <thead className="bg-gray-50">
+                                                                    <tr>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Mode</th>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">School/Institution</th>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Year of Exam/Completion</th>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Candidate Index/Reg. Number</th>
+                                                                        <th className="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">Points Score / CGPA</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {[
+                                                                        ["A' Level", 'alevel'],
+                                                                        ['Diploma', 'diploma'],
+                                                                        ['HEAC', 'heac'],
+                                                                        ['Mature Entry', 'mature'],
+                                                                    ].map(([label, prefix]) => (
+                                                                        <tr key={prefix}>
+                                                                            <td className="border border-gray-200 px-3 py-2 font-medium text-gray-600 whitespace-nowrap">{label}</td>
+                                                                            {['school_exam','year','index','points'].map((col) => (
+                                                                                <td key={col} className="border border-gray-200 px-2 py-1">
+                                                                                    <TextInput
+                                                                                        className="block w-full border-0 shadow-none focus:ring-0 uppercase text-sm min-w-[100px]"
+                                                                                        value={pi[`${prefix}_${col}`] || ''}
+                                                                                        onChange={(e) => updateSection('personal_info', `${prefix}_${col}`, e.target.value)}
+                                                                                        disabled={isLocked} />
+                                                                                </td>
+                                                                            ))}
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
 
+                                    {/* ══════════════════════════════════════════
+                                        STEP 2 – SECTION B2: DISABILITY
+                                    ══════════════════════════════════════════ */}
+                                    {activeStep === 2 && (
+                                        <div className="space-y-6">
+                                            <div className="rounded-md border border-gray-200 p-4">
+                                                <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
+                                                    Section B2 – For Students with Disabilities
+                                                </h4>
+                                                <p className="text-sm text-gray-500 mb-4 italic">
+                                                    Complete this section only if you indicated that you have a disability. If you have no disability, you may proceed to the next section.
+                                                </p>
+
+                                                <h5 className="font-semibold text-gray-700 mb-3">16. Specify the form of disability you have (Tick where applicable)</h5>
+                                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 mb-6">
+                                                    {[
+                                                        ['difficulty_walking', 'Difficulty walking'],
+                                                        ['difficulty_seeing', 'Difficulty seeing'],
+                                                        ['difficulty_hearing', 'Difficulty hearing'],
+                                                        ['difficulty_communicating', 'Difficulty communicating'],
+                                                        ['difficulty_picking', 'Difficulty picking objects with hands'],
+                                                        ['difficulty_self_care', 'Difficulty self-care'],
+                                                        ['difficulty_emotions', 'Difficulty controlling emotions'],
+                                                    ].map(([field, label]) => (
+                                                        <CheckboxField key={field} id={field} label={label}
+                                                            checked={di[field]}
+                                                            onChange={(v) => updateSection('disability_info', field, v)}
+                                                            disabled={isLocked} />
+                                                    ))}
+                                                </div>
+
+                                                <h5 className="font-semibold text-gray-700 mb-3">17. Level of functionality based on difficulty ticked</h5>
+                                                <div className="flex flex-wrap gap-4 mb-6">
+                                                    {['Some difficulty', 'A lot of difficulty', 'Cannot do at all'].map((level) => (
+                                                        <RadioField key={level} name="functionality_level" value={level} label={level}
+                                                            checked={di.functionality_level === level}
+                                                            onChange={(v) => updateSection('disability_info', 'functionality_level', v)}
+                                                            disabled={isLocked} />
+                                                    ))}
+                                                </div>
+
+                                                <h5 className="font-semibold text-gray-700 mb-3">18. Indicate any other member of your family with disabilities</h5>
+                                                <div className="flex flex-wrap gap-4 mb-3">
+                                                    <CheckboxField id="family_father" label="Father"
+                                                        checked={di.family_disability_father}
+                                                        onChange={(v) => updateSection('disability_info', 'family_disability_father', v)}
+                                                        disabled={isLocked} />
+                                                    <CheckboxField id="family_mother" label="Mother"
+                                                        checked={di.family_disability_mother}
+                                                        onChange={(v) => updateSection('disability_info', 'family_disability_mother', v)}
+                                                        disabled={isLocked} />
+                                                    <CheckboxField id="family_siblings" label="Sibling(s)"
+                                                        checked={di.family_disability_siblings}
+                                                        onChange={(v) => updateSection('disability_info', 'family_disability_siblings', v)}
+                                                        disabled={isLocked} />
+                                                </div>
+                                                {di.family_disability_siblings && (
+                                                    <div className="grid grid-cols-2 gap-4 mb-6 max-w-xs">
+                                                        <div>
+                                                            <InputLabel htmlFor="siblings_female" value="No. of Female Siblings" />
+                                                            <TextInput id="siblings_female" type="number" min="0" className="mt-1 block w-full"
+                                                                value={di.siblings_female_count}
+                                                                onChange={(e) => updateSection('disability_info', 'siblings_female_count', e.target.value)}
+                                                                disabled={isLocked} />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel htmlFor="siblings_male" value="No. of Male Siblings" />
+                                                            <TextInput id="siblings_male" type="number" min="0" className="mt-1 block w-full"
+                                                                value={di.siblings_male_count}
+                                                                onChange={(e) => updateSection('disability_info', 'siblings_male_count', e.target.value)}
+                                                                disabled={isLocked} />
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <h5 className="font-semibold text-gray-700 mb-2">18. Indicate the kind of assistive support/reasonable accommodation you may require to aid safe participation while studying</h5>
+                                                    <textarea rows={4}
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                                        value={di.assistive_support}
+                                                        onChange={(e) => updateSection('disability_info', 'assistive_support', e.target.value)}
+                                                        disabled={isLocked}
+                                                        placeholder="Describe any assistive support or reasonable accommodation needed..." />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* ══════════════════════════════════════════
+                                        STEP 3 – SECTION B3: DEPENDANTS
+                                    ══════════════════════════════════════════ */}
+                                    {activeStep === 3 && (
+                                        <div className="space-y-6">
+                                            <div className="rounded-md border border-gray-200 p-4">
+                                                <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
+                                                    Section B3 – To Be Filled by Applicants with Dependants
+                                                </h4>
+
+                                                <h5 className="font-semibold text-gray-700 mb-3">19a. If married/cohabiting, provide the following information about your spouse/partner</h5>
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-6">
+                                                    <div>
+                                                        <InputLabel htmlFor="spouse_surname" value="Spouse Surname" />
+                                                        <TextInput id="spouse_surname" className="mt-1 block w-full uppercase"
+                                                            value={dep.spouse_surname}
+                                                            onChange={(e) => updateSection('dependants_info', 'spouse_surname', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="spouse_other_names" value="Spouse Other Name(s)" />
+                                                        <TextInput id="spouse_other_names" className="mt-1 block w-full uppercase"
+                                                            value={dep.spouse_other_names}
+                                                            onChange={(e) => updateSection('dependants_info', 'spouse_other_names', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="spouse_education_level" value="Level of Education" />
+                                                        <TextInput id="spouse_education_level" className="mt-1 block w-full"
+                                                            value={dep.spouse_education_level}
+                                                            onChange={(e) => updateSection('dependants_info', 'spouse_education_level', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="spouse_occupation" value="Occupation" />
+                                                        <TextInput id="spouse_occupation" className="mt-1 block w-full"
+                                                            value={dep.spouse_occupation}
+                                                            onChange={(e) => updateSection('dependants_info', 'spouse_occupation', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <InputLabel htmlFor="marriage_balance_plan" value="How do you plan to ensure that you strike a balance between marriage and school obligations?" />
+                                                        <textarea rows={3}
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                                            value={dep.marriage_balance_plan}
+                                                            onChange={(e) => updateSection('dependants_info', 'marriage_balance_plan', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                </div>
+
+                                                <h5 className="font-semibold text-gray-700 mb-3">19b. If you are a mother, provide the following information about your children</h5>
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+                                                    <div>
+                                                        <InputLabel htmlFor="num_children" value="How many children do you have?" />
+                                                        <TextInput id="num_children" type="number" min="0" className="mt-1 block w-full"
+                                                            value={dep.num_children}
+                                                            onChange={(e) => updateSection('dependants_info', 'num_children', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="oldest_child_age" value="Age of oldest child" />
+                                                        <TextInput id="oldest_child_age" type="number" min="0" className="mt-1 block w-full"
+                                                            value={dep.oldest_child_age}
+                                                            onChange={(e) => updateSection('dependants_info', 'oldest_child_age', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="youngest_child_age" value="Age of youngest child" />
+                                                        <TextInput id="youngest_child_age" type="number" min="0" className="mt-1 block w-full"
+                                                            value={dep.youngest_child_age}
+                                                            onChange={(e) => updateSection('dependants_info', 'youngest_child_age', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                    <div>
+                                                        <InputLabel htmlFor="childcare_plan" value="How do you plan to manage taking care of the children while pursuing your studies?" />
+                                                        <textarea rows={3}
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                                            value={dep.childcare_plan}
+                                                            onChange={(e) => updateSection('dependants_info', 'childcare_plan', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="spouse_support" value="What kind of support do you get from your spouse?" />
+                                                        <textarea rows={3}
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                                            value={dep.spouse_support}
+                                                            onChange={(e) => updateSection('dependants_info', 'spouse_support', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <InputLabel htmlFor="non_financial_support_needed" value="What kind of non-financial support do you need as a mother to enable you pursue your studies?" />
+                                                        <textarea rows={3}
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                                            value={dep.non_financial_support_needed}
+                                                            onChange={(e) => updateSection('dependants_info', 'non_financial_support_needed', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* ══════════════════════════════════════════
+                                        STEP 4 – SECTION B6: MOTIVATION ESSAY
+                                    ══════════════════════════════════════════ */}
+                                    {activeStep === 4 && (
+                                        <div className="space-y-6">
+                                            <div className="rounded-md border border-gray-200 p-4">
+                                                <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
+                                                    Section B6 – Motivation Statement
+                                                </h4>
+                                                <div>
+                                                    <RequiredLabel htmlFor="motivation" value="20. Write a 250-word motivation, expressing why you need this scholarship offer and how you intend to use it to improve yourself and the community around you." required />
+                                                    <textarea
+                                                        id="motivation"
+                                                        rows={12}
+                                                        className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                                        value={data.essay.motivation}
+                                                        onChange={(e) => updateSection('essay', 'motivation', e.target.value)}
+                                                        disabled={isLocked}
+                                                        placeholder="Write your motivation here (target: 250 words)..."
+                                                    />
+                                                    <div className="mt-2 flex items-center justify-between">
+                                                        <div className="text-xs text-gray-500">
+                                                            Word count: <span className={countWords(data.essay.motivation) >= 250 ? 'text-green-600 font-semibold' : 'text-amber-600'}>
+                                                                {countWords(data.essay.motivation)} / 250
+                                                            </span>
+                                                        </div>
+                                                        {countWords(data.essay.motivation) >= 250 && (
+                                                            <span className="text-xs text-green-600 font-medium">✓ Target reached</span>
+                                                        )}
+                                                    </div>
+                                                    <InputError message={errors['essay.motivation'] || stepErrors['essay.motivation']} className="mt-2" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* ══════════════════════════════════════════
+                                        STEP 5 – DOCUMENTS
+                                    ══════════════════════════════════════════ */}
                                     {activeStep === 5 && (
                                         <div className="space-y-5">
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="personal_statement"
-                                                    value="Personal Essay (STEM Journey and Need)"
-                                                    required
-                                                />
-                                                <textarea
-                                                    id="personal_statement"
-                                                    rows={8}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={data.essay.personal_statement}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'essay',
-                                                            'personal_statement',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                    placeholder="Share your academic path, financial context, and why this scholarship matters."
-                                                />
-                                                <div className="mt-1 text-xs text-gray-500">
-                                                    Word count: {countWords(data.essay.personal_statement)} (minimum 100 words)
-                                                </div>
-                                                <InputError
-                                                    message={errors['essay.personal_statement'] || stepErrors['essay.personal_statement']}
-                                                    className="mt-2"
-                                                />
+                                            <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
+                                                <h4 className="text-sm font-semibold text-blue-900">Required & Optional Attachments</h4>
+                                                <p className="mt-1 text-xs text-blue-700">
+                                                    Please submit clear, legible copies. Accepted formats: PDF, JPG, PNG (max 5MB per file).
+                                                </p>
                                             </div>
 
-                                            <div>
-                                                <RequiredLabel
-                                                    htmlFor="commitment"
-                                                    value="Commitment to Teaching in Rural/Underserved Areas"
-                                                    required
-                                                />
-                                                <textarea
-                                                    id="commitment"
-                                                    rows={8}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={data.essay.commitment}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'essay',
-                                                            'commitment',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    required
-                                                    placeholder="Explain how you will apply your STEM education in schools and communities with the greatest need."
-                                                />
-                                                <div className="mt-1 text-xs text-gray-500">
-                                                    Word count: {countWords(data.essay.commitment)} (minimum 100 words)
+                                            {[
+                                                { key: 'exam_results', label: 'Photocopy of Examination Results (PLE, UCE, UACE) / Academic Transcript for Diploma', required: true,
+                                                    hint: 'Upload your PLE, UCE, UACE results or Diploma transcript' },
+                                                { key: 'national_id', label: 'Photocopy of National ID Card (back and front) / NIN', required: true,
+                                                    hint: 'Upload both sides of your National ID card or NIN confirmation' },
+                                                { key: 'birth_certificate', label: 'Photocopy of National Birth Certificate', required: false,
+                                                    hint: 'Upload your national birth certificate' },
+                                                { key: 'admission_letter', label: 'Photocopy of Admission Letter to LiT Partner University / UNITE Campus', required: false,
+                                                    hint: 'Upload your university admission letter' },
+                                                { key: 'recommendation_lc1', label: 'Recommendation Letter from LC1 Chairperson or Person of Reputable Standing', required: false,
+                                                    hint: 'Upload recommendation from your area LC1 or equivalent' },
+                                                { key: 'recommendation_school', label: 'Recommendation Letter from Former School', required: false,
+                                                    hint: 'Upload recommendation from your former school' },
+                                                { key: 'refugee_number', label: 'Photocopy of Refugee Number (for those living in Uganda with refugee status)', required: false,
+                                                    hint: 'Only required if you have refugee status in Uganda' },
+                                            ].map(({ key, label, required, hint }) => (
+                                                <div key={key}>
+                                                    <RequiredLabel htmlFor={key} value={label} required={required} />
+                                                    <p className="mt-1 text-xs text-gray-500 mb-2">{hint}</p>
+                                                    <input
+                                                        id={key}
+                                                        type="file"
+                                                        accept=".pdf,.jpg,.jpeg,.png"
+                                                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                                                        onChange={(e) => {
+                                                            hasChanged.current = true;
+                                                            setData('documents', { ...docs, [key]: e.target.files[0] });
+                                                        }}
+                                                        disabled={isLocked}
+                                                    />
+                                                    {docs[key] && (
+                                                        <p className="mt-2 text-sm text-green-600">
+                                                            ✓ {typeof docs[key] === 'string' ? 'Previously uploaded' : docs[key].name}
+                                                        </p>
+                                                    )}
+                                                    <InputError message={errors[`documents.${key}`] || stepErrors[`documents.${key}`]} className="mt-2" />
                                                 </div>
-                                                <InputError
-                                                    message={errors['essay.commitment'] || stepErrors['essay.commitment']}
-                                                    className="mt-2"
-                                                />
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* ══════════════════════════════════════════
+                                        STEP 6 – SECTION C & D: GUARDIAN / DECLARATION
+                                    ══════════════════════════════════════════ */}
+                                    {activeStep === 6 && (
+                                        <div className="space-y-6">
+                                            {/* Section C */}
+                                            <div className="rounded-md border border-gray-200 p-4">
+                                                <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
+                                                    Section C – To Be Completed by Parent/Legal Guardian
+                                                </h4>
+                                                <p className="text-xs text-gray-500 mb-4 italic">
+                                                    Person so far responsible for financing the education of the applicant.
+                                                </p>
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                    <div>
+                                                        <RequiredLabel htmlFor="guardian_surname" value="21. Surname" required />
+                                                        <TextInput id="guardian_surname" className="mt-1 block w-full uppercase"
+                                                            value={gi.guardian_surname}
+                                                            onChange={(e) => updateSection('guardian_info', 'guardian_surname', e.target.value)}
+                                                            disabled={isLocked} required />
+                                                        <InputError message={errors['guardian_info.guardian_surname'] || stepErrors['guardian_info.guardian_surname']} className="mt-2" />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="guardian_other_names" value="Other Name(s)" />
+                                                        <TextInput id="guardian_other_names" className="mt-1 block w-full uppercase"
+                                                            value={gi.guardian_other_names}
+                                                            onChange={(e) => updateSection('guardian_info', 'guardian_other_names', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <InputLabel htmlFor="guardian_address" value="22. Address" />
+                                                        <TextInput id="guardian_address" className="mt-1 block w-full"
+                                                            value={gi.guardian_address}
+                                                            onChange={(e) => updateSection('guardian_info', 'guardian_address', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <RequiredLabel htmlFor="guardian_telephone" value="Telephone" required />
+                                                        <TextInput id="guardian_telephone" className="mt-1 block w-full"
+                                                            value={gi.guardian_telephone}
+                                                            onChange={(e) => updateSection('guardian_info', 'guardian_telephone', e.target.value)}
+                                                            disabled={isLocked} required />
+                                                        <InputError message={errors['guardian_info.guardian_telephone'] || stepErrors['guardian_info.guardian_telephone']} className="mt-2" />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="guardian_district" value="23. District of Residence" />
+                                                        <TextInput id="guardian_district" className="mt-1 block w-full uppercase"
+                                                            value={gi.guardian_district}
+                                                            onChange={(e) => updateSection('guardian_info', 'guardian_district', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="guardian_region" value="Region of Residence" />
+                                                        <TextInput id="guardian_region" className="mt-1 block w-full uppercase"
+                                                            value={gi.guardian_region}
+                                                            onChange={(e) => updateSection('guardian_info', 'guardian_region', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="guardian_occupation" value="24. Occupation" />
+                                                        <TextInput id="guardian_occupation" className="mt-1 block w-full"
+                                                            value={gi.guardian_occupation}
+                                                            onChange={(e) => updateSection('guardian_info', 'guardian_occupation', e.target.value)}
+                                                            disabled={isLocked} />
+                                                    </div>
+                                                    <div>
+                                                        <RequiredLabel htmlFor="guardian_relation" value="Relationship with Applicant" required />
+                                                        <TextInput id="guardian_relation" className="mt-1 block w-full"
+                                                            value={gi.guardian_relation}
+                                                            onChange={(e) => updateSection('guardian_info', 'guardian_relation', e.target.value)}
+                                                            disabled={isLocked} required />
+                                                        <InputError message={errors['guardian_info.guardian_relation'] || stepErrors['guardian_info.guardian_relation']} className="mt-2" />
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            <div>
-                                                <InputLabel
-                                                    htmlFor="additional_information"
-                                                    value="Additional Information (Optional)"
-                                                />
-                                                <textarea
-                                                    id="additional_information"
-                                                    rows={4}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    value={data.essay.additional_information}
-                                                    onChange={(event) =>
-                                                        updateSectionValue(
-                                                            'essay',
-                                                            'additional_information',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    disabled={isLocked}
-                                                    placeholder="Any context you want the committee to consider"
-                                                />
-                                                <InputError
-                                                    message={errors['essay.additional_information']}
-                                                    className="mt-2"
-                                                />
+                                            {/* Section D */}
+                                            <div className="rounded-md border border-gray-200 p-4">
+                                                <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
+                                                    Section D – Criminal Offence Declaration
+                                                </h4>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <RequiredLabel htmlFor="criminal_offence" value="25. Have you ever been Charged and/or Convicted of a criminal offence?" required />
+                                                        <div className="mt-2 flex gap-6">
+                                                            <RadioField name="criminal_offence" value="yes" label="YES"
+                                                                checked={decl.criminal_offence === 'yes'}
+                                                                onChange={(v) => updateSection('declaration_info', 'criminal_offence', v)}
+                                                                disabled={isLocked} />
+                                                            <RadioField name="criminal_offence" value="no" label="NO"
+                                                                checked={decl.criminal_offence === 'no'}
+                                                                onChange={(v) => updateSection('declaration_info', 'criminal_offence', v)}
+                                                                disabled={isLocked} />
+                                                        </div>
+                                                        <InputError message={errors['declaration_info.criminal_offence']} className="mt-2" />
+                                                    </div>
+                                                    {decl.criminal_offence === 'yes' && (
+                                                        <div>
+                                                            <InputLabel htmlFor="criminal_details" value="If so, please state the Charge/Conviction and elaborate on the circumstances and outcome." />
+                                                            <textarea
+                                                                id="criminal_details"
+                                                                rows={5}
+                                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                                                value={decl.criminal_details}
+                                                                onChange={(e) => updateSection('declaration_info', 'criminal_details', e.target.value)}
+                                                                disabled={isLocked}
+                                                                placeholder="Describe the charge/conviction, circumstances and outcome..." />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Declaration notice */}
+                                            <div className="rounded-md border border-gray-300 bg-gray-50 p-4 text-sm text-gray-700">
+                                                <p className="font-semibold mb-2">Declaration</p>
+                                                <p className="mb-2">
+                                                    It is important that your eligibility for student financial aid be based upon accurate information.
+                                                </p>
+                                                <p className="mb-2 italic">
+                                                    I do hereby declare that all the information given above is true.
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    <strong>Note:</strong> Misrepresentation in any material form renders the application null and void. Any award made based on misrepresentation shall be withdrawn or refunded by the applicant, and he/she may be prosecuted. The truth, rather than lies, will get you Financial Aid.
+                                                </p>
                                             </div>
                                         </div>
                                     )}
 
-                                    {activeStep === 6 && (
+                                    {/* ══════════════════════════════════════════
+                                        STEP 7 – REVIEW & SUBMIT
+                                    ══════════════════════════════════════════ */}
+                                    {activeStep === 7 && (
                                         <div className="space-y-6">
-                                            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 mb-4">
-                                                <h3 className="text-base font-semibold text-emerald-900">
-                                                    Review Your Application
-                                                </h3>
+                                            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+                                                <h3 className="text-base font-semibold text-emerald-900">Review Your Application</h3>
                                                 <p className="mt-1 text-sm text-emerald-700">
                                                     Please review all information carefully before submitting. You can go back to any step to make changes.
                                                 </p>
                                             </div>
 
-                                            {/* Personal Information */}
+                                            {/* Personal Info summary */}
                                             <div className="rounded-md border border-gray-200 p-4">
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                                                    Personal Information
-                                                </h4>
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">Section A – Personal Information</h4>
                                                 <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">First Name</dt>
-                                                        <dd className="mt-1">{data.personal_info.first_name || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Last Name</dt>
-                                                        <dd className="mt-1">{data.personal_info.last_name || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Phone Number</dt>
-                                                        <dd className="mt-1">{data.personal_info.phone || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Date of Birth</dt>
-                                                        <dd className="mt-1">{data.personal_info.date_of_birth || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Gender</dt>
-                                                        <dd className="mt-1">{data.personal_info.gender || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Nationality</dt>
-                                                        <dd className="mt-1">{data.personal_info.nationality || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Person with Disability</dt>
-                                                        <dd className="mt-1">
-                                                            {data.personal_info.has_disability === 'yes' ? 'Yes' : 
-                                                             data.personal_info.has_disability === 'no' ? 'No' : 
-                                                             data.personal_info.has_disability === 'prefer_not_to_answer' ? 'Prefer Not to Answer' : 
-                                                             'Not provided'}
-                                                        </dd>
-                                                    </div>
-                                                    {data.personal_info.has_disability === 'yes' && (
-                                                        <div>
-                                                            <dt className="font-medium text-gray-500">Disability Details</dt>
-                                                            <dd className="mt-1">{data.personal_info.disability_details || 'Not provided'}</dd>
+                                                    <div><dt className="font-medium text-gray-500">Full Name</dt><dd className="mt-1">{[pi.surname, pi.other_names].filter(Boolean).join(', ') || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Date of Birth</dt><dd className="mt-1">{pi.date_of_birth || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">NIN</dt><dd className="mt-1">{pi.nin || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Phone</dt><dd className="mt-1">{pi.phone || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Email</dt><dd className="mt-1">{pi.email || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Marital Status</dt><dd className="mt-1">{pi.marital_status || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Ugandan National</dt><dd className="mt-1">{pi.is_ugandan === 'yes' ? 'Yes' : pi.is_ugandan === 'no' ? 'No' : 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Disability</dt><dd className="mt-1">{pi.has_disability === 'yes' ? `Yes – ${pi.disability_specify || 'specified in Section B2'}` : pi.has_disability === 'no' ? 'No' : 'Not specified'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Place of Residence</dt><dd className="mt-1">{[pi.residence_village, pi.residence_district, pi.residence_region, pi.residence_country].filter(Boolean).join(', ') || 'Not provided'}</dd></div>
+                                                </dl>
+                                            </div>
+
+                                            {/* Education summary */}
+                                            <div className="rounded-md border border-gray-200 p-4">
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">Section B1 – Education</h4>
+                                                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
+                                                    <div><dt className="font-medium text-gray-500">Academic Programme</dt><dd className="mt-1">{pi.academic_programme || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Institution</dt><dd className="mt-1">{pi.institution || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Teaching Subjects</dt><dd className="mt-1">{[pi.teaching_subjects_1, pi.teaching_subjects_2].filter(Boolean).join(', ') || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Student Admission No.</dt><dd className="mt-1">{pi.student_admission_number || 'Not provided'}</dd></div>
+                                                </dl>
+                                            </div>
+
+                                            {/* Motivation summary */}
+                                            <div className="rounded-md border border-gray-200 p-4">
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">Section B6 – Motivation</h4>
+                                                <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+                                                    {data.essay.motivation || 'Not provided'}
+                                                </p>
+                                                <p className="mt-1 text-xs text-gray-500">Word count: {countWords(data.essay.motivation)}</p>
+                                            </div>
+
+                                            {/* Documents summary */}
+                                            <div className="rounded-md border border-gray-200 p-4">
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">Uploaded Documents</h4>
+                                                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
+                                                    {[
+                                                        ['exam_results', 'Examination Results'],
+                                                        ['national_id', 'National ID'],
+                                                        ['birth_certificate', 'Birth Certificate'],
+                                                        ['admission_letter', 'Admission Letter'],
+                                                        ['recommendation_lc1', 'Recommendation (LC1)'],
+                                                        ['recommendation_school', 'Recommendation (School)'],
+                                                        ['refugee_number', 'Refugee Number'],
+                                                    ].map(([key, label]) => (
+                                                        <div key={key}>
+                                                            <dt className="font-medium text-gray-500">{label}</dt>
+                                                            <dd className="mt-1">
+                                                                {docs[key]
+                                                                    ? <span className="text-green-600">✓ {typeof docs[key] === 'string' ? 'Uploaded' : docs[key].name}</span>
+                                                                    : <span className="text-gray-400">Not uploaded</span>}
+                                                            </dd>
                                                         </div>
-                                                    )}
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Refugee or Displaced Person</dt>
-                                                        <dd className="mt-1">
-                                                            {data.personal_info.refugee_or_displaced === 'yes' ? 'Yes' : 
-                                                             data.personal_info.refugee_or_displaced === 'no' ? 'No' : 
-                                                             data.personal_info.refugee_or_displaced === 'prefer_not_to_answer' ? 'Prefer Not to Answer' : 
-                                                             'Not provided'}
-                                                        </dd>
-                                                    </div>
-                                                    {data.personal_info.refugee_or_displaced === 'yes' && (
-                                                        <div>
-                                                            <dt className="font-medium text-gray-500">Refugee/Displaced Details</dt>
-                                                            <dd className="mt-1">{data.personal_info.refugee_details || 'Not provided'}</dd>
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Residence Area</dt>
-                                                        <dd className="mt-1">
-                                                            {data.personal_info.residence_area === 'rural' ? 'Rural Area' : 
-                                                             data.personal_info.residence_area === 'urban' ? 'Urban Area' : 
-                                                             'Not provided'}
-                                                        </dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">University</dt>
-                                                        <dd className="mt-1">{data.personal_info.university || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Program of Study</dt>
-                                                        <dd className="mt-1">{data.personal_info.program_of_study || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Year of Study</dt>
-                                                        <dd className="mt-1">{data.personal_info.year_of_study || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Current CGPA</dt>
-                                                        <dd className="mt-1">{data.personal_info.cgpa || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">High School</dt>
-                                                        <dd className="mt-1">{data.personal_info.high_school || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Current School/Campus</dt>
-                                                        <dd className="mt-1">{data.personal_info.current_school || 'Not provided'}</dd>
-                                                    </div>
+                                                    ))}
                                                 </dl>
                                             </div>
 
-                                            {/* Financial Information */}
+                                            {/* Guardian summary */}
                                             <div className="rounded-md border border-gray-200 p-4">
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                                                    Financial Information
-                                                </h4>
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">Section C – Guardian/Parent</h4>
                                                 <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Household Income</dt>
-                                                        <dd className="mt-1">{data.financial_info.household_income ? formatCurrency(data.financial_info.household_income) : 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Number of Dependents</dt>
-                                                        <dd className="mt-1">{data.financial_info.number_of_dependents || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Estimated Tuition</dt>
-                                                        <dd className="mt-1">{data.financial_info.estimated_tuition ? formatCurrency(data.financial_info.estimated_tuition) : 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Estimated Living Expenses</dt>
-                                                        <dd className="mt-1">{data.financial_info.estimated_living_expenses ? formatCurrency(data.financial_info.estimated_living_expenses) : 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Other Expenses</dt>
-                                                        <dd className="mt-1">{data.financial_info.other_expenses ? formatCurrency(data.financial_info.other_expenses) : 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Existing Support</dt>
-                                                        <dd className="mt-1">{data.financial_info.existing_support ? formatCurrency(data.financial_info.existing_support) : 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Requested Support Amount</dt>
-                                                        <dd className="mt-1">{data.financial_info.requested_support_amount ? formatCurrency(data.financial_info.requested_support_amount) : 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Scholarship Type Requested</dt>
-                                                        <dd className="mt-1">
-                                                            {data.financial_info.scholarship_type_requested === 'full' ? 'Full Scholarship' : 
-                                                             data.financial_info.scholarship_type_requested === 'partial' ? 'Partial Scholarship' : 
-                                                             'Not provided'}
-                                                        </dd>
-                                                    </div>
-                                                    <div className="md:col-span-2">
-                                                        <dt className="font-medium text-gray-500">Income Sources</dt>
-                                                        <dd className="mt-1 whitespace-pre-wrap">{data.financial_info.income_sources || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div className="md:col-span-2">
-                                                        <dt className="font-medium text-gray-500">Funding Gap</dt>
-                                                        <dd className="mt-1 text-emerald-700 font-semibold">{formatCurrency(fundingGap)}</dd>
-                                                    </div>
+                                                    <div><dt className="font-medium text-gray-500">Name</dt><dd className="mt-1">{[gi.guardian_surname, gi.guardian_other_names].filter(Boolean).join(', ') || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Telephone</dt><dd className="mt-1">{gi.guardian_telephone || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">District/Region</dt><dd className="mt-1">{[gi.guardian_district, gi.guardian_region].filter(Boolean).join(', ') || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Occupation</dt><dd className="mt-1">{gi.guardian_occupation || 'Not provided'}</dd></div>
+                                                    <div><dt className="font-medium text-gray-500">Relationship</dt><dd className="mt-1">{gi.guardian_relation || 'Not provided'}</dd></div>
                                                 </dl>
                                             </div>
 
-                                            {/* Guardian Information */}
-                                            <div className="rounded-md border border-gray-200 p-4">
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                                                    Guardian Information
-                                                </h4>
-                                                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Guardian Name</dt>
-                                                        <dd className="mt-1">{data.guardian_info.guardian_name || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Relation</dt>
-                                                        <dd className="mt-1">{data.guardian_info.guardian_relation || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Phone</dt>
-                                                        <dd className="mt-1">{data.guardian_info.guardian_phone || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Email</dt>
-                                                        <dd className="mt-1">{data.guardian_info.guardian_email || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Occupation</dt>
-                                                        <dd className="mt-1">{data.guardian_info.guardian_occupation || 'Not provided'}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Address</dt>
-                                                        <dd className="mt-1">{data.guardian_info.guardian_address || 'Not provided'}</dd>
-                                                    </div>
-                                                </dl>
-                                            </div>
-
-                                            {/* Essays */}
-                                            <div className="rounded-md border border-gray-200 p-4">
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                                                    Essays & Statements
-                                                </h4>
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500 text-sm">Personal Statement</dt>
-                                                        <dd className="mt-2 text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
-                                                            {data.essay.personal_statement || 'Not provided'}
-                                                        </dd>
-                                                        <p className="mt-1 text-xs text-gray-500">
-                                                            Word count: {countWords(data.essay.personal_statement)}
-                                                        </p>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500 text-sm">Teaching Commitment</dt>
-                                                        <dd className="mt-2 text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
-                                                            {data.essay.commitment || 'Not provided'}
-                                                        </dd>
-                                                        <p className="mt-1 text-xs text-gray-500">
-                                                            Word count: {countWords(data.essay.commitment)}
-                                                        </p>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500 text-sm">Additional Information</dt>
-                                                        <dd className="mt-2 text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
-                                                            {data.essay.additional_information || 'Not provided'}
-                                                        </dd>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Documents */}
-                                            <div className="rounded-md border border-gray-200 p-4">
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                                                    Uploaded Documents
-                                                </h4>
-                                                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Academic Documents</dt>
-                                                        <dd className="mt-1">
-                                                            {data.documents.academic_documents ? 
-                                                                <span className="text-green-600">✓ {typeof data.documents.academic_documents === 'string' ? 'Uploaded' : data.documents.academic_documents.name}</span> : 
-                                                                <span className="text-red-600">Not uploaded</span>
-                                                            }
-                                                        </dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">National ID</dt>
-                                                        <dd className="mt-1">
-                                                            {data.documents.national_id ? 
-                                                                <span className="text-green-600">✓ {typeof data.documents.national_id === 'string' ? 'Uploaded' : data.documents.national_id.name}</span> : 
-                                                                <span className="text-red-600">Not uploaded</span>
-                                                            }
-                                                        </dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Admission Form (Optional)</dt>
-                                                        <dd className="mt-1">
-                                                            {data.documents.admission_form ? 
-                                                                <span className="text-green-600">✓ {typeof data.documents.admission_form === 'string' ? 'Uploaded' : data.documents.admission_form.name}</span> : 
-                                                                <span className="text-gray-500">Not uploaded</span>
-                                                            }
-                                                        </dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt className="font-medium text-gray-500">Provisional Results (Optional)</dt>
-                                                        <dd className="mt-1">
-                                                            {data.documents.provisional_results ? 
-                                                                <span className="text-green-600">✓ {typeof data.documents.provisional_results === 'string' ? 'Uploaded' : data.documents.provisional_results.name}</span> : 
-                                                                <span className="text-gray-500">Not uploaded</span>
-                                                            }
-                                                        </dd>
-                                                    </div>
-                                                </dl>
+                                            {/* Final declaration notice */}
+                                            <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                                                <p className="font-semibold">By submitting this application, I declare that:</p>
+                                                <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
+                                                    <li>All information provided is true and accurate to the best of my knowledge.</li>
+                                                    <li>I understand that misrepresentation renders the application null and void.</li>
+                                                    <li>I have read and agree to the terms of the LiT Scholarship Programme.</li>
+                                                </ul>
                                             </div>
                                         </div>
                                     )}
                                 </motion.div>
                             </AnimatePresence>
 
+                            {/* Navigation */}
                             <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-6">
                                 <div className="text-sm text-gray-600">
                                     {savingDraft ? 'Saving draft...' : draftMessage}
                                 </div>
-
                                 <div className="flex flex-wrap gap-2">
                                     <Link href={route('portal')}>
-                                        <SecondaryButton type="button">
-                                            Back to Dashboard
-                                        </SecondaryButton>
+                                        <SecondaryButton type="button">Back to Dashboard</SecondaryButton>
                                     </Link>
-
                                     {activeStep > 1 && (
-                                        <SecondaryButton
-                                            type="button"
-                                            onClick={previousStep}
-                                        >
-                                            Previous
-                                        </SecondaryButton>
+                                        <SecondaryButton type="button" onClick={previousStep}>Previous</SecondaryButton>
                                     )}
-
                                     {!isLocked && (
-                                        <SecondaryButton
-                                            type="button"
-                                            onClick={() =>
-                                                saveDraft('Draft saved successfully.')
-                                            }
-                                            disabled={savingDraft}
-                                        >
+                                        <SecondaryButton type="button" onClick={() => saveDraft('Draft saved successfully.')} disabled={savingDraft}>
                                             Save Draft
                                         </SecondaryButton>
                                     )}
-
                                     {activeStep < STEP_CONFIG.length ? (
-                                        <PrimaryButton 
-                                            type="button" 
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                nextStep();
-                                            }}
-                                        >
-                                            {activeStep === 5 ? 'Proceed to Review & Submit' : 'Next Step'}
+                                        <PrimaryButton type="button" onClick={(e) => { e.preventDefault(); nextStep(); }}>
+                                            {activeStep === 6 ? 'Proceed to Review & Submit' : 'Next Step'}
                                         </PrimaryButton>
                                     ) : (
-                                        <PrimaryButton
-                                            type="submit"
-                                            disabled={processing || isLocked}
-                                        >
-                                            {processing
-                                                ? 'Submitting...'
-                                                : isLocked
-                                                  ? 'Already Submitted'
-                                                  : 'Submit Application'}
+                                        <PrimaryButton type="submit" disabled={processing || isLocked}>
+                                            {processing ? 'Submitting...' : isLocked ? 'Already Submitted' : 'Submit Application'}
                                         </PrimaryButton>
                                     )}
                                 </div>

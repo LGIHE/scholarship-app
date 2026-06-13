@@ -82,165 +82,122 @@ class ApplicationResource extends Resource
                         Infolists\Components\TextEntry::make('user.email')
                             ->label('Email Address')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.first_name')
-                            ->label('First Name')
+                        Infolists\Components\TextEntry::make('personal_info.surname')
+                            ->label('Surname')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.middle_name')
-                            ->label('Middle Name')
-                            ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.last_name')
-                            ->label('Last Name')
+                        Infolists\Components\TextEntry::make('personal_info.other_names')
+                            ->label('Other Name(s)')
                             ->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('personal_info.date_of_birth')
                             ->label('Date of Birth')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.gender')
-                            ->label('Gender')
-                            ->placeholder('Not provided')
-                            ->formatStateUsing(fn ($state) => $state ? ucfirst($state) : 'Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.nin')
+                            ->label('NIN')
+                            ->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('personal_info.phone')
-                            ->label('Phone Number')
+                            ->label('Telephone')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.address')
-                            ->label('Address')
-                            ->placeholder('Not provided')
-                            ->columnSpanFull(),
-                        Infolists\Components\TextEntry::make('personal_info.city')
-                            ->label('City')
+                        Infolists\Components\TextEntry::make('personal_info.email')
+                            ->label('Email')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.state')
-                            ->label('State/Province')
+                        Infolists\Components\TextEntry::make('personal_info.marital_status')
+                            ->label('Marital Status')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.country')
-                            ->label('Country')
-                            ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.postal_code')
-                            ->label('Postal Code')
-                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('personal_info.is_ugandan')
+                            ->label('Ugandan National')
+                            ->formatStateUsing(fn ($state) => $state === 'yes' ? 'Yes' : ($state === 'no' ? 'No' : 'Not specified'))
+                            ->badge()
+                            ->color(fn ($state) => $state === 'yes' ? 'success' : 'warning'),
                         Infolists\Components\TextEntry::make('personal_info.has_disability')
-                            ->label('Person with Disability')
-                            ->formatStateUsing(fn ($state) => match($state) {
-                                'yes' => 'Yes',
-                                'no' => 'No',
-                                'prefer_not_to_answer' => 'Prefer Not to Answer',
-                                default => 'Not Specified'
-                            })
+                            ->label('Has Disability')
+                            ->formatStateUsing(fn ($state) => $state === 'yes' ? 'Yes' : ($state === 'no' ? 'No' : 'Not specified'))
                             ->badge()
                             ->color(fn ($state) => $state === 'yes' ? 'warning' : 'gray'),
-                        Infolists\Components\TextEntry::make('personal_info.disability_details')
-                            ->label('Disability Details')
-                            ->placeholder('Not provided')
-                            ->columnSpanFull(),
-                        Infolists\Components\TextEntry::make('personal_info.refugee_or_displaced')
-                            ->label('Refugee or Displaced Person')
-                            ->formatStateUsing(fn ($state) => match($state) {
-                                'yes' => 'Yes',
-                                'no' => 'No',
-                                'prefer_not_to_answer' => 'Prefer Not to Answer',
-                                default => 'Not Specified'
-                            })
-                            ->badge()
-                            ->color(fn ($state) => $state === 'yes' ? 'warning' : 'gray'),
-                        Infolists\Components\TextEntry::make('personal_info.refugee_details')
-                            ->label('Refugee/Displaced Details')
-                            ->placeholder('Not provided')
-                            ->columnSpanFull(),
-                        Infolists\Components\TextEntry::make('personal_info.residence_area')
-                            ->label('Residence Area')
-                            ->formatStateUsing(fn ($state) => match($state) {
-                                'rural' => 'Rural Area',
-                                'urban' => 'Urban Area',
-                                default => 'Not Specified'
-                            })
-                            ->badge()
-                            ->color(fn ($state) => $state === 'rural' ? 'success' : 'info'),
+                        Infolists\Components\TextEntry::make('personal_info.disability_specify')
+                            ->label('Disability Specified')
+                            ->placeholder('Not provided'),
                     ])->columns(3),
-                
+
                 Infolists\Components\Section::make('Academic Information')
                     ->schema([
-                        Infolists\Components\TextEntry::make('personal_info.current_education_level')
-                            ->label('Current Education Level')
+                        Infolists\Components\TextEntry::make('personal_info.academic_programme')
+                            ->label('Academic Programme')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.institution_name')
-                            ->label('Institution Name')
+                        Infolists\Components\TextEntry::make('personal_info.institution')
+                            ->label('Institution')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.field_of_study')
-                            ->label('Field of Study')
+                        Infolists\Components\TextEntry::make('personal_info.teaching_subjects_1')
+                            ->label('Teaching Subject 1')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.gpa')
-                            ->label('GPA/Grade')
+                        Infolists\Components\TextEntry::make('personal_info.teaching_subjects_2')
+                            ->label('Teaching Subject 2')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.intended_university')
-                            ->label('Intended University')
-                            ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.intended_course')
-                            ->label('Intended Course')
+                        Infolists\Components\TextEntry::make('personal_info.student_admission_number')
+                            ->label('Student Admission Number')
                             ->placeholder('Not provided'),
                     ])->columns(3)->collapsible(),
-                
-                Infolists\Components\Section::make('Financial Information')
+
+                Infolists\Components\Section::make('Disability Information (Section B2)')
                     ->schema([
-                        Infolists\Components\TextEntry::make('financial_info.household_income')
-                            ->label('Household Income')
-                            ->money('usd')
+                        Infolists\Components\TextEntry::make('disability_info.functionality_level')
+                            ->label('Functionality Level')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('financial_info.number_of_dependents')
-                            ->label('Number of Dependents')
-                            ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('financial_info.employment_status')
-                            ->label('Employment Status')
-                            ->placeholder('Not provided')
-                            ->formatStateUsing(fn ($state) => $state ? ucwords(str_replace('_', ' ', $state)) : 'Not provided'),
-                        Infolists\Components\TextEntry::make('financial_info.other_scholarships')
-                            ->label('Other Scholarships')
-                            ->placeholder('Not provided')
-                            ->formatStateUsing(fn ($state) => $state === 'yes' ? 'Yes' : ($state === 'no' ? 'No' : 'Not provided')),
-                        Infolists\Components\TextEntry::make('financial_info.scholarship_details')
-                            ->label('Scholarship Details')
-                            ->placeholder('Not provided')
-                            ->columnSpanFull(),
-                        Infolists\Components\TextEntry::make('financial_info.financial_need_explanation')
-                            ->label('Financial Need Explanation')
+                        Infolists\Components\TextEntry::make('disability_info.assistive_support')
+                            ->label('Assistive Support Needed')
                             ->placeholder('Not provided')
                             ->columnSpanFull(),
                     ])->columns(2)->collapsible(),
 
+                Infolists\Components\Section::make('Dependants Information (Section B3)')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('dependants_info.num_children')
+                            ->label('Number of Children')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('dependants_info.oldest_child_age')
+                            ->label('Age of Oldest Child')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('dependants_info.youngest_child_age')
+                            ->label('Age of Youngest Child')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('dependants_info.childcare_plan')
+                            ->label('Childcare Plan')
+                            ->placeholder('Not provided')
+                            ->columnSpanFull(),
+                    ])->columns(3)->collapsible(),
+
                 Infolists\Components\Section::make('Guardian Information')
                     ->schema([
-                        Infolists\Components\TextEntry::make('guardian_info.guardian_name')
-                            ->label('Guardian Name')
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_surname')
+                            ->label('Guardian Surname')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('guardian_info.guardian_phone')
-                            ->label('Guardian Phone')
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_other_names')
+                            ->label('Guardian Other Name(s)')
                             ->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('guardian_info.guardian_email')
-                            ->label('Guardian Email')
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_telephone')
+                            ->label('Guardian Telephone')
                             ->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('guardian_info.guardian_relation')
                             ->label('Relation to Applicant')
                             ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_occupation')
+                            ->label('Occupation')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_district')
+                            ->label('District of Residence')
+                            ->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_region')
+                            ->label('Region of Residence')
+                            ->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('guardian_info.guardian_address')
-                            ->label('Guardian Address')
+                            ->label('Address')
                             ->placeholder('Not provided')
                             ->columnSpanFull(),
                     ])->columns(2)->collapsible(),
 
-                Infolists\Components\Section::make('Essays / Statements')
+                Infolists\Components\Section::make('Motivation Statement (Section B6)')
                     ->schema([
-                        Infolists\Components\TextEntry::make('essay.personal_statement')
-                            ->label('Personal Statement')
-                            ->placeholder('Not provided')
-                            ->columnSpanFull()
-                            ->html()
-                            ->formatStateUsing(fn ($state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">Not provided</em>'),
-                        Infolists\Components\TextEntry::make('essay.commitment')
-                            ->label('Commitment Essay')
-                            ->placeholder('Not provided')
-                            ->columnSpanFull()
-                            ->html()
-                            ->formatStateUsing(fn ($state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">Not provided</em>'),
-                        Infolists\Components\TextEntry::make('essay.career_goals')
-                            ->label('Career Goals')
+                        Infolists\Components\TextEntry::make('essay.motivation')
+                            ->label('Motivation (250-word essay)')
                             ->placeholder('Not provided')
                             ->columnSpanFull()
                             ->html()
@@ -249,28 +206,32 @@ class ApplicationResource extends Resource
 
                 Infolists\Components\Section::make('Uploaded Documents')
                     ->schema([
-                        Infolists\Components\TextEntry::make('documents.academic_documents')
-                            ->label('Academic Documents')
+                        Infolists\Components\TextEntry::make('documents.exam_results')
+                            ->label('Examination Results')
                             ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
                         Infolists\Components\TextEntry::make('documents.national_id')
                             ->label('National ID')
                             ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
-                        Infolists\Components\TextEntry::make('documents.admission_form')
-                            ->label('Admission Form')
+                        Infolists\Components\TextEntry::make('documents.birth_certificate')
+                            ->label('Birth Certificate')
                             ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
-                        Infolists\Components\TextEntry::make('documents.provisional_results')
-                            ->label('Provisional Results')
+                        Infolists\Components\TextEntry::make('documents.admission_letter')
+                            ->label('Admission Letter')
                             ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
-                        Infolists\Components\TextEntry::make('documents.recommendation_letter')
-                            ->label('Recommendation Letter')
+                        Infolists\Components\TextEntry::make('documents.recommendation_lc1')
+                            ->label('Recommendation Letter (LC1)')
                             ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
-                        Infolists\Components\TextEntry::make('documents.proof_of_income')
-                            ->label('Proof of Income')
+                        Infolists\Components\TextEntry::make('documents.recommendation_school')
+                            ->label('Recommendation Letter (School)')
+                            ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
+                            ->html(),
+                        Infolists\Components\TextEntry::make('documents.refugee_number')
+                            ->label('Refugee Number')
                             ->formatStateUsing(fn ($state) => $state ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>' : '<em class="text-gray-400">Not uploaded</em>')
                             ->html(),
                     ])->columns(2)->collapsible(),
