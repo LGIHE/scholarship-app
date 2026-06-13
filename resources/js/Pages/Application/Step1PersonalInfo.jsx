@@ -17,9 +17,9 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                 <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
                     Applicant Background Information
                 </h4>
-                <p className="text-xs text-gray-500 mb-4 italic">
+                {/* <p className="text-xs text-gray-500 mb-4 italic">
                     Complete all questions using BLOCK letters only. Your application will not be processed if you leave any questions unanswered.
-                </p>
+                </p> */}
 
                 {/* ── 1. Personal Information ───────────────────────────── */}
                 <h5 className="font-semibold text-gray-700 mb-3">1. Personal Information</h5>
