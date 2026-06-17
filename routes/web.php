@@ -82,8 +82,11 @@ use App\Http\Controllers\Admin\DocumentController;
 
 Route::get('/portal', function () {
     $application = auth()->user()->applications()->latest()->first();
+    $deadline = \Carbon\Carbon::parse(config('scholarship.application_deadline'))->setTime(23, 59, 59);
     return Inertia::render('Dashboard', [
-        'application' => $application
+        'application'         => $application,
+        'deadlinePassed'      => now()->greaterThan($deadline),
+        'applicationDeadline' => $deadline->toDateString(),
     ]);
 })->middleware(['auth', 'verified', \App\Http\Middleware\EnsureApplicantOrScholar::class])->name('portal');
 

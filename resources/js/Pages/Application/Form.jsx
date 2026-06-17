@@ -31,7 +31,7 @@ function countWords(text) {
 }
 
 export default function Form() {
-    const { auth, application } = usePage().props;
+    const { auth, application, deadlinePassed, applicationDeadline } = usePage().props;
 
     const initialData = useFormDefaults(auth, application);
     const { data, setData, post, processing, errors } = useForm(initialData);
@@ -44,7 +44,7 @@ export default function Form() {
     const initialRender = useRef(true);
     const hasChanged    = useRef(false);
 
-    const isLocked = ['submitted', 'under_review', 'approved', 'rejected'].includes(application?.status);
+    const isLocked = deadlinePassed || ['under_review', 'approved', 'rejected'].includes(application?.status);
 
     const statusLabels = {
         draft: 'Draft', submitted: 'Submitted', under_review: 'Under Review',
@@ -322,9 +322,19 @@ export default function Form() {
                             <h3 className="text-lg font-semibold text-gray-900">
                                 University Education Scholarships – Application Form
                             </h3>
-                            {isLocked && (
+                            {deadlinePassed && (
+                                <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                                    The application deadline ({new Date(applicationDeadline + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}) has passed. This application is now read-only and can no longer be edited or submitted.
+                                </p>
+                            )}
+                            {!deadlinePassed && application?.status && ['under_review', 'approved', 'rejected'].includes(application.status) && (
                                 <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                                    This application is already submitted. You can review details but cannot edit fields.
+                                    This application is under review and can no longer be edited.
+                                </p>
+                            )}
+                            {!deadlinePassed && application?.status === 'submitted' && (
+                                <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                                    Your application has been submitted. You can still make changes and resubmit before the deadline.
                                 </p>
                             )}
                         </div>
@@ -413,7 +423,7 @@ export default function Form() {
                                         </PrimaryButton>
                                     ) : (
                                         <PrimaryButton type="submit" disabled={processing || isLocked}>
-                                            {processing ? 'Submitting...' : isLocked ? 'Already Submitted' : 'Submit Application'}
+                                            {processing ? 'Submitting...' : deadlinePassed ? 'Deadline Passed' : isLocked ? 'Under Review' : application?.status === 'submitted' ? 'Resubmit Application' : 'Submit Application'}
                                         </PrimaryButton>
                                     )}
                                 </div>

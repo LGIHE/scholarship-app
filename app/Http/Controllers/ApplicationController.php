@@ -25,9 +25,23 @@ class ApplicationController extends Controller
                 ->first();
         }
 
+        $deadline = \Carbon\Carbon::parse(config('scholarship.application_deadline'))->setTime(23, 59, 59);
+
         return Inertia::render('Application/Form', [
-            'application' => $application,
+            'application'      => $application,
+            'deadlinePassed'   => now()->greaterThan($deadline),
+            'applicationDeadline' => $deadline->toDateString(),
         ]);
+    }
+
+    /**
+     * Check whether the application deadline has passed.
+     * The deadline expires at 23:59:59 on the configured date.
+     */
+    private function isDeadlinePassed(): bool
+    {
+        $deadline = \Carbon\Carbon::parse(config('scholarship.application_deadline'))->setTime(23, 59, 59);
+        return now()->greaterThan($deadline);
     }
 
     /**
@@ -35,6 +49,12 @@ class ApplicationController extends Controller
      */
     public function draft(Request $request)
     {
+        if ($this->isDeadlinePassed()) {
+            return response()->json([
+                'message' => 'The application deadline has passed. No further edits are allowed.',
+            ], 403);
+        }
+
         // Parse JSON fields
         $personalInfo    = json_decode($request->input('personal_info', '{}'), true) ?? [];
         $disabilityInfo  = json_decode($request->input('disability_info', '{}'), true) ?? [];
@@ -44,9 +64,10 @@ class ApplicationController extends Controller
         $guardianInfo    = json_decode($request->input('guardian_info', '{}'), true) ?? [];
         $declarationInfo = json_decode($request->input('declaration_info', '{}'), true) ?? [];
 
-        // Find existing draft
+        // Find existing draft or submitted application (submitted can still be edited before deadline)
         $application = Application::where('user_id', $request->user()->id)
-            ->where('status', 'draft')
+            ->whereIn('status', ['draft', 'submitted'])
+            ->latest()
             ->first();
 
         // Preserve existing documents
@@ -77,19 +98,25 @@ class ApplicationController extends Controller
             }
         }
 
-        $application = Application::updateOrCreate(
-            ['user_id' => $request->user()->id, 'status' => 'draft'],
-            [
-                'personal_info'    => $personalInfo,
-                'disability_info'  => $disabilityInfo,
-                'dependants_info'  => $dependantsInfo,
-                'financial_info'   => $financialInfo,
-                'essay'            => $essay,
-                'guardian_info'    => $guardianInfo,
-                'declaration_info' => $declarationInfo,
-                'documents'        => $documentPaths,
-            ]
-        );
+        $updateData = [
+            'personal_info'    => $personalInfo,
+            'disability_info'  => $disabilityInfo,
+            'dependants_info'  => $dependantsInfo,
+            'financial_info'   => $financialInfo,
+            'essay'            => $essay,
+            'guardian_info'    => $guardianInfo,
+            'declaration_info' => $declarationInfo,
+            'documents'        => $documentPaths,
+        ];
+
+        if ($application) {
+            $application->update($updateData);
+        } else {
+            $application = Application::create(array_merge($updateData, [
+                'user_id' => $request->user()->id,
+                'status'  => 'draft',
+            ]));
+        }
 
         return response()->json(['message' => 'Draft saved successfully', 'application' => $application]);
     }
@@ -99,13 +126,20 @@ class ApplicationController extends Controller
      */
     public function submit(Request $request)
     {
+        if ($this->isDeadlinePassed()) {
+            return redirect()->route('portal')->withErrors([
+                'deadline' => 'The application deadline has passed. Submissions are no longer accepted.',
+            ]);
+        }
+
         \Illuminate\Support\Facades\Log::info('Application submission attempt', [
             'user_id' => $request->user()->id,
         ]);
 
-        // Get existing draft for previously uploaded documents
+        // Get existing draft or submitted application for previously uploaded documents
         $existingDraft = Application::where('user_id', $request->user()->id)
-            ->where('status', 'draft')
+            ->whereIn('status', ['draft', 'submitted'])
+            ->latest()
             ->first();
 
         $existingDocuments = $existingDraft ? ($existingDraft->documents ?? []) : [];
@@ -188,20 +222,26 @@ class ApplicationController extends Controller
             }
         }
 
-        $application = Application::updateOrCreate(
-            ['user_id' => $request->user()->id, 'status' => 'draft'],
-            [
-                'personal_info'    => $request->input('personal_info', []),
-                'disability_info'  => $request->input('disability_info', []),
-                'dependants_info'  => $request->input('dependants_info', []),
-                'financial_info'   => $request->input('financial_info', []),
-                'guardian_info'    => $request->input('guardian_info', []),
-                'declaration_info' => $request->input('declaration_info', []),
-                'essay'            => $request->input('essay', []),
-                'documents'        => $documentPaths,
-                'status'           => 'submitted',
-            ]
-        );
+        $submitData = [
+            'personal_info'    => $request->input('personal_info', []),
+            'disability_info'  => $request->input('disability_info', []),
+            'dependants_info'  => $request->input('dependants_info', []),
+            'financial_info'   => $request->input('financial_info', []),
+            'guardian_info'    => $request->input('guardian_info', []),
+            'declaration_info' => $request->input('declaration_info', []),
+            'essay'            => $request->input('essay', []),
+            'documents'        => $documentPaths,
+            'status'           => 'submitted',
+        ];
+
+        if ($existingDraft) {
+            $existingDraft->update($submitData);
+            $application = $existingDraft;
+        } else {
+            $application = Application::create(array_merge($submitData, [
+                'user_id' => $request->user()->id,
+            ]));
+        }
 
         $scoringService = new \App\Services\ScoringService();
         $scoringService->score($application);
