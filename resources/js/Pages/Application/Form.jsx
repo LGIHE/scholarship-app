@@ -129,11 +129,48 @@ export default function Form() {
             if (!data.personal_info.surname?.trim())            errs['personal_info.surname']            = 'Surname is required';
             if (!data.personal_info.other_names?.trim())        errs['personal_info.other_names']        = 'Other name(s) are required';
             if (!data.personal_info.date_of_birth?.trim())      errs['personal_info.date_of_birth']      = 'Date of birth is required';
+            if (!data.personal_info.nin?.trim())                errs['personal_info.nin']                = 'National Identification Number (NIN) is required';
             if (!data.personal_info.phone?.trim())              errs['personal_info.phone']              = 'Telephone number is required';
             if (!data.personal_info.marital_status)             errs['personal_info.marital_status']     = 'Marital status is required';
             if (!data.personal_info.is_ugandan)                 errs['personal_info.is_ugandan']         = 'Nationality is required';
             if (!data.personal_info.academic_programme?.trim()) errs['personal_info.academic_programme'] = 'Academic programme is required';
             if (!data.personal_info.institution?.trim())        errs['personal_info.institution']        = 'Institution is required';
+        } else if (step === 2) {
+            // Only required when applicant has indicated they have a disability
+            if (data.personal_info.has_disability === 'yes') {
+                const di = data.disability_info;
+                const disabilityTypes = [
+                    'difficulty_walking','difficulty_seeing','difficulty_hearing',
+                    'difficulty_communicating','difficulty_picking','difficulty_self_care','difficulty_emotions',
+                ];
+                const anyDisabilityTicked = disabilityTypes.some((f) => di[f]);
+                if (!anyDisabilityTicked) {
+                    errs['disability_info.disability_type'] = 'Please tick at least one form of disability (Q16)';
+                }
+                if (!di.functionality_level) {
+                    errs['disability_info.functionality_level'] = 'Functionality level is required (Q17)';
+                }
+            }
+        } else if (step === 3) {
+            const isMarried = ['Married', 'Cohabiting / living with a partner'].includes(data.personal_info.marital_status);
+            if (isMarried) {
+                const dep = data.dependants_info;
+                if (!dep.spouse_surname?.trim())         errs['dependants_info.spouse_surname']        = 'Spouse surname is required (19a)';
+                if (!dep.spouse_other_names?.trim())     errs['dependants_info.spouse_other_names']    = 'Spouse other name(s) are required (19a)';
+                if (!dep.spouse_education_level?.trim()) errs['dependants_info.spouse_education_level']= 'Spouse level of education is required (19a)';
+                if (!dep.spouse_occupation?.trim())      errs['dependants_info.spouse_occupation']     = 'Spouse occupation is required (19a)';
+                if (!dep.marriage_balance_plan?.trim())  errs['dependants_info.marriage_balance_plan'] = 'Marriage/school balance plan is required (19a)';
+            }
+            // Financial info always required on step 3
+            const fi = data.financial_info;
+            if (fi.household_income === '' || fi.household_income === null || fi.household_income === undefined) {
+                errs['financial_info.household_income']    = 'Estimated annual household income is required';
+            }
+            if (fi.number_of_dependents === '' || fi.number_of_dependents === null || fi.number_of_dependents === undefined) {
+                errs['financial_info.number_of_dependents'] = 'Number of dependents is required';
+            }
+            if (!fi.income_source?.trim()) errs['financial_info.income_source']          = 'Primary source of household income is required';
+            if (!fi.other_financial_support?.trim()) errs['financial_info.other_financial_support'] = 'Other financial support field is required (enter "None" if not applicable)';
         } else if (step === 4) {
             if (!data.essay.motivation?.trim() || countWords(data.essay.motivation) < 50) {
                 errs['essay.motivation'] = 'Motivation essay is required (minimum 50 words, target 250 words)';
@@ -163,19 +200,39 @@ export default function Form() {
         Object.keys(errors).forEach((key) => {
             if (key.startsWith('personal_info.') || key.startsWith('personal_info[')) steps.add(1);
             else if (key.startsWith('disability_info.'))                              steps.add(2);
-            else if (key.startsWith('dependants_info.'))                              steps.add(3);
+            else if (key.startsWith('dependants_info.') || key.startsWith('financial_info.')) steps.add(3);
+            else if (key.startsWith('essay.'))                                        steps.add(4);
+            else if (key.startsWith('documents.'))                                    steps.add(5);
+            else if (key.startsWith('guardian_info.') || key.startsWith('declaration_info.')) steps.add(6);
+        });
+        // Also include steps that have local stepErrors
+        Object.keys(stepErrors).forEach((key) => {
+            if (key.startsWith('personal_info.'))                                     steps.add(1);
+            else if (key.startsWith('disability_info.'))                              steps.add(2);
+            else if (key.startsWith('dependants_info.') || key.startsWith('financial_info.')) steps.add(3);
             else if (key.startsWith('essay.'))                                        steps.add(4);
             else if (key.startsWith('documents.'))                                    steps.add(5);
             else if (key.startsWith('guardian_info.') || key.startsWith('declaration_info.')) steps.add(6);
         });
         return steps;
-    }, [errors]);
+    }, [errors, stepErrors]);
 
     const getStepStatusColor = (stepId) => {
-        if (stepId === activeStep)           return 'border-emerald-500 bg-emerald-50';
-        if (stepsWithErrors.has(stepId))     return 'border-red-300 bg-red-50 hover:border-red-400';
-        if (isStepComplete(stepId))          return 'border-green-300 bg-green-50 hover:border-green-400';
-        return 'border-orange-300 bg-orange-50 hover:border-orange-400';
+        if (stepId === activeStep)       return 'border-emerald-500 bg-emerald-50';
+        if (stepsWithErrors.has(stepId)) return 'border-red-300 bg-red-50 hover:border-red-400';
+
+        // Step 2: orange if disability is flagged AND required fields are not yet complete
+        if (stepId === 2 && data.personal_info.has_disability === 'yes' && !isStepComplete(2)) {
+            return 'border-orange-400 bg-orange-50 hover:border-orange-500';
+        }
+
+        // Step 3: orange if married/cohabiting AND required fields are not yet complete
+        if (stepId === 3 && ['Married', 'Cohabiting / living with a partner'].includes(data.personal_info.marital_status) && !isStepComplete(3)) {
+            return 'border-orange-400 bg-orange-50 hover:border-orange-500';
+        }
+
+        if (isStepComplete(stepId)) return 'border-green-300 bg-green-50 hover:border-green-400';
+        return 'border-gray-300 bg-gray-50 hover:border-gray-400';
     };
 
     // ── Navigation ─────────────────────────────────────────────────────────────

@@ -1,9 +1,11 @@
+import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import { CheckboxField, RadioField } from './FormComponents';
 
-export default function StepSectionB2({ data, updateSection, isLocked }) {
+export default function StepSectionB2({ data, errors, stepErrors, updateSection, isLocked }) {
     const di = data.disability_info;
+    const hasDisability = data.personal_info.has_disability === 'yes';
 
     return (
         <div className="space-y-6">
@@ -16,16 +18,19 @@ export default function StepSectionB2({ data, updateSection, isLocked }) {
                 </p>
 
                 {/* Q16 – Disability types */}
-                <h5 className="font-semibold text-gray-700 mb-3">16. Specify the form of disability you have (Tick where applicable)</h5>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 mb-6">
+                <h5 className="font-semibold text-gray-700 mb-3">
+                    16. Specify the form of disability you have (Tick where applicable)
+                    {hasDisability && <span className="ml-1 text-red-500">*</span>}
+                </h5>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 mb-2">
                     {[
-                        ['difficulty_walking', 'Difficulty walking'],
-                        ['difficulty_seeing', 'Difficulty seeing'],
-                        ['difficulty_hearing', 'Difficulty hearing'],
-                        ['difficulty_communicating', 'Difficulty communicating'],
-                        ['difficulty_picking', 'Difficulty picking objects with hands'],
-                        ['difficulty_self_care', 'Difficulty self-care'],
-                        ['difficulty_emotions', 'Difficulty controlling emotions'],
+                        ['difficulty_walking',       'Difficulty walking'],
+                        ['difficulty_seeing',         'Difficulty seeing'],
+                        ['difficulty_hearing',        'Difficulty hearing'],
+                        ['difficulty_communicating',  'Difficulty communicating'],
+                        ['difficulty_picking',        'Difficulty picking objects with hands'],
+                        ['difficulty_self_care',      'Difficulty self-care'],
+                        ['difficulty_emotions',       'Difficulty controlling emotions'],
                     ].map(([field, label]) => (
                         <CheckboxField key={field} id={field} label={label}
                             checked={di[field]}
@@ -33,10 +38,18 @@ export default function StepSectionB2({ data, updateSection, isLocked }) {
                             disabled={isLocked} />
                     ))}
                 </div>
+                {hasDisability && (
+                    <InputError
+                        message={errors['disability_info.disability_type'] || stepErrors['disability_info.disability_type']}
+                        className="mb-4" />
+                )}
 
                 {/* Q17 – Functionality level */}
-                <h5 className="font-semibold text-gray-700 mb-3">17. Level of functionality based on difficulty ticked</h5>
-                <div className="flex flex-wrap gap-4 mb-6">
+                <h5 className="font-semibold text-gray-700 mb-3">
+                    17. Level of functionality based on difficulty ticked
+                    {hasDisability && <span className="ml-1 text-red-500">*</span>}
+                </h5>
+                <div className="flex flex-wrap gap-4 mb-2">
                     {['Some difficulty', 'A lot of difficulty', 'Cannot do at all'].map((level) => (
                         <RadioField key={level} name="functionality_level" value={level} label={level}
                             checked={di.functionality_level === level}
@@ -44,6 +57,11 @@ export default function StepSectionB2({ data, updateSection, isLocked }) {
                             disabled={isLocked} />
                     ))}
                 </div>
+                {hasDisability && (
+                    <InputError
+                        message={errors['disability_info.functionality_level'] || stepErrors['disability_info.functionality_level']}
+                        className="mb-4" />
+                )}
 
                 {/* Q18 – Family members with disability */}
                 <h5 className="font-semibold text-gray-700 mb-3">18. Indicate any other member of your family with disabilities</h5>

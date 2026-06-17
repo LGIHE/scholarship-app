@@ -49,14 +49,14 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                         <InputError message={errors['personal_info.date_of_birth'] || stepErrors['personal_info.date_of_birth']} className="mt-2" />
                     </div>
                     <div>
-                        <InputLabel htmlFor="nin" value="National Identification Number (NIN)" />
+                        <RequiredLabel htmlFor="nin" value="National Identification Number (NIN)" required />
                         <TextInput id="nin" className="mt-1 block w-full uppercase tracking-widest"
                             maxLength={14}
                             placeholder="e.g. CM9100012345ABCD"
                             value={pi.nin}
                             onChange={(e) => updateSection('personal_info', 'nin', e.target.value)}
-                            disabled={isLocked} />
-                        <InputError message={errors['personal_info.nin']} className="mt-2" />
+                            disabled={isLocked} required />
+                        <InputError message={errors['personal_info.nin'] || stepErrors['personal_info.nin']} className="mt-2" />
                     </div>
                 </div>
 

@@ -122,15 +122,25 @@ export default function StepSectionCD({ data, errors, stepErrors, updateSection,
             </div>
 
             {/* ── Declaration notice ─────────────────────────────────────── */}
-            <div className="rounded-md border border-gray-300 bg-gray-50 p-4 text-sm text-gray-700">
-                <p className="font-semibold mb-2">Declaration</p>
-                <p className="mb-2">
-                    It is important that your eligibility for student financial aid be based upon accurate information.
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">
+                <p className="font-bold text-base mb-3">DECLARATION</p>
+                <p className="mb-3 leading-relaxed">
+                    The accuracy of the information you provide is fundamental to a fair and transparent assessment of
+                    your eligibility for student financial aid. Please read the following declaration carefully before
+                    proceeding to the final review and submission of your application.
                 </p>
-                <p className="mb-2 italic">I do hereby declare that all the information given above is true.</p>
-                <p className="text-xs text-gray-500">
-                    <strong>Note:</strong> Misrepresentation in any material form renders the application null and void. Any award made based on misrepresentation shall be withdrawn or refunded by the applicant, and he/she may be prosecuted. The truth, rather than lies, will get you Financial Aid.
+                <p className="mb-3 leading-relaxed italic">
+                    I hereby solemnly declare that all information provided in this application is, to the best of my
+                    knowledge and belief, true, complete, and accurate in every material respect. I have not wilfully
+                    omitted, concealed, or misrepresented any fact relevant to this application.
                 </p>
+                <div className="rounded border border-amber-300 bg-amber-100 p-3 text-xs text-amber-800 leading-relaxed">
+                    <strong>Important Notice:</strong> Any deliberate misrepresentation, falsification, or omission of
+                    material information in this application shall render the application null and void. Any scholarship
+                    award made on the basis of such misrepresentation shall be immediately withdrawn and must be fully
+                    refunded by the applicant. The applicant may further be subject to disciplinary or legal proceedings.
+                    By submitting this application, you confirm your acceptance of this declaration in full.
+                </div>
             </div>
         </div>
     );

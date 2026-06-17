@@ -50,9 +50,48 @@ class ApplicationResource extends Resource
 
     public static function infolist(Infolist $infolist): Infolist
     {
-        $docLink = fn ($state) => $state
-            ? '<a href="'.asset('storage/'.$state).'" target="_blank" class="text-blue-600 hover:underline">View Document</a>'
-            : '<em class="text-gray-400">Not uploaded</em>';
+        $docEntry = function (string $field, string $label) {
+            return Infolists\Components\TextEntry::make("documents.{$field}")
+                ->label($label)
+                ->formatStateUsing(function ($state) use ($field) {
+                    if (!$state) {
+                        return '<em class="text-gray-400">Not uploaded</em>';
+                    }
+                    $url      = asset('storage/' . $state);
+                    $download = route('admin.documents.download', ['path' => base64_encode($state)]);
+                    $ext      = strtolower(pathinfo($state, PATHINFO_EXTENSION));
+
+                    // Encode each value as a JS string literal so the onclick attribute
+                    // remains valid HTML *and* the CustomEvent detail is a proper object.
+                    // Using json_encode per-value gives us correctly escaped JS strings
+                    // (e.g. backslashes, quotes) without needing htmlspecialchars on the
+                    // whole payload (which would turn " into &quot; and break the JS).
+                    $jsUrl   = json_encode($url);
+                    $jsExt   = json_encode($ext);
+                    $jsLabel = json_encode($field);
+
+                    return <<<HTML
+                        <span class="inline-flex items-center gap-2">
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
+                                onclick="window.dispatchEvent(new CustomEvent('open-document-viewer', { detail: { url: {$jsUrl}, ext: {$jsExt}, label: {$jsLabel} } }))"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                View
+                            </button>
+                            <a
+                                href="{$download}"
+                                class="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-800 hover:underline"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Download
+                            </a>
+                        </span>
+                    HTML;
+                })
+                ->html();
+        };
 
         return $infolist
             ->schema([
@@ -116,15 +155,10 @@ class ApplicationResource extends Resource
 
                 Infolists\Components\Section::make('Next of Kin')
                     ->schema([
-                        Infolists\Components\RepeatableEntry::make('personal_info.next_of_kin')
+                        Infolists\Components\ViewEntry::make('personal_info.next_of_kin')
                             ->label('')
-                            ->schema([
-                                Infolists\Components\TextEntry::make('name')->label('Name')->placeholder('Not provided'),
-                                Infolists\Components\TextEntry::make('relationship')->label('Relationship')->placeholder('Not provided'),
-                                Infolists\Components\TextEntry::make('telephone')->label('Telephone')->placeholder('Not provided'),
-                            ])
-                            ->columns(3)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->view('filament.infolists.next-of-kin-table'),
                     ])->collapsible(),
 
                 Infolists\Components\Section::make('Place of Birth / Origin / Residence')
@@ -159,43 +193,19 @@ class ApplicationResource extends Resource
 
                 Infolists\Components\Section::make('Schools Attended')
                     ->schema([
-                        Infolists\Components\TextEntry::make('personal_info.primary_school_name')->label('Primary School')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.primary_school_district')->label('Primary District/Country')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.primary_school_dates')->label('Primary Dates')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.primary_school_responsible')->label('Primary – Responsible Person')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.olevel_school_name')->label("O'Level School")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.olevel_school_district')->label("O'Level District/Country")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.olevel_school_dates')->label("O'Level Dates")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.olevel_school_responsible')->label("O'Level – Responsible Person")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.alevel_school_name')->label("A'Level School")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.alevel_school_district')->label("A'Level District/Country")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.alevel_school_dates')->label("A'Level Dates")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.alevel_school_responsible')->label("A'Level – Responsible Person")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.university_name')->label('University/Institution')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.university_district')->label('University District/Country')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.university_dates')->label('University Dates')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.university_responsible')->label('University – Responsible Person')->placeholder('Not provided'),
-                    ])->columns(4)->collapsible(),
+                        Infolists\Components\ViewEntry::make('personal_info')
+                            ->label('')
+                            ->columnSpanFull()
+                            ->view('filament.infolists.schools-attended-table'),
+                    ])->columns(1)->collapsible(),
 
                 Infolists\Components\Section::make('Mode of Admission to University')
                     ->schema([
-                        Infolists\Components\TextEntry::make('personal_info.alevel_school_exam')->label("A'Level School/Institution")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.alevel_year')->label("A'Level Year")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.alevel_index')->label("A'Level Index No.")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.alevel_points')->label("A'Level Points")->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.diploma_school')->label('Diploma School/Institution')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.diploma_year')->label('Diploma Year')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.diploma_index')->label('Diploma Index No.')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.diploma_cgpa')->label('Diploma CGPA')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.heac_school')->label('HEAC School/Institution')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.heac_year')->label('HEAC Year')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.heac_index')->label('HEAC Index No.')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.heac_points')->label('HEAC Points')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.mature_school')->label('Mature Entry School/Institution')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.mature_year')->label('Mature Entry Year')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.mature_index')->label('Mature Entry Index No.')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.mature_points')->label('Mature Entry Points')->placeholder('Not provided'),
-                    ])->columns(4)->collapsible(),
+                        Infolists\Components\ViewEntry::make('personal_info')
+                            ->label('')
+                            ->columnSpanFull()
+                            ->view('filament.infolists.admission-mode-table'),
+                    ])->columns(1)->collapsible(),
 
                 Infolists\Components\Section::make('Disability Information (Section B2)')
                     ->schema([
@@ -263,27 +273,13 @@ class ApplicationResource extends Resource
 
                 Infolists\Components\Section::make('Uploaded Documents')
                     ->schema([
-                        Infolists\Components\TextEntry::make('documents.exam_results')
-                            ->label('Examination Results')
-                            ->formatStateUsing($docLink)->html(),
-                        Infolists\Components\TextEntry::make('documents.national_id')
-                            ->label('National ID')
-                            ->formatStateUsing($docLink)->html(),
-                        Infolists\Components\TextEntry::make('documents.birth_certificate')
-                            ->label('Birth Certificate')
-                            ->formatStateUsing($docLink)->html(),
-                        Infolists\Components\TextEntry::make('documents.admission_letter')
-                            ->label('Admission Letter')
-                            ->formatStateUsing($docLink)->html(),
-                        Infolists\Components\TextEntry::make('documents.recommendation_lc1')
-                            ->label('Recommendation Letter (LC1)')
-                            ->formatStateUsing($docLink)->html(),
-                        Infolists\Components\TextEntry::make('documents.recommendation_school')
-                            ->label('Recommendation Letter (School)')
-                            ->formatStateUsing($docLink)->html(),
-                        Infolists\Components\TextEntry::make('documents.refugee_number')
-                            ->label('Refugee Number')
-                            ->formatStateUsing($docLink)->html(),
+                        $docEntry('exam_results',         'Examination Results'),
+                        $docEntry('national_id',          'National ID'),
+                        $docEntry('birth_certificate',    'Birth Certificate'),
+                        $docEntry('admission_letter',     'Admission Letter'),
+                        $docEntry('recommendation_lc1',   'Recommendation Letter (LC1)'),
+                        $docEntry('recommendation_school','Recommendation Letter (School)'),
+                        $docEntry('refugee_number',       'Refugee Number'),
                     ])->columns(2)->collapsible(),
 
                 Infolists\Components\Section::make('Financial Information (Section B5)')

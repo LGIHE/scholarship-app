@@ -78,6 +78,7 @@ Route::post('/contact', function (\Illuminate\Http\Request $request) {
 
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AcademicProgressController;
+use App\Http\Controllers\Admin\DocumentController;
 
 Route::get('/portal', function () {
     $application = auth()->user()->applications()->latest()->first();
@@ -105,3 +106,8 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureApplicantOrScholar::class]
 });
 
 require __DIR__.'/auth.php';
+
+// Admin document download (Filament admin panel — protected by Filament's own auth)
+Route::get('/admin/documents/download/{path}', [DocumentController::class, 'download'])
+    ->middleware(['auth'])
+    ->name('admin.documents.download');
