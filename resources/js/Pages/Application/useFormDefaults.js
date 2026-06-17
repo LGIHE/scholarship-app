@@ -73,6 +73,12 @@ export function useFormDefaults(auth, application) {
                 spouse_support: '',
                 non_financial_support_needed: '',
             },
+            financial_info: {
+                household_income: '',
+                number_of_dependents: '',
+                income_source: '',
+                other_financial_support: '',
+            },
             essay: {
                 motivation: '',
             },
@@ -109,6 +115,7 @@ export function useFormDefaults(auth, application) {
             personal_info:    { ...defaults.personal_info,    ...(application?.personal_info    || {}) },
             disability_info:  { ...defaults.disability_info,  ...(application?.disability_info  || {}) },
             dependants_info:  { ...defaults.dependants_info,  ...(application?.dependants_info  || {}) },
+            financial_info:   { ...defaults.financial_info,   ...(application?.financial_info   || {}) },
             essay:            { ...defaults.essay,            ...(application?.essay            || {}) },
             guardian_info:    { ...defaults.guardian_info,    ...(application?.guardian_info    || {}) },
             declaration_info: { ...defaults.declaration_info, ...(application?.declaration_info || {}) },

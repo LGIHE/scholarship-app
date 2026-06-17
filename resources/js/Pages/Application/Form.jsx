@@ -85,6 +85,7 @@ export default function Form() {
             formData.append('personal_info',    JSON.stringify(data.personal_info));
             formData.append('disability_info',  JSON.stringify(data.disability_info));
             formData.append('dependants_info',  JSON.stringify(data.dependants_info));
+            formData.append('financial_info',   JSON.stringify(data.financial_info));
             formData.append('essay',            JSON.stringify(data.essay));
             formData.append('guardian_info',    JSON.stringify(data.guardian_info));
             formData.append('declaration_info', JSON.stringify(data.declaration_info));
@@ -115,7 +116,7 @@ export default function Form() {
         const timer = setTimeout(() => { void saveDraft('Draft auto-saved.'); }, 1200);
         return () => clearTimeout(timer);
     }, [
-        data.essay, data.disability_info, data.dependants_info,
+        data.essay, data.disability_info, data.dependants_info, data.financial_info,
         data.guardian_info, data.personal_info, data.declaration_info,
         data.documents, isLocked,
     ]);

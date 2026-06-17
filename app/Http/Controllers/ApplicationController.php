@@ -39,6 +39,7 @@ class ApplicationController extends Controller
         $personalInfo    = json_decode($request->input('personal_info', '{}'), true) ?? [];
         $disabilityInfo  = json_decode($request->input('disability_info', '{}'), true) ?? [];
         $dependantsInfo  = json_decode($request->input('dependants_info', '{}'), true) ?? [];
+        $financialInfo   = json_decode($request->input('financial_info', '{}'), true) ?? [];
         $essay           = json_decode($request->input('essay', '{}'), true) ?? [];
         $guardianInfo    = json_decode($request->input('guardian_info', '{}'), true) ?? [];
         $declarationInfo = json_decode($request->input('declaration_info', '{}'), true) ?? [];
@@ -82,6 +83,7 @@ class ApplicationController extends Controller
                 'personal_info'    => $personalInfo,
                 'disability_info'  => $disabilityInfo,
                 'dependants_info'  => $dependantsInfo,
+                'financial_info'   => $financialInfo,
                 'essay'            => $essay,
                 'guardian_info'    => $guardianInfo,
                 'declaration_info' => $declarationInfo,
@@ -190,6 +192,7 @@ class ApplicationController extends Controller
                 'personal_info'    => $request->input('personal_info', []),
                 'disability_info'  => $request->input('disability_info', []),
                 'dependants_info'  => $request->input('dependants_info', []),
+                'financial_info'   => $request->input('financial_info', []),
                 'guardian_info'    => $request->input('guardian_info', []),
                 'declaration_info' => $request->input('declaration_info', []),
                 'essay'            => $request->input('essay', []),

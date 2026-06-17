@@ -3,6 +3,7 @@ import TextInput from '@/Components/TextInput';
 
 export default function StepSectionB3({ data, updateSection, isLocked }) {
     const dep = data.dependants_info;
+    const fi  = data.financial_info;
 
     return (
         <div className="space-y-6">
@@ -107,6 +108,53 @@ export default function StepSectionB3({ data, updateSection, isLocked }) {
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
                             value={dep.non_financial_support_needed}
                             onChange={(e) => updateSection('dependants_info', 'non_financial_support_needed', e.target.value)}
+                            disabled={isLocked} />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Financial Information (Section B5) ───────────────────── */}
+            <div className="rounded-md border border-gray-200 p-4">
+                <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
+                    Financial Information (Section B5)
+                </h4>
+                <p className="text-xs text-gray-500 mb-4 italic">
+                    This information is used to assess financial need. All figures should be in Uganda Shillings (UGX) per year.
+                </p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <InputLabel htmlFor="household_income"
+                            value="Estimated Annual Household Income (UGX)" />
+                        <TextInput id="household_income" type="number" min="0" className="mt-1 block w-full"
+                            placeholder="e.g. 3600000"
+                            value={fi.household_income}
+                            onChange={(e) => updateSection('financial_info', 'household_income', e.target.value)}
+                            disabled={isLocked} />
+                    </div>
+                    <div>
+                        <InputLabel htmlFor="number_of_dependents"
+                            value="Total Number of People Dependent on this Income" />
+                        <TextInput id="number_of_dependents" type="number" min="0" className="mt-1 block w-full"
+                            placeholder="e.g. 5"
+                            value={fi.number_of_dependents}
+                            onChange={(e) => updateSection('financial_info', 'number_of_dependents', e.target.value)}
+                            disabled={isLocked} />
+                    </div>
+                    <div>
+                        <InputLabel htmlFor="income_source" value="Primary Source of Household Income" />
+                        <TextInput id="income_source" className="mt-1 block w-full"
+                            placeholder="e.g. Farming, Business, Employment"
+                            value={fi.income_source}
+                            onChange={(e) => updateSection('financial_info', 'income_source', e.target.value)}
+                            disabled={isLocked} />
+                    </div>
+                    <div>
+                        <InputLabel htmlFor="other_financial_support"
+                            value="Any Other Source of Financial Support for Your Studies?" />
+                        <TextInput id="other_financial_support" className="mt-1 block w-full"
+                            placeholder="e.g. NCHE bursary, Church sponsorship, None"
+                            value={fi.other_financial_support}
+                            onChange={(e) => updateSection('financial_info', 'other_financial_support', e.target.value)}
                             disabled={isLocked} />
                     </div>
                 </div>

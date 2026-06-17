@@ -6,7 +6,9 @@ function countWords(text) {
 
 export default function StepReview({ data }) {
     const pi   = data.personal_info;
+    const fi   = data.financial_info;
     const gi   = data.guardian_info;
+    const decl = data.declaration_info;
     const docs = data.documents;
 
     return (
@@ -62,6 +64,17 @@ export default function StepReview({ data }) {
                 <p className="mt-1 text-xs text-gray-500">Word count: {countWords(data.essay.motivation)}</p>
             </div>
 
+            {/* Financial Information */}
+            <div className="rounded-md border border-gray-200 p-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Financial Information</h4>
+                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-700">
+                    <SummaryItem label="Household Income (UGX/year)" value={fi?.household_income} />
+                    <SummaryItem label="Number of Dependents" value={fi?.number_of_dependents} />
+                    <SummaryItem label="Primary Income Source" value={fi?.income_source} />
+                    <SummaryItem label="Other Financial Support" value={fi?.other_financial_support} />
+                </dl>
+            </div>
+
             {/* Documents */}
             <div className="rounded-md border border-gray-200 p-4">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3">Uploaded Documents</h4>
@@ -100,6 +113,20 @@ export default function StepReview({ data }) {
                     <SummaryItem label="Relationship" value={gi.guardian_relation} />
                 </dl>
             </div>
+
+            {/* Criminal Declaration */}
+            {decl?.criminal_offence && (
+                <div className="rounded-md border border-gray-200 p-4">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Criminal Offence Declaration</h4>
+                    <dl className="grid grid-cols-1 gap-y-3 text-sm text-gray-700">
+                        <SummaryItem label="Ever charged/convicted of a criminal offence?"
+                            value={decl.criminal_offence === 'yes' ? 'Yes' : 'No'} />
+                        {decl.criminal_offence === 'yes' && (
+                            <SummaryItem label="Details" value={decl.criminal_details} />
+                        )}
+                    </dl>
+                </div>
+            )}
 
             {/* Final declaration */}
             <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
