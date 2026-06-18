@@ -61,21 +61,23 @@ class ApplicationResource extends Resource
                     $download = route('admin.documents.download', ['path' => base64_encode($state)]);
                     $ext      = strtolower(pathinfo($state, PATHINFO_EXTENSION));
 
-                    // Encode each value as a JS string literal so the onclick attribute
-                    // remains valid HTML *and* the CustomEvent detail is a proper object.
-                    // Using json_encode per-value gives us correctly escaped JS strings
-                    // (e.g. backslashes, quotes) without needing htmlspecialchars on the
-                    // whole payload (which would turn " into &quot; and break the JS).
-                    $jsUrl   = json_encode($url);
-                    $jsExt   = json_encode($ext);
-                    $jsLabel = json_encode($field);
+                    // Pass data via HTML attributes so Livewire DOM morphing cannot
+                    // strip or encode them. Alpine's x-on:click is preserved by
+                    // Livewire whereas plain onclick attributes are sanitized away.
+                    $attrUrl   = htmlspecialchars($url,   ENT_QUOTES, 'UTF-8');
+                    $attrExt   = htmlspecialchars($ext,   ENT_QUOTES, 'UTF-8');
+                    $attrLabel = htmlspecialchars($field, ENT_QUOTES, 'UTF-8');
 
                     return <<<HTML
                         <span class="inline-flex items-center gap-2">
                             <button
                                 type="button"
+                                x-data
+                                data-url="{$attrUrl}"
+                                data-ext="{$attrExt}"
+                                data-label="{$attrLabel}"
+                                x-on:click="\$dispatch('open-document-viewer', { url: \$el.dataset.url, ext: \$el.dataset.ext, label: \$el.dataset.label })"
                                 class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
-                                onclick="window.dispatchEvent(new CustomEvent('open-document-viewer', { detail: { url: {$jsUrl}, ext: {$jsExt}, label: {$jsLabel} } }))"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 View
