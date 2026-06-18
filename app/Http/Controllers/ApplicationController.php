@@ -144,13 +144,21 @@ class ApplicationController extends Controller
 
         $existingDocuments = $existingDraft ? ($existingDraft->documents ?? []) : [];
 
+        // Determine nationality for conditional validation
+        $isUgandan = $request->input('personal_info.is_ugandan') === 'yes';
+
         // Build validation rules
         $validationRules = [
             'personal_info'                     => 'required|array',
             'personal_info.surname'             => 'required|string|max:255',
             'personal_info.other_names'         => 'required|string|max:255',
             'personal_info.date_of_birth'       => 'required|date',
-            'personal_info.nin'                 => 'required|string|max:14',
+            // NIN required only for Ugandans; non-Ugandans must supply at least one alternative ID
+            'personal_info.nin'                 => $isUgandan ? 'required|string|min:4|max:14' : 'nullable|string|max:14',
+            'personal_info.passport_number'     => !$isUgandan ? 'nullable|string|max:50' : 'nullable',
+            'personal_info.foreign_id_number'   => !$isUgandan ? 'nullable|string|max:100' : 'nullable',
+            'personal_info.refugee_card_number' => !$isUgandan ? 'nullable|string|max:100' : 'nullable',
+            'personal_info.non_ugandan_explanation' => !$isUgandan ? 'nullable|string|max:500' : 'nullable',
             'personal_info.phone'               => 'required|string|max:30',
             'personal_info.marital_status'      => 'required|string|max:100',
             'personal_info.is_ugandan'          => 'required|string|in:yes,no',
@@ -163,6 +171,18 @@ class ApplicationController extends Controller
             'essay'                             => 'required|array',
             'essay.motivation'                  => 'required|string|min:50',
         ];
+
+        // Non-Ugandans must supply at least one form of ID
+        if (!$isUgandan) {
+            $hasId = $request->filled('personal_info.passport_number')
+                || $request->filled('personal_info.foreign_id_number')
+                || $request->filled('personal_info.refugee_card_number');
+            if (!$hasId) {
+                return redirect()->back()->withErrors([
+                    'personal_info.passport_number' => 'Please provide at least one identification document (Passport, National ID, or Refugee Card).',
+                ])->withInput();
+            }
+        }
 
         // Required documents: only validate if not already uploaded
         if ($request->hasFile('documents.exam_results') || ! isset($existingDocuments['exam_results'])) {
@@ -184,6 +204,9 @@ class ApplicationController extends Controller
             'personal_info.other_names'        => 'other name(s)',
             'personal_info.date_of_birth'      => 'date of birth',
             'personal_info.nin'                => 'National Identification Number (NIN)',
+            'personal_info.passport_number'    => 'passport number',
+            'personal_info.foreign_id_number'  => 'national ID number',
+            'personal_info.refugee_card_number'=> 'refugee card number',
             'personal_info.phone'              => 'telephone number',
             'personal_info.marital_status'     => 'marital status',
             'personal_info.is_ugandan'         => 'Ugandan nationality',

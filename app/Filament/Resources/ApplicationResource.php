@@ -131,8 +131,6 @@ class ApplicationResource extends Resource
                             ->label('Other Name(s)')->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('personal_info.date_of_birth')
                             ->label('Date of Birth')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('personal_info.nin')
-                            ->label('NIN')->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('personal_info.phone')
                             ->label('Telephone')->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('personal_info.email')
@@ -144,8 +142,26 @@ class ApplicationResource extends Resource
                             ->formatStateUsing(fn ($state) => $state === 'yes' ? 'Yes' : ($state === 'no' ? 'No' : 'Not specified'))
                             ->badge()
                             ->color(fn ($state) => $state === 'yes' ? 'success' : 'warning'),
+                        Infolists\Components\TextEntry::make('personal_info.nin')
+                            ->label('NIN')
+                            ->placeholder('N/A')
+                            ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'yes'),
+                        Infolists\Components\TextEntry::make('personal_info.passport_number')
+                            ->label('Passport Number')
+                            ->placeholder('Not provided')
+                            ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'no'),
+                        Infolists\Components\TextEntry::make('personal_info.foreign_id_number')
+                            ->label('National ID No. (Country of Origin)')
+                            ->placeholder('Not provided')
+                            ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'no'),
+                        Infolists\Components\TextEntry::make('personal_info.refugee_card_number')
+                            ->label('Refugee Card Number')
+                            ->placeholder('Not provided')
+                            ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'no'),
                         Infolists\Components\TextEntry::make('personal_info.non_ugandan_explanation')
-                            ->label('Non-Ugandan Explanation')->placeholder('N/A'),
+                            ->label('Nationality / Explanation')
+                            ->placeholder('N/A')
+                            ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'no'),
                         Infolists\Components\TextEntry::make('personal_info.has_disability')
                             ->label('Has Disability')
                             ->formatStateUsing(fn ($state) => $state === 'yes' ? 'Yes' : ($state === 'no' ? 'No' : 'Not specified'))

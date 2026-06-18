@@ -48,16 +48,6 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                             disabled={isLocked} required />
                         <InputError message={errors['personal_info.date_of_birth'] || stepErrors['personal_info.date_of_birth']} className="mt-2" />
                     </div>
-                    <div>
-                        <RequiredLabel htmlFor="nin" value="National Identification Number (NIN)" required />
-                        <TextInput id="nin" className="mt-1 block w-full uppercase tracking-widest"
-                            maxLength={14}
-                            placeholder="e.g. CM9100012345ABCD"
-                            value={pi.nin}
-                            onChange={(e) => updateSection('personal_info', 'nin', e.target.value)}
-                            disabled={isLocked} required />
-                        <InputError message={errors['personal_info.nin'] || stepErrors['personal_info.nin']} className="mt-2" />
-                    </div>
                 </div>
 
                 {/* ── 3. Disability (yes/no) ────────────────────────────── */}
@@ -180,14 +170,63 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                         </div>
                         <InputError message={errors['personal_info.is_ugandan'] || stepErrors['personal_info.is_ugandan']} className="mt-2" />
                     </div>
-                    {pi.is_ugandan === 'no' && (
+                    {/* NIN — shown only for Ugandans */}
+                    {pi.is_ugandan === 'yes' && (
                         <div className="mb-4">
-                            <InputLabel htmlFor="non_ugandan_explanation" value="If NO, explain:" />
-                            <textarea rows={2}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
-                                value={pi.non_ugandan_explanation}
-                                onChange={(e) => updateSection('personal_info', 'non_ugandan_explanation', e.target.value)}
-                                disabled={isLocked} />
+                            <RequiredLabel htmlFor="nin" value="National Identification Number (NIN)" required />
+                            <TextInput id="nin" className="mt-1 block w-full uppercase tracking-widest"
+                                minLength={4}
+                                maxLength={14}
+                                placeholder="e.g. CM9100012345ABCD"
+                                value={pi.nin || ''}
+                                onChange={(e) => updateSection('personal_info', 'nin', e.target.value)}
+                                disabled={isLocked} required />
+                            <InputError message={errors['personal_info.nin'] || stepErrors['personal_info.nin']} className="mt-2" />
+                        </div>
+                    )}
+
+                    {/* Non-Ugandan identification — shown only when NOT Ugandan */}
+                    {pi.is_ugandan === 'no' && (
+                        <div className="mb-4 space-y-4">
+                            <p className="text-sm text-gray-600 italic">
+                                Please provide at least one of the following identification details:
+                            </p>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <InputLabel htmlFor="passport_number" value="Passport Number" />
+                                    <TextInput id="passport_number" className="mt-1 block w-full uppercase tracking-widest"
+                                        placeholder="e.g. A12345678"
+                                        value={pi.passport_number || ''}
+                                        onChange={(e) => updateSection('personal_info', 'passport_number', e.target.value)}
+                                        disabled={isLocked} />
+                                    <InputError message={errors['personal_info.passport_number'] || stepErrors['personal_info.passport_number']} className="mt-2" />
+                                </div>
+                                <div>
+                                    <InputLabel htmlFor="foreign_id_number" value="National ID No. (from country of origin)" />
+                                    <TextInput id="foreign_id_number" className="mt-1 block w-full uppercase tracking-widest"
+                                        value={pi.foreign_id_number || ''}
+                                        onChange={(e) => updateSection('personal_info', 'foreign_id_number', e.target.value)}
+                                        disabled={isLocked} />
+                                    <InputError message={errors['personal_info.foreign_id_number'] || stepErrors['personal_info.foreign_id_number']} className="mt-2" />
+                                </div>
+                                <div>
+                                    <InputLabel htmlFor="refugee_card_number" value="Refugee Card Number" />
+                                    <TextInput id="refugee_card_number" className="mt-1 block w-full uppercase tracking-widest"
+                                        placeholder="e.g. UGA/2023/123456"
+                                        value={pi.refugee_card_number || ''}
+                                        onChange={(e) => updateSection('personal_info', 'refugee_card_number', e.target.value)}
+                                        disabled={isLocked} />
+                                    <InputError message={errors['personal_info.refugee_card_number'] || stepErrors['personal_info.refugee_card_number']} className="mt-2" />
+                                </div>
+                                <div>
+                                    <InputLabel htmlFor="non_ugandan_explanation" value="Nationality / Explanation" />
+                                    <TextInput id="non_ugandan_explanation" className="mt-1 block w-full"
+                                        placeholder="e.g. Kenyan national, student visa"
+                                        value={pi.non_ugandan_explanation || ''}
+                                        onChange={(e) => updateSection('personal_info', 'non_ugandan_explanation', e.target.value)}
+                                        disabled={isLocked} />
+                                </div>
+                            </div>
                         </div>
                     )}
 
