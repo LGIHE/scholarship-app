@@ -30,7 +30,7 @@ return [
     | your mailers below. You may also add additional mailers if needed.
     |
     | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
-    |            "postmark", "resend", "log", "array",
+    |            "postmark", "log", "array",
     |            "failover", "roundrobin"
     |
     */
@@ -61,8 +61,15 @@ return [
             // ],
         ],
 
-        'resend' => [
-            'transport' => 'resend',
+        'azure' => [
+            'transport' => 'smtp',
+            'host' => env('MAIL_HOST', 'smtp.azurecomm.net'),
+            'port' => env('MAIL_PORT', 587),
+            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'username' => env('MAIL_USERNAME'),
+            'password' => env('MAIL_PASSWORD'),
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
         'sendmail' => [
