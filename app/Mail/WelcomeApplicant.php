@@ -34,7 +34,7 @@ class WelcomeApplicant extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to Luigi Giussani Foundation - Verify Your Email',
+            subject: 'Welcome to LIT-Uganda - Verify Your Email',
         );
     }
 

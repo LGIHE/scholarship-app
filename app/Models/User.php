@@ -81,4 +81,14 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     {
         return $this->hasAnyRole(['System Admin', 'Committee Member']);
     }
+
+    /**
+     * Override to suppress the default verification email.
+     * The WelcomeApplicant mailable (sent by SendWelcomeEmail listener)
+     * already includes the verification link, so no separate email is needed.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        // Intentionally empty — verification link is included in the welcome email.
+    }
 }
