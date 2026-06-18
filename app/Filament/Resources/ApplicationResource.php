@@ -142,25 +142,30 @@ class ApplicationResource extends Resource
                             ->formatStateUsing(fn ($state) => $state === 'yes' ? 'Yes' : ($state === 'no' ? 'No' : 'Not specified'))
                             ->badge()
                             ->color(fn ($state) => $state === 'yes' ? 'success' : 'warning'),
-                        Infolists\Components\TextEntry::make('personal_info.nin')
-                            ->label('NIN')
-                            ->placeholder('N/A')
+
+                        // Ugandan — NIN only
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('personal_info.nin')
+                                ->label('National Identification Number (NIN)')
+                                ->placeholder('Not provided'),
+                        ])
                             ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'yes'),
-                        Infolists\Components\TextEntry::make('personal_info.passport_number')
-                            ->label('Passport Number')
-                            ->placeholder('Not provided')
-                            ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'no'),
-                        Infolists\Components\TextEntry::make('personal_info.foreign_id_number')
-                            ->label('National ID No. (Country of Origin)')
-                            ->placeholder('Not provided')
-                            ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'no'),
-                        Infolists\Components\TextEntry::make('personal_info.refugee_card_number')
-                            ->label('Refugee Card Number')
-                            ->placeholder('Not provided')
-                            ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'no'),
-                        Infolists\Components\TextEntry::make('personal_info.non_ugandan_explanation')
-                            ->label('Nationality / Explanation')
-                            ->placeholder('N/A')
+
+                        // Non-Ugandan — alternative ID fields
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('personal_info.passport_number')
+                                ->label('Passport Number')
+                                ->placeholder('Not provided'),
+                            Infolists\Components\TextEntry::make('personal_info.foreign_id_number')
+                                ->label('National ID No. (Country of Origin)')
+                                ->placeholder('Not provided'),
+                            Infolists\Components\TextEntry::make('personal_info.refugee_card_number')
+                                ->label('Refugee Card Number')
+                                ->placeholder('Not provided'),
+                            Infolists\Components\TextEntry::make('personal_info.non_ugandan_explanation')
+                                ->label('Nationality / Explanation')
+                                ->placeholder('Not provided'),
+                        ])
                             ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'no'),
                         Infolists\Components\TextEntry::make('personal_info.has_disability')
                             ->label('Has Disability')
