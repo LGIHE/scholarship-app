@@ -68,7 +68,7 @@ export default function StepReview({ data }) {
                         value={pi.is_ugandan === 'yes' ? 'Yes' : pi.is_ugandan === 'no' ? 'No' : null}
                     />
                     {pi.is_ugandan === 'no' && (
-                        <SummaryItem label="Nationality Explanation" value={pi.non_ugandan_explanation} />
+                        <SummaryItem label="Nationality" value={pi.non_ugandan_explanation} />
                     )}
                 </dl>
 

@@ -163,7 +163,7 @@ class ApplicationResource extends Resource
                                 ->label('Refugee Card Number')
                                 ->placeholder('Not provided'),
                             Infolists\Components\TextEntry::make('personal_info.non_ugandan_explanation')
-                                ->label('Nationality / Explanation')
+                                ->label('Nationality')
                                 ->placeholder('Not provided'),
                         ])
                             ->visible(fn ($record) => ($record->personal_info['is_ugandan'] ?? null) === 'no'),
@@ -353,6 +353,33 @@ class ApplicationResource extends Resource
                               ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%"));
                         });
                     }),
+                Tables\Columns\TextColumn::make('nationality')
+                    ->label('Nationality')
+                    ->getStateUsing(function ($record): string {
+                        $info = $record->personal_info ?? [];
+                        if (($info['is_ugandan'] ?? null) === 'yes') return 'Ugandan';
+                        if (!empty($info['non_ugandan_explanation'])) return $info['non_ugandan_explanation'];
+                        if (($info['is_ugandan'] ?? null) === 'no') return 'Non-Ugandan';
+                        return '—';
+                    })
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'Ugandan' ? 'success' : ($state === '—' ? 'gray' : 'warning')),
+                Tables\Columns\TextColumn::make('age')
+                    ->label('Age')
+                    ->getStateUsing(function ($record): string {
+                        $dob = $record->personal_info['date_of_birth'] ?? null;
+                        if (!$dob) return '—';
+                        try { return (string) \Carbon\Carbon::parse($dob)->age; }
+                        catch (\Exception) { return '—'; }
+                    }),
+                Tables\Columns\IconColumn::make('disability')
+                    ->label('Disability')
+                    ->getStateUsing(fn ($record): bool => ($record->personal_info['has_disability'] ?? null) === 'yes')
+                    ->boolean()
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-minus-circle'),
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'primary' => 'submitted',

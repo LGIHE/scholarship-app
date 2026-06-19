@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import { RequiredLabel, RadioField } from './FormComponents';
+import COUNTRIES from '@/data/countries';
 
 export default function StepSectionA({ data, errors, stepErrors, updateSection, updateNextOfKin, isLocked }) {
     const pi = data.personal_info;
@@ -219,12 +220,21 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                                     <InputError message={errors['personal_info.refugee_card_number'] || stepErrors['personal_info.refugee_card_number']} className="mt-2" />
                                 </div>
                                 <div>
-                                    <InputLabel htmlFor="non_ugandan_explanation" value="Nationality / Explanation" />
-                                    <TextInput id="non_ugandan_explanation" className="mt-1 block w-full"
-                                        placeholder="e.g. Kenyan national, student visa"
+                                    <RequiredLabel htmlFor="non_ugandan_explanation" value="Nationality" required />
+                                    <select
+                                        id="non_ugandan_explanation"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                                         value={pi.non_ugandan_explanation || ''}
                                         onChange={(e) => updateSection('personal_info', 'non_ugandan_explanation', e.target.value)}
-                                        disabled={isLocked} />
+                                        disabled={isLocked}
+                                        required
+                                    >
+                                        <option value="">— Select nationality —</option>
+                                        {COUNTRIES.map((country) => (
+                                            <option key={country} value={country}>{country}</option>
+                                        ))}
+                                    </select>
+                                    <InputError message={errors['personal_info.non_ugandan_explanation'] || stepErrors['personal_info.non_ugandan_explanation']} className="mt-2" />
                                 </div>
                             </div>
                         </div>

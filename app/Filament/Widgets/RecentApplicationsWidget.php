@@ -27,13 +27,40 @@ class RecentApplicationsWidget extends BaseWidget
                     ->limit(5)
             )
             ->columns([
-                Tables\Columns\TextColumn::make('user.name')
+                Tables\Columns\TextColumn::make('applicant_full_name')
                     ->label('Applicant')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('personal_info.first_name')
-                    ->label('First Name'),
-                Tables\Columns\TextColumn::make('personal_info.last_name')
-                    ->label('Last Name'),
+                    ->getStateUsing(fn ($record): string => trim(
+                        ($record->personal_info['surname'] ?? '')
+                        . ' ' .
+                        ($record->personal_info['other_names'] ?? '')
+                    ) ?: ($record->user->name ?? '—')),
+                Tables\Columns\TextColumn::make('nationality')
+                    ->label('Nationality')
+                    ->getStateUsing(function ($record): string {
+                        $info = $record->personal_info ?? [];
+                        if (($info['is_ugandan'] ?? null) === 'yes') return 'Ugandan';
+                        if (!empty($info['non_ugandan_explanation'])) return $info['non_ugandan_explanation'];
+                        if (($info['is_ugandan'] ?? null) === 'no') return 'Non-Ugandan';
+                        return '—';
+                    })
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'Ugandan' ? 'success' : ($state === '—' ? 'gray' : 'warning')),
+                Tables\Columns\TextColumn::make('age')
+                    ->label('Age')
+                    ->getStateUsing(function ($record): string {
+                        $dob = $record->personal_info['date_of_birth'] ?? null;
+                        if (!$dob) return '—';
+                        try { return (string) \Carbon\Carbon::parse($dob)->age; }
+                        catch (\Exception) { return '—'; }
+                    }),
+                Tables\Columns\IconColumn::make('disability')
+                    ->label('Disability')
+                    ->getStateUsing(fn ($record): bool => ($record->personal_info['has_disability'] ?? null) === 'yes')
+                    ->boolean()
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-minus-circle'),
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'primary' => 'submitted',
@@ -42,15 +69,6 @@ class RecentApplicationsWidget extends BaseWidget
                         'danger' => 'rejected',
                         'secondary' => 'draft',
                     ]),
-                Tables\Columns\TextColumn::make('scoring_breakdown.total')
-                    ->label('Score')
-                    ->badge()
-                    ->color(fn ($state): string => match (true) {
-                        $state >= 80 => 'success',
-                        $state >= 60 => 'warning',
-                        $state < 60 => 'danger',
-                        default => 'secondary',
-                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Submitted')
                     ->dateTime()
