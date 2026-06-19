@@ -189,8 +189,11 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                     {/* Non-Ugandan identification — shown only when NOT Ugandan */}
                     {pi.is_ugandan === 'no' && (
                         <div className="mb-4 space-y-4">
+                            <p className="text-sm text-gray-600 italic">
+                                Please provide at least one of the following identification details:
+                            </p>
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div className="md:col-span-2">
+                                <div>
                                     <RequiredLabel htmlFor="non_ugandan_explanation" value="Nationality" required />
                                     <select
                                         id="non_ugandan_explanation"
@@ -207,11 +210,6 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                                     </select>
                                     <InputError message={errors['personal_info.non_ugandan_explanation'] || stepErrors['personal_info.non_ugandan_explanation']} className="mt-2" />
                                 </div>
-                            </div>
-                            <p className="text-sm text-gray-600 italic">
-                                Please provide at least one of the following identification details:
-                            </p>
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <InputLabel htmlFor="passport_number" value="Passport Number" />
                                     <TextInput id="passport_number" className="mt-1 block w-full uppercase tracking-widest"
