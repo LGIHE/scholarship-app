@@ -189,6 +189,25 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                     {/* Non-Ugandan identification — shown only when NOT Ugandan */}
                     {pi.is_ugandan === 'no' && (
                         <div className="mb-4 space-y-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div className="md:col-span-2">
+                                    <RequiredLabel htmlFor="non_ugandan_explanation" value="Nationality" required />
+                                    <select
+                                        id="non_ugandan_explanation"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                        value={pi.non_ugandan_explanation || ''}
+                                        onChange={(e) => updateSection('personal_info', 'non_ugandan_explanation', e.target.value)}
+                                        disabled={isLocked}
+                                        required
+                                    >
+                                        <option value="">— Select nationality —</option>
+                                        {COUNTRIES.map((country) => (
+                                            <option key={country} value={country}>{country}</option>
+                                        ))}
+                                    </select>
+                                    <InputError message={errors['personal_info.non_ugandan_explanation'] || stepErrors['personal_info.non_ugandan_explanation']} className="mt-2" />
+                                </div>
+                            </div>
                             <p className="text-sm text-gray-600 italic">
                                 Please provide at least one of the following identification details:
                             </p>
@@ -218,23 +237,6 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                                         onChange={(e) => updateSection('personal_info', 'refugee_card_number', e.target.value)}
                                         disabled={isLocked} />
                                     <InputError message={errors['personal_info.refugee_card_number'] || stepErrors['personal_info.refugee_card_number']} className="mt-2" />
-                                </div>
-                                <div>
-                                    <RequiredLabel htmlFor="non_ugandan_explanation" value="Nationality" required />
-                                    <select
-                                        id="non_ugandan_explanation"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                        value={pi.non_ugandan_explanation || ''}
-                                        onChange={(e) => updateSection('personal_info', 'non_ugandan_explanation', e.target.value)}
-                                        disabled={isLocked}
-                                        required
-                                    >
-                                        <option value="">— Select nationality —</option>
-                                        {COUNTRIES.map((country) => (
-                                            <option key={country} value={country}>{country}</option>
-                                        ))}
-                                    </select>
-                                    <InputError message={errors['personal_info.non_ugandan_explanation'] || stepErrors['personal_info.non_ugandan_explanation']} className="mt-2" />
                                 </div>
                             </div>
                         </div>
