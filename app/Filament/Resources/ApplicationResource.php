@@ -339,13 +339,20 @@ class ApplicationResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name')->searchable(),
-                Tables\Columns\TextColumn::make('personal_info.first_name')
-                    ->label('First Name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('personal_info.last_name')
-                    ->label('Last Name')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('applicant_full_name')
+                    ->label('Applicant')
+                    ->getStateUsing(fn ($record): string => trim(
+                        ($record->personal_info['surname'] ?? '')
+                        . ' ' .
+                        ($record->personal_info['other_names'] ?? '')
+                    ) ?: ($record->user->name ?? '—'))
+                    ->searchable(query: function ($query, string $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('personal_info->surname', 'like', "%{$search}%")
+                              ->orWhere('personal_info->other_names', 'like', "%{$search}%")
+                              ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%"));
+                        });
+                    }),
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'primary' => 'submitted',
@@ -354,17 +361,6 @@ class ApplicationResource extends Resource
                         'danger' => 'rejected',
                         'secondary' => 'draft',
                     ]),
-                Tables\Columns\TextColumn::make('scoring_breakdown.total')
-                    ->label('Total Score')
-                    ->numeric()
-                    ->sortable()
-                    ->badge()
-                    ->color(fn ($state): string => match (true) {
-                        $state >= 80 => 'success',
-                        $state >= 60 => 'warning',
-                        $state < 60 => 'danger',
-                        default => 'secondary',
-                    }),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

@@ -34,17 +34,20 @@ class ScholarStatsWidget extends BaseWidget
             Stat::make('Active Scholars', $totalScholars)
                 ->description('Currently enrolled scholars')
                 ->descriptionIcon('heroicon-m-user-group')
-                ->color('success'),
+                ->color('success')
+                ->url(route('filament.admin.resources.scholars.index')),
             
             Stat::make('Pending Applicants', $totalApplicants)
                 ->description('Awaiting approval')
                 ->descriptionIcon('heroicon-m-clock')
-                ->color('warning'),
+                ->color('warning')
+                ->url(route('filament.admin.resources.applications.index', ['tableFilters[status][value]' => 'submitted'])),
             
             Stat::make('Complete Profiles', $scholarsWithCompleteInfo)
                 ->description('Scholars with full academic details')
                 ->descriptionIcon('heroicon-m-check-circle')
-                ->color('info'),
+                ->color('info')
+                ->url(route('filament.admin.resources.scholars.index')),
         ];
     }
 }

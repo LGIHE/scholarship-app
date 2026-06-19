@@ -143,17 +143,48 @@ class ApplicantUserResource extends Resource
                         'info' => 'Applicant',
                     ])
                     ->searchable(),
-                Tables\Columns\TextColumn::make('permissions.name')
-                    ->label('Direct Permissions')
+                Tables\Columns\TextColumn::make('nationality')
+                    ->label('Nationality')
+                    ->getStateUsing(function (User $record): string {
+                        $app = $record->applications()->latest()->first();
+                        if (!$app) return '—';
+                        $info = $app->personal_info ?? [];
+                        if (($info['is_ugandan'] ?? null) === 'yes') {
+                            return 'Ugandan';
+                        }
+                        if (!empty($info['non_ugandan_explanation'])) {
+                            return $info['non_ugandan_explanation'];
+                        }
+                        if (($info['is_ugandan'] ?? null) === 'no') {
+                            return 'Non-Ugandan';
+                        }
+                        return '—';
+                    })
                     ->badge()
-                    ->color('success')
-                    ->searchable()
-                    ->toggleable()
-                    ->limit(3)
-                    ->tooltip(function (User $record): ?string {
-                        $permissions = $record->permissions->pluck('name')->toArray();
-                        return count($permissions) > 0 ? implode(', ', $permissions) : null;
+                    ->color(fn (string $state): string => $state === 'Ugandan' ? 'success' : ($state === '—' ? 'gray' : 'warning')),
+                Tables\Columns\TextColumn::make('age')
+                    ->label('Age')
+                    ->getStateUsing(function (User $record): string {
+                        $app = $record->applications()->latest()->first();
+                        $dob = $app?->personal_info['date_of_birth'] ?? null;
+                        if (!$dob) return '—';
+                        try {
+                            return (string) \Carbon\Carbon::parse($dob)->age;
+                        } catch (\Exception) {
+                            return '—';
+                        }
                     }),
+                Tables\Columns\IconColumn::make('disability')
+                    ->label('Disability')
+                    ->getStateUsing(function (User $record): bool {
+                        $app = $record->applications()->latest()->first();
+                        return ($app?->personal_info['has_disability'] ?? null) === 'yes';
+                    })
+                    ->boolean()
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-minus-circle'),
                 Tables\Columns\TextColumn::make('applications_count')
                     ->counts('applications')
                     ->label('Applications')
