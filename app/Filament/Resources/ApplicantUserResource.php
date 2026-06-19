@@ -206,14 +206,18 @@ class ApplicantUserResource extends Resource
                 Tables\Actions\EditAction::make()
                     ->modal()
                     ->modalWidth('4xl'),
-                Tables\Actions\Action::make('view_applications')
-                    ->label('View Applications')
+                Tables\Actions\Action::make('view_application')
+                    ->label('View Application')
                     ->icon('heroicon-o-document-text')
-                    ->url(fn (User $record): string => route('filament.admin.resources.applications.index', [
-                        'tableFilters' => [
-                            'user' => ['value' => $record->id]
-                        ]
-                    ]))
+                    ->url(function (User $record): string {
+                        $application = $record->applications()->latest()->first();
+                        if ($application) {
+                            return route('filament.admin.resources.applications.view', ['record' => $application->id]);
+                        }
+                        return route('filament.admin.resources.applications.index', [
+                            'tableFilters' => ['user' => ['value' => $record->id]]
+                        ]);
+                    })
                     ->visible(fn (User $record): bool => $record->applications()->count() > 0)
                     ->color('primary'),
                 Tables\Actions\DeleteAction::make(),

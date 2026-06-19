@@ -37,11 +37,11 @@ class ScholarStatsWidget extends BaseWidget
                 ->color('success')
                 ->url(route('filament.admin.resources.scholars.index')),
             
-            Stat::make('Pending Applicants', $totalApplicants)
-                ->description('Awaiting approval')
-                ->descriptionIcon('heroicon-m-clock')
+            Stat::make('Total Applicants', $totalApplicants)
+                ->description('All registered applicants')
+                ->descriptionIcon('heroicon-m-user-group')
                 ->color('warning')
-                ->url(route('filament.admin.resources.applications.index', ['tableFilters[status][value]' => 'submitted'])),
+                ->url(route('filament.admin.resources.applicant-users.index')),
             
             Stat::make('Complete Profiles', $scholarsWithCompleteInfo)
                 ->description('Scholars with full academic details')
