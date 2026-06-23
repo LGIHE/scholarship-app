@@ -130,6 +130,16 @@ const faqs = [
                     'Implementation of Leaders in Teaching will be in collaboration with District Local Governments, teacher training institutions, and community structures to ensure local ownership, coordination, and oversight of program activities.',
             },
             {
+                question: 'Does the current scholarship cater for Primary Education as well?',
+                answer:
+                    'No. The scholarship is specifically for secondary education. It supports female students pursuing a Bachelor of Science with Education (BScEd) to become qualified STEM teachers in secondary schools.',
+            },
+            {
+                question: 'Does the Mastercard Foundation scholarship cover all science courses at university?',
+                answer:
+                    'No. It is specifically for a Bachelor of Science in Education (BScEd) in STEM subjects. Other science degree programmes that are not education-based are not covered under this scholarship.',
+            },
+            {
                 question: 'How will the Leaders in Teaching ensure sustainability after the program ends?',
                 answerNode: (
                     <div className="space-y-2 text-sm text-gray-600">
@@ -220,6 +230,16 @@ const faqs = [
                 question: 'Is the scholarship open to non-Ugandan applicants?',
                 answer:
                     'The scholarship is open to female Ugandan citizens and to females with official Refugee Status in Uganda. Applicants without either of these statuses are not eligible.',
+            },
+            {
+                question: 'Are continuing students at universities in Year 2 or Year 3 eligible to apply?',
+                answer:
+                    'No. This scholarship is only for fresh students coming directly from A-level. Continuing students already enrolled in Year 2 or Year 3 are not eligible to apply.',
+            },
+            {
+                question: 'I have attained a HAEC (Higher Advanced Education Certificate) in STEM subjects. Am I eligible to apply?',
+                answer:
+                    'Yes, you are eligible. In addition to holders of a HAEC in STEM subjects, those who have previously acquired a diploma in Education for STEM subjects are also eligible to apply.',
             },
         ],
     },
@@ -418,6 +438,11 @@ const faqs = [
                 answer:
                     'Ensure you are using a valid email address that you have access to, as you will need to verify it. If you continue to have trouble, contact the support team through the Contact page or call (+256) 764 078712 for assistance.',
             },
+            // {
+            //     question: 'I am unable to browse through the link shared. What should I do?',
+            //     answer:
+            //         'This is often a network issue. Check whether you are on the MTN network and try switching to Airtel, as the link may load more reliably on a different network.',
+            // },
         ],
     },
 ];
