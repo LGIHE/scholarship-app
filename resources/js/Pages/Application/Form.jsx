@@ -13,6 +13,7 @@ import Step4Motivation          from './Step4Motivation';
 import Step5Documents           from './Step5Documents';
 import Step6GuardianDeclaration from './Step6GuardianDeclaration';
 import Step7Review              from './Step7Review';
+import HearingSourceDialog      from './HearingSourceDialog';
 
 const STEP_CONFIG = [
     { id: 1, title: 'Step 1',  description: 'Personal background & education info' },
@@ -41,6 +42,12 @@ export default function Form() {
     const [draftMessage, setDraftMessage] = useState('');
     const [stepErrors, setStepErrors]   = useState({});
 
+    // Show the hearing-source prompt for returning applicants who submitted without it
+    const needsHearingSource =
+        application?.status === 'submitted' &&
+        !application?.personal_info?.hearing_source;
+    const [showHearingDialog, setShowHearingDialog] = useState(needsHearingSource);
+
     const initialRender = useRef(true);
     const hasChanged    = useRef(false);
 
@@ -49,6 +56,37 @@ export default function Form() {
     const statusLabels = {
         draft: 'Draft', submitted: 'Submitted', under_review: 'Under Review',
         approved: 'Approved', rejected: 'Rejected',
+    };
+
+    // ── Hearing-source handler (for the retrofit dialog) ──────────────────────
+
+    const handleHearingSourceSave = async ({ hearing_source, hearing_source_other }) => {
+        // Update local form state
+        setData('personal_info', {
+            ...data.personal_info,
+            hearing_source,
+            hearing_source_other,
+        });
+
+        // Persist immediately via draft endpoint
+        const formData = new FormData();
+        formData.append('personal_info', JSON.stringify({
+            ...data.personal_info,
+            hearing_source,
+            hearing_source_other,
+        }));
+        formData.append('disability_info',  JSON.stringify(data.disability_info));
+        formData.append('dependants_info',  JSON.stringify(data.dependants_info));
+        formData.append('financial_info',   JSON.stringify(data.financial_info));
+        formData.append('essay',            JSON.stringify(data.essay));
+        formData.append('guardian_info',    JSON.stringify(data.guardian_info));
+        formData.append('declaration_info', JSON.stringify(data.declaration_info));
+
+        await window.axios.post(route('application.draft'), formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        setShowHearingDialog(false);
     };
 
     // ── Shared state updaters ──────────────────────────────────────────────────
@@ -186,6 +224,10 @@ export default function Form() {
             if (!data.guardian_info.guardian_surname?.trim())   errs['guardian_info.guardian_surname']   = 'Guardian surname is required';
             if (!data.guardian_info.guardian_telephone?.trim()) errs['guardian_info.guardian_telephone'] = 'Guardian telephone is required';
             if (!data.guardian_info.guardian_relation?.trim())  errs['guardian_info.guardian_relation']  = 'Guardian relationship is required';
+            if (!data.personal_info.hearing_source)             errs['personal_info.hearing_source']     = 'Please select how you heard about the scholarship';
+            if (data.personal_info.hearing_source === 'other' && !data.personal_info.hearing_source_other?.trim()) {
+                errs['personal_info.hearing_source_other'] = 'Please specify how you heard about the scholarship';
+            }
         }
         return errs;
     };
@@ -198,7 +240,8 @@ export default function Form() {
     const stepsWithErrors = useMemo(() => {
         const steps = new Set();
         Object.keys(errors).forEach((key) => {
-            if (key.startsWith('personal_info.') || key.startsWith('personal_info[')) steps.add(1);
+            if (key.startsWith('personal_info.hearing_source'))                       steps.add(6);
+            else if (key.startsWith('personal_info.') || key.startsWith('personal_info[')) steps.add(1);
             else if (key.startsWith('disability_info.'))                              steps.add(2);
             else if (key.startsWith('dependants_info.') || key.startsWith('financial_info.')) steps.add(3);
             else if (key.startsWith('essay.'))                                        steps.add(4);
@@ -207,7 +250,8 @@ export default function Form() {
         });
         // Also include steps that have local stepErrors
         Object.keys(stepErrors).forEach((key) => {
-            if (key.startsWith('personal_info.'))                                     steps.add(1);
+            if (key.startsWith('personal_info.hearing_source'))                       steps.add(6);
+            else if (key.startsWith('personal_info.'))                                steps.add(1);
             else if (key.startsWith('disability_info.'))                              steps.add(2);
             else if (key.startsWith('dependants_info.') || key.startsWith('financial_info.')) steps.add(3);
             else if (key.startsWith('essay.'))                                        steps.add(4);
@@ -287,6 +331,7 @@ export default function Form() {
     const stepProps = { data, errors, stepErrors, updateSection, isLocked };
 
     return (
+        <>
         <AuthenticatedLayout
             header={
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -433,5 +478,11 @@ export default function Form() {
                 </div>
             </div>
         </AuthenticatedLayout>
+
+        {/* Hearing-source retrofit dialog — shown to returning applicants who submitted without filling this field */}
+        {showHearingDialog && (
+            <HearingSourceDialog onSave={handleHearingSourceSave} />
+        )}
+        </>
     );
 }

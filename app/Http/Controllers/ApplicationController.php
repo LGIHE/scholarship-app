@@ -170,6 +170,8 @@ class ApplicationController extends Controller
             'guardian_info.guardian_relation'   => 'required|string|max:100',
             'essay'                             => 'required|array',
             'essay.motivation'                  => 'required|string|min:50',
+            'personal_info.hearing_source'      => 'required|string|in:organization_website,social_media,referral,advertisement,professional_network,email_newsletter,walk_in,other',
+            'personal_info.hearing_source_other' => 'required_if:personal_info.hearing_source,other|nullable|string|max:500',
         ];
 
         // Non-Ugandans must supply at least one form of ID
@@ -219,6 +221,8 @@ class ApplicationController extends Controller
             'essay.motivation'                 => 'motivation essay',
             'documents.exam_results'           => 'examination results',
             'documents.national_id'            => 'national ID',
+            'personal_info.hearing_source'     => 'how you heard about the scholarship',
+            'personal_info.hearing_source_other' => 'other source specification',
         ]);
 
         // Generate applicant name for file naming

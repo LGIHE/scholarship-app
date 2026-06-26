@@ -83,10 +83,18 @@ use App\Http\Controllers\Admin\DocumentController;
 Route::get('/portal', function () {
     $application = auth()->user()->applications()->latest()->first();
     $deadline = \Carbon\Carbon::parse(config('scholarship.application_deadline'))->setTime(23, 59, 59);
+
+    // Flag for the hearing-source retrofit dialog: only show for submitted applicants
+    // who haven't yet filled in how they heard about the scholarship.
+    $needsHearingSource = $application
+        && $application->status === 'submitted'
+        && empty($application->personal_info['hearing_source'] ?? null);
+
     return Inertia::render('Dashboard', [
         'application'         => $application,
         'deadlinePassed'      => now()->greaterThan($deadline),
         'applicationDeadline' => $deadline->toDateString(),
+        'needsHearingSource'  => $needsHearingSource,
     ]);
 })->middleware(['auth', 'verified', \App\Http\Middleware\EnsureApplicantOrScholar::class])->name('portal');
 

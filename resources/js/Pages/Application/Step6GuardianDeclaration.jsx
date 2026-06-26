@@ -3,12 +3,92 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import { RequiredLabel, RadioField } from './FormComponents';
 
+const HEARING_SOURCE_OPTIONS = [
+    { value: 'organization_website', label: 'Organization website' },
+    { value: 'social_media',         label: 'Social media (e.g., WhatsApp, Facebook, Twitter, Instagram)' },
+    { value: 'referral',             label: 'Referral from a friend or colleague' },
+    { value: 'advertisement',        label: 'Advertisement (TV, radio, newspaper)' },
+    { value: 'professional_network', label: 'Professional network or industry contacts' },
+    { value: 'email_newsletter',     label: 'Email newsletter or scholarship alert' },
+    { value: 'walk_in',              label: 'Walk-in / Direct visit to the organization' },
+    { value: 'other',                label: 'Other' },
+];
+
 export default function StepSectionCD({ data, errors, stepErrors, updateSection, isLocked }) {
     const gi   = data.guardian_info;
     const decl = data.declaration_info;
+    const pi   = data.personal_info;
 
     return (
         <div className="space-y-6">
+            {/* ── How did you hear about us ───────────────────────────────── */}
+            <div className="rounded-md border border-gray-200 p-4">
+                <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">
+                    How Did You Hear About the Scholarship?
+                </h4>
+                <div className="space-y-3">
+                    <div>
+                        <RequiredLabel
+                            htmlFor="hearing_source"
+                            value="How did you hear about this scholarship?"
+                            required
+                        />
+                        <div className="mt-2 space-y-2">
+                            {HEARING_SOURCE_OPTIONS.map((opt) => (
+                                <label
+                                    key={opt.value}
+                                    className={`flex items-start gap-3 cursor-pointer rounded-md border px-4 py-2.5 transition-colors ${
+                                        isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                                    } ${
+                                        pi.hearing_source === opt.value
+                                            ? 'border-emerald-500 bg-emerald-50'
+                                            : 'border-gray-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/30'
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="hearing_source"
+                                        value={opt.value}
+                                        checked={pi.hearing_source === opt.value}
+                                        onChange={() => updateSection('personal_info', 'hearing_source', opt.value)}
+                                        disabled={isLocked}
+                                        className="mt-0.5 h-4 w-4 shrink-0 border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                    />
+                                    <span className="text-sm text-gray-700">{opt.label}</span>
+                                </label>
+                            ))}
+                        </div>
+                        <InputError
+                            message={errors['personal_info.hearing_source'] || stepErrors['personal_info.hearing_source']}
+                            className="mt-2"
+                        />
+                    </div>
+
+                    {pi.hearing_source === 'other' && (
+                        <div>
+                            <RequiredLabel
+                                htmlFor="hearing_source_other"
+                                value="Please specify"
+                                required
+                            />
+                            <TextInput
+                                id="hearing_source_other"
+                                className="mt-1 block w-full"
+                                value={pi.hearing_source_other || ''}
+                                onChange={(e) => updateSection('personal_info', 'hearing_source_other', e.target.value)}
+                                disabled={isLocked}
+                                maxLength={500}
+                                placeholder="Please describe how you heard about the scholarship..."
+                            />
+                            <InputError
+                                message={errors['personal_info.hearing_source_other'] || stepErrors['personal_info.hearing_source_other']}
+                                className="mt-2"
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* ── Section C ──────────────────────────────────────────────── */}
             <div className="rounded-md border border-gray-200 p-4">
                 <h4 className="mb-4 font-semibold text-gray-800 text-base border-b pb-2">

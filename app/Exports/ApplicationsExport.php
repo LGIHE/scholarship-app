@@ -68,6 +68,8 @@ class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, W
             'Guardian Occupation', 'Guardian District', 'Guardian Region', 'Guardian Address',
             // Declaration
             'Criminal Offence?', 'Criminal Details',
+            // How heard
+            'How They Heard About the Scholarship', 'Other Source (Specified)',
             // Scoring
             'Score – Financial Need', 'Score – Academic Merit', 'Score – Demographics',
             'Score – Commitment', 'Score – Essay Quality', 'Total Score',
@@ -155,6 +157,9 @@ class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, W
             // Declaration
             isset($d['criminal_offence']) ? ($d['criminal_offence'] === 'yes' ? 'Yes' : 'No') : '',
             $d['criminal_details'] ?? '',
+            // How heard
+            $p['hearing_source'] ?? '',
+            $p['hearing_source_other'] ?? '',
             // Scoring
             $sc['financial_need'] ?? 0, $sc['academic_merit'] ?? 0,
             $sc['demographics'] ?? 0, $sc['commitment'] ?? 0,

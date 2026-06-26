@@ -1,11 +1,45 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { Head, Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import HearingSourceDialog from './Application/HearingSourceDialog';
 
 export default function Dashboard() {
-    const { application, auth, deadlinePassed, applicationDeadline } = usePage().props;
+    const { application, auth, deadlinePassed, applicationDeadline, needsHearingSource } = usePage().props;
     const status = application?.status || 'not_started';
     const isScholar = auth?.user?.roles?.some(role => role.name === 'Scholar');
+
+    const [showHearingDialog, setShowHearingDialog] = useState(!!needsHearingSource);
+
+    const handleHearingSourceSave = async ({ hearing_source, hearing_source_other }) => {
+        const formData = new FormData();
+
+        // Merge into existing personal_info so nothing is lost
+        const updatedPersonalInfo = {
+            ...(application?.personal_info ?? {}),
+            hearing_source,
+            hearing_source_other,
+        };
+
+        formData.append('personal_info', JSON.stringify(updatedPersonalInfo));
+
+        // Pass through the other sections unchanged so the draft endpoint is happy
+        const passThrough = [
+            ['disability_info',  application?.disability_info  ?? {}],
+            ['dependants_info',  application?.dependants_info  ?? {}],
+            ['financial_info',   application?.financial_info   ?? {}],
+            ['essay',            application?.essay            ?? {}],
+            ['guardian_info',    application?.guardian_info    ?? {}],
+            ['declaration_info', application?.declaration_info ?? {}],
+        ];
+        passThrough.forEach(([key, value]) => formData.append(key, JSON.stringify(value)));
+
+        await window.axios.post(route('application.draft'), formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        setShowHearingDialog(false);
+    };
 
     const statusLabels = {
         not_started: 'Not Started',
@@ -24,6 +58,7 @@ export default function Dashboard() {
     const canEdit = !deadlinePassed && (status === 'draft' || status === 'submitted' || status === 'not_started');
 
     return (
+        <>
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
@@ -132,5 +167,11 @@ export default function Dashboard() {
                 </div>
             </div>
         </AuthenticatedLayout>
+
+        {/* Hearing-source retrofit dialog — shown once for submitted applicants who haven't filled this in */}
+        {showHearingDialog && (
+            <HearingSourceDialog onSave={handleHearingSourceSave} />
+        )}
+        </>
     );
 }

@@ -360,6 +360,34 @@ export default function StepReview({ data }) {
                 </dl>
             </div>
 
+            {/* ── How did you hear about the scholarship ───────────────── */}
+            <div className="rounded-md border border-gray-200 p-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">How Did You Hear About the Scholarship?</h4>
+                <dl className="grid grid-cols-1 gap-y-3 text-sm text-gray-700">
+                    <SummaryItem
+                        label="How you heard about this scholarship"
+                        value={(() => {
+                            const sourceLabels = {
+                                organization_website: 'Organization website',
+                                social_media:         'Social media (e.g., WhatsApp, Facebook, Twitter, Instagram)',
+                                referral:             'Referral from a friend or colleague',
+                                advertisement:        'Advertisement (TV, radio, newspaper)',
+                                professional_network: 'Professional network or industry contacts',
+                                email_newsletter:     'Email newsletter or scholarship alert',
+                                walk_in:              'Walk-in / Direct visit to the organization',
+                                other:                'Other',
+                            };
+                            const label = sourceLabels[pi.hearing_source];
+                            if (!label) return null;
+                            if (pi.hearing_source === 'other' && pi.hearing_source_other) {
+                                return `Other – ${pi.hearing_source_other}`;
+                            }
+                            return label;
+                        })()}
+                    />
+                </dl>
+            </div>
+
             {/* ── Final Declaration ────────────────────────────────────── */}
             <div className="rounded-md border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">
                 <p className="font-bold text-base mb-3">DECLARATION</p>

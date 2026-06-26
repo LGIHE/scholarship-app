@@ -316,6 +316,32 @@ class ApplicationResource extends Resource
                         Infolists\Components\TextEntry::make('financial_info.other_financial_support')
                             ->label('Other Financial Support')->placeholder('Not provided'),
                     ])->columns(2)->collapsible(),
+
+                Infolists\Components\Section::make('Source of Information')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('personal_info.hearing_source')
+                            ->label('How They Heard About the Scholarship')
+                            ->placeholder('Not provided')
+                            ->formatStateUsing(function ($state) {
+                                $labels = [
+                                    'organization_website' => 'Organization website',
+                                    'social_media'         => 'Social media (WhatsApp, Facebook, Twitter, Instagram)',
+                                    'referral'             => 'Referral from a friend or colleague',
+                                    'advertisement'        => 'Advertisement (TV, radio, newspaper)',
+                                    'professional_network' => 'Professional network or industry contacts',
+                                    'email_newsletter'     => 'Email newsletter or scholarship alert',
+                                    'walk_in'              => 'Walk-in / Direct visit to the organization',
+                                    'other'                => 'Other',
+                                ];
+                                return $labels[$state] ?? $state;
+                            })
+                            ->badge()
+                            ->color('info'),
+                        Infolists\Components\TextEntry::make('personal_info.hearing_source_other')
+                            ->label('Other (Specified)')
+                            ->placeholder('N/A')
+                            ->visible(fn ($record) => ($record->personal_info['hearing_source'] ?? null) === 'other'),
+                    ])->columns(2)->collapsible(),
             ]);
     }
 

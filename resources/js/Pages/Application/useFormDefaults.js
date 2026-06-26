@@ -21,6 +21,8 @@ export function useFormDefaults(auth, application) {
                 phone: '',
                 email: auth?.user?.email || '',
                 marital_status: '',
+                hearing_source: '',
+                hearing_source_other: '',
                 next_of_kin: [
                     { name: '', relationship: '', telephone: '' },
                     { name: '', relationship: '', telephone: '' },
