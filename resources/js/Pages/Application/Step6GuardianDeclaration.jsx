@@ -1,6 +1,7 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
+import AddressFields from '@/Components/AddressFields';
 import { RequiredLabel, RadioField } from './FormComponents';
 
 const HEARING_SOURCE_OPTIONS = [
@@ -114,11 +115,8 @@ export default function StepSectionCD({ data, errors, stepErrors, updateSection,
                             disabled={isLocked} />
                     </div>
                     <div className="md:col-span-2">
-                        <InputLabel htmlFor="guardian_address" value="22. Address" />
-                        <TextInput id="guardian_address" className="mt-1 block w-full"
-                            value={gi.guardian_address}
-                            onChange={(e) => updateSection('guardian_info', 'guardian_address', e.target.value)}
-                            disabled={isLocked} />
+                        <InputLabel htmlFor="guardian_address" value="22. Address / Village / Parish" />
+                        <p className="text-xs text-gray-500 mt-1 italic">Use the Location of Residence fields below to provide the full address.</p>
                     </div>
                     <div>
                         <RequiredLabel htmlFor="guardian_telephone" value="Telephone" required />
@@ -127,20 +125,6 @@ export default function StepSectionCD({ data, errors, stepErrors, updateSection,
                             onChange={(e) => updateSection('guardian_info', 'guardian_telephone', e.target.value)}
                             disabled={isLocked} required />
                         <InputError message={errors['guardian_info.guardian_telephone'] || stepErrors['guardian_info.guardian_telephone']} className="mt-2" />
-                    </div>
-                    <div>
-                        <InputLabel htmlFor="guardian_district" value="23. District of Residence" />
-                        <TextInput id="guardian_district" className="mt-1 block w-full uppercase"
-                            value={gi.guardian_district}
-                            onChange={(e) => updateSection('guardian_info', 'guardian_district', e.target.value)}
-                            disabled={isLocked} />
-                    </div>
-                    <div>
-                        <InputLabel htmlFor="guardian_region" value="Region of Residence" />
-                        <TextInput id="guardian_region" className="mt-1 block w-full uppercase"
-                            value={gi.guardian_region}
-                            onChange={(e) => updateSection('guardian_info', 'guardian_region', e.target.value)}
-                            disabled={isLocked} />
                     </div>
                     <div>
                         <InputLabel htmlFor="guardian_occupation" value="24. Occupation" />
@@ -157,6 +141,23 @@ export default function StepSectionCD({ data, errors, stepErrors, updateSection,
                             disabled={isLocked} required />
                         <InputError message={errors['guardian_info.guardian_relation'] || stepErrors['guardian_info.guardian_relation']} className="mt-2" />
                     </div>
+                </div>
+
+                {/* 23. Location of Residence (country → region → district → address) */}
+                <div className="mt-4">
+                    <InputLabel value="23. Location of Residence" className="font-medium mb-1" />
+                    <AddressFields
+                        countryValue={gi.guardian_country || ''}
+                        regionValue={gi.guardian_region || ''}
+                        districtValue={gi.guardian_district || ''}
+                        villageValue={gi.guardian_address || ''}
+                        onCountryChange={(v) => updateSection('guardian_info', 'guardian_country', v)}
+                        onRegionChange={(v) => updateSection('guardian_info', 'guardian_region', v)}
+                        onDistrictChange={(v) => updateSection('guardian_info', 'guardian_district', v)}
+                        onVillageChange={(v) => updateSection('guardian_info', 'guardian_address', v)}
+                        errors={{}}
+                        disabled={isLocked}
+                    />
                 </div>
             </div>
 

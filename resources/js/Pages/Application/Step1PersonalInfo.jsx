@@ -1,8 +1,10 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
+import AddressFields from '@/Components/AddressFields';
 import { RequiredLabel, RadioField } from './FormComponents';
 import COUNTRIES from '@/data/countries';
+import INSTITUTIONS from '@/data/institutions';
 
 export default function StepSectionA({ data, errors, stepErrors, updateSection, updateNextOfKin, isLocked }) {
     const pi = data.personal_info;
@@ -240,7 +242,7 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                         </div>
                     )}
 
-                    {/* Q7, Q8, Q9 – place grids */}
+                    {/* Q7, Q8, Q9 – place grids (country → region → district → village) */}
                     {[
                         { label: '7. Place of Birth', prefix: 'birth' },
                         { label: '8. Place of Origin', prefix: 'origin' },
@@ -248,22 +250,18 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                     ].map(({ label, prefix }) => (
                         <div key={prefix} className="mb-4">
                             <InputLabel value={label} className="font-medium" />
-                            <div className="grid grid-cols-2 gap-3 mt-2 md:grid-cols-4">
-                                {[
-                                    [`${prefix}_village`, 'Village/Parish/Sub-county'],
-                                    [`${prefix}_district`, 'District'],
-                                    [`${prefix}_region`, 'Region'],
-                                    [`${prefix}_country`, 'Country'],
-                                ].map(([field, lbl]) => (
-                                    <div key={field}>
-                                        <InputLabel value={lbl} className="text-xs text-gray-500" />
-                                        <TextInput className="mt-1 block w-full text-sm uppercase"
-                                            value={pi[field] || ''}
-                                            onChange={(e) => updateSection('personal_info', field, e.target.value)}
-                                            disabled={isLocked} />
-                                    </div>
-                                ))}
-                            </div>
+                            <AddressFields
+                                countryValue={pi[`${prefix}_country`] || ''}
+                                regionValue={pi[`${prefix}_region`] || ''}
+                                districtValue={pi[`${prefix}_district`] || ''}
+                                villageValue={pi[`${prefix}_village`] || ''}
+                                onCountryChange={(v) => updateSection('personal_info', `${prefix}_country`, v)}
+                                onRegionChange={(v) => updateSection('personal_info', `${prefix}_region`, v)}
+                                onDistrictChange={(v) => updateSection('personal_info', `${prefix}_district`, v)}
+                                onVillageChange={(v) => updateSection('personal_info', `${prefix}_village`, v)}
+                                errors={{}}
+                                disabled={isLocked}
+                            />
                         </div>
                     ))}
                 </div>
@@ -285,10 +283,19 @@ export default function StepSectionA({ data, errors, stepErrors, updateSection, 
                         </div>
                         <div>
                             <RequiredLabel htmlFor="institution" value="13. Institution (University/UNITE Campus)" required />
-                            <TextInput id="institution" className="mt-1 block w-full uppercase"
+                            <select
+                                id="institution"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                                 value={pi.institution}
                                 onChange={(e) => updateSection('personal_info', 'institution', e.target.value)}
-                                disabled={isLocked} required />
+                                disabled={isLocked}
+                                required
+                            >
+                                <option value="">— Select institution —</option>
+                                {INSTITUTIONS.map((inst) => (
+                                    <option key={inst} value={inst}>{inst}</option>
+                                ))}
+                            </select>
                             <InputError message={errors['personal_info.institution'] || stepErrors['personal_info.institution']} className="mt-2" />
                         </div>
                         <div>

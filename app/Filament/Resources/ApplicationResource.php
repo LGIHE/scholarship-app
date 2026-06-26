@@ -268,9 +268,10 @@ class ApplicationResource extends Resource
                         Infolists\Components\TextEntry::make('guardian_info.guardian_telephone')->label('Telephone')->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('guardian_info.guardian_relation')->label('Relation to Applicant')->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('guardian_info.guardian_occupation')->label('Occupation')->placeholder('Not provided'),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_country')->label('Country of Residence')->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('guardian_info.guardian_district')->label('District of Residence')->placeholder('Not provided'),
                         Infolists\Components\TextEntry::make('guardian_info.guardian_region')->label('Region of Residence')->placeholder('Not provided'),
-                        Infolists\Components\TextEntry::make('guardian_info.guardian_address')->label('Address')->placeholder('Not provided')->columnSpanFull(),
+                        Infolists\Components\TextEntry::make('guardian_info.guardian_address')->label('Village/Address')->placeholder('Not provided')->columnSpanFull(),
                     ])->columns(3)->collapsible(),
 
                 Infolists\Components\Section::make('Criminal Offence Declaration (Section D)')

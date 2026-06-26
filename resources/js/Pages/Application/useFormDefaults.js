@@ -89,6 +89,7 @@ export function useFormDefaults(auth, application) {
                 guardian_other_names: '',
                 guardian_address: '',
                 guardian_telephone: '',
+                guardian_country: '',
                 guardian_district: '',
                 guardian_region: '',
                 guardian_occupation: '',
