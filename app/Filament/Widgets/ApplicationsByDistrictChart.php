@@ -19,22 +19,26 @@ class ApplicationsByDistrictChart extends ChartWidget
 
     protected function getData(): array
     {
-        $results = Application::query()
+        // Pull all non-empty residence_district values and normalise in PHP
+        // to avoid SQLite collation issues causing duplicates.
+        $rows = Application::query()
             ->whereNotNull(DB::raw("json_extract(personal_info, '$.residence_district')"))
             ->where(DB::raw("json_extract(personal_info, '$.residence_district')"), '!=', '')
-            ->select(
-                DB::raw("upper(json_extract(personal_info, '$.residence_district')) as district"),
-                DB::raw('COUNT(*) as total')
-            )
-            ->groupBy('district')
-            ->orderByDesc('total')
-            ->get();
+            ->pluck(DB::raw("json_extract(personal_info, '$.residence_district')"));
 
-        // Convert "KAMPALA" → "Kampala" for display
-        $labels = $results->pluck('district')
-            ->map(fn ($d) => mb_convert_case($d, MB_CASE_TITLE, 'UTF-8'))
-            ->toArray();
-        $data   = $results->pluck('total')->toArray();
+        // Normalise: lowercase + trim whitespace → use as merge key, display as Title Case
+        $grouped = [];
+        foreach ($rows as $raw) {
+            $key = strtolower(preg_replace('/\s+/', ' ', trim((string) $raw)));
+            if ($key === '') continue;
+            $grouped[$key] = ($grouped[$key] ?? 0) + 1;
+        }
+
+        // Sort descending by count
+        arsort($grouped);
+
+        $labels = array_map(fn ($k) => mb_convert_case($k, MB_CASE_TITLE, 'UTF-8'), array_keys($grouped));
+        $data   = array_values($grouped);
 
         // Colour palette — cycles if there are more districts than colours
         $palette = [
