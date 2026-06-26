@@ -23,14 +23,17 @@ class ApplicationsByDistrictChart extends ChartWidget
             ->whereNotNull(DB::raw("json_extract(personal_info, '$.residence_district')"))
             ->where(DB::raw("json_extract(personal_info, '$.residence_district')"), '!=', '')
             ->select(
-                DB::raw("json_extract(personal_info, '$.residence_district') as district"),
+                DB::raw("upper(json_extract(personal_info, '$.residence_district')) as district"),
                 DB::raw('COUNT(*) as total')
             )
             ->groupBy('district')
             ->orderByDesc('total')
             ->get();
 
-        $labels = $results->pluck('district')->toArray();
+        // Convert "KAMPALA" → "Kampala" for display
+        $labels = $results->pluck('district')
+            ->map(fn ($d) => mb_convert_case($d, MB_CASE_TITLE, 'UTF-8'))
+            ->toArray();
         $data   = $results->pluck('total')->toArray();
 
         // Colour palette — cycles if there are more districts than colours
