@@ -17,6 +17,7 @@ class Dashboard extends BaseDashboard
             \App\Filament\Widgets\ApplicationStatsWidget::class,
             \App\Filament\Widgets\ScholarStatsWidget::class,
             \App\Filament\Widgets\ApplicationsByStatusChart::class,
+            \App\Filament\Widgets\ApplicationsByDistrictChart::class,
             \App\Filament\Widgets\RecentApplicationsWidget::class,
         ];
     }
