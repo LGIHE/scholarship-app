@@ -4,7 +4,6 @@ namespace App\Filament\Widgets;
 
 use App\Models\Application;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\DB;
 
 class ApplicationsByUniversityChart extends ChartWidget
 {
@@ -19,19 +18,17 @@ class ApplicationsByUniversityChart extends ChartWidget
 
     protected function getData(): array
     {
-        // Pull all institution values and normalise in PHP to merge duplicates.
-        $rows = Application::query()
-            ->whereNotNull(DB::raw("json_extract(personal_info, '$.institution')"))
-            ->where(DB::raw("json_extract(personal_info, '$.institution')"), '!=', '')
-            ->pluck(DB::raw("json_extract(personal_info, '$.institution')"));
-
-        // Normalise: lowercase + collapse whitespace → merge key; display as Title Case
+        // Load personal_info via model cast, extract institution in PHP
         $grouped = [];
-        foreach ($rows as $raw) {
-            $key = strtolower(preg_replace('/\s+/', ' ', trim((string) $raw)));
-            if ($key === '') continue;
-            $grouped[$key] = ($grouped[$key] ?? 0) + 1;
-        }
+        Application::query()
+            ->whereNotNull('personal_info')
+            ->get(['personal_info'])
+            ->each(function ($app) use (&$grouped) {
+                $raw = trim((string) ($app->personal_info['institution'] ?? ''));
+                if ($raw === '') return;
+                $key = strtolower(preg_replace('/\s+/', ' ', $raw));
+                $grouped[$key] = ($grouped[$key] ?? 0) + 1;
+            });
 
         arsort($grouped);
 

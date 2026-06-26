@@ -4,7 +4,6 @@ namespace App\Filament\Widgets;
 
 use App\Models\Application;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\DB;
 
 class ApplicationsByDistrictChart extends ChartWidget
 {
@@ -19,22 +18,18 @@ class ApplicationsByDistrictChart extends ChartWidget
 
     protected function getData(): array
     {
-        // Pull all non-empty residence_district values and normalise in PHP
-        // to avoid SQLite collation issues causing duplicates.
-        $rows = Application::query()
-            ->whereNotNull(DB::raw("json_extract(personal_info, '$.residence_district')"))
-            ->where(DB::raw("json_extract(personal_info, '$.residence_district')"), '!=', '')
-            ->pluck(DB::raw("json_extract(personal_info, '$.residence_district')"));
-
-        // Normalise: lowercase + trim whitespace → use as merge key, display as Title Case
+        // Load personal_info as array via the model cast, extract district in PHP
         $grouped = [];
-        foreach ($rows as $raw) {
-            $key = strtolower(preg_replace('/\s+/', ' ', trim((string) $raw)));
-            if ($key === '') continue;
-            $grouped[$key] = ($grouped[$key] ?? 0) + 1;
-        }
+        Application::query()
+            ->whereNotNull('personal_info')
+            ->get(['personal_info'])
+            ->each(function ($app) use (&$grouped) {
+                $raw = trim((string) ($app->personal_info['residence_district'] ?? ''));
+                if ($raw === '') return;
+                $key = strtolower(preg_replace('/\s+/', ' ', $raw));
+                $grouped[$key] = ($grouped[$key] ?? 0) + 1;
+            });
 
-        // Sort descending by count
         arsort($grouped);
 
         $labels = array_map(fn ($k) => mb_convert_case($k, MB_CASE_TITLE, 'UTF-8'), array_keys($grouped));

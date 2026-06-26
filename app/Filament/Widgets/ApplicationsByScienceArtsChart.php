@@ -4,7 +4,6 @@ namespace App\Filament\Widgets;
 
 use App\Models\Application;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\DB;
 
 class ApplicationsByScienceArtsChart extends ChartWidget
 {
@@ -39,28 +38,23 @@ class ApplicationsByScienceArtsChart extends ChartWidget
     {
         $counts = ['Sciences' => 0, 'Arts' => 0];
 
-        // Each application can have two teaching subjects; each one casts a vote.
-        $rows = Application::query()
-            ->whereNotNull(DB::raw("json_extract(personal_info, '$.teaching_subjects_1')"))
-            ->select(
-                DB::raw("json_extract(personal_info, '$.teaching_subjects_1') as sub1"),
-                DB::raw("json_extract(personal_info, '$.teaching_subjects_2') as sub2")
-            )
-            ->get();
+        // Use model cast to read personal_info directly — no DB::raw needed
+        Application::query()
+            ->whereNotNull('personal_info')
+            ->get(['personal_info'])
+            ->each(function ($app) use (&$counts) {
+                foreach (['teaching_subjects_1', 'teaching_subjects_2'] as $field) {
+                    $raw = trim((string) ($app->personal_info[$field] ?? ''));
+                    if ($raw === '') continue;
 
-        foreach ($rows as $row) {
-            foreach (['sub1', 'sub2'] as $col) {
-                $raw = trim((string) ($row->$col ?? ''));
-                if ($raw === '') continue;
+                    $normalised = strtolower(preg_replace('/\s+/', ' ', $raw));
+                    $category   = in_array($normalised, self::SCIENCE_SUBJECTS, true)
+                        ? 'Sciences'
+                        : 'Arts';
 
-                $normalised = strtolower(preg_replace('/\s+/', ' ', $raw));
-                $category   = in_array($normalised, self::SCIENCE_SUBJECTS, true)
-                    ? 'Sciences'
-                    : 'Arts';
-
-                $counts[$category]++;
-            }
-        }
+                    $counts[$category]++;
+                }
+            });
 
         $counts = array_filter($counts, fn ($v) => $v > 0);
 

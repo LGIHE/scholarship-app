@@ -4,7 +4,6 @@ namespace App\Filament\Widgets;
 
 use App\Models\Application;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\DB;
 
 class ApplicationsByGenderChart extends ChartWidget
 {
@@ -21,31 +20,22 @@ class ApplicationsByGenderChart extends ChartWidget
     {
         $counts = ['Female' => 0, 'Male' => 0, 'Other' => 0];
 
-        // Pull NIN values; CF = Female, CM = Male, anything else = Other
-        $nins = Application::query()
-            ->whereNotNull(DB::raw("json_extract(personal_info, '$.nin')"))
-            ->pluck(DB::raw("json_extract(personal_info, '$.nin')"));
+        // Use model cast to read personal_info array directly — no DB::raw needed
+        Application::query()
+            ->whereNotNull('personal_info')
+            ->get(['personal_info'])
+            ->each(function ($app) use (&$counts) {
+                $nin    = trim((string) ($app->personal_info['nin'] ?? ''));
+                $prefix = strtoupper(substr($nin, 0, 2));
 
-        foreach ($nins as $nin) {
-            $prefix = strtoupper(substr(trim((string) $nin), 0, 2));
-            if ($prefix === 'CF') {
-                $counts['Female']++;
-            } elseif ($prefix === 'CM') {
-                $counts['Male']++;
-            } else {
-                $counts['Other']++;
-            }
-        }
-
-        // Applications with no NIN at all count as Other
-        $noNin = Application::query()
-            ->where(function ($q) {
-                $q->whereNull(DB::raw("json_extract(personal_info, '$.nin')"))
-                  ->orWhere(DB::raw("json_extract(personal_info, '$.nin')"), '=', '');
-            })
-            ->count();
-
-        $counts['Other'] += $noNin;
+                if ($prefix === 'CF') {
+                    $counts['Female']++;
+                } elseif ($prefix === 'CM') {
+                    $counts['Male']++;
+                } else {
+                    $counts['Other']++;
+                }
+            });
 
         // Remove zero-count categories for a cleaner chart
         $counts = array_filter($counts, fn ($v) => $v > 0);
