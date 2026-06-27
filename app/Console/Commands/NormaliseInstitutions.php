@@ -48,13 +48,14 @@ class NormaliseInstitutions extends Command
         // Makerere
         'makerere'                          => 'Makerere University (All Campuses)',
 
-        // Kyambogo
+        // Kyambogo — also catches abbreviations starting with "kyam"
         'kyambogo'                          => 'Kyambogo University (All Campuses)',
+        'kyam'                              => 'Kyambogo University (All Campuses)',
 
         // Busitema (catches "Busitema University/Nangorera Campus" etc.)
         'busitema'                          => 'Busitema University (All Campuses)',
 
-        // Islamic University in Uganda
+        // Islamic University in Uganda — catches iuiu anywhere in the string
         'islamic university in uganda'      => 'Islamic University in Uganda (All Campuses)',
         'islamic university'                => 'Islamic University in Uganda (All Campuses)',
         'iuiu'                              => 'Islamic University in Uganda (All Campuses)',
@@ -81,9 +82,11 @@ class NormaliseInstitutions extends Command
         // UNITE campuses — check specific campuses BEFORE generic "unite"
         'unite kabale'                      => 'UNITE Kabale Campus',
         'unite kaliro'                      => 'UNITE Kaliro Campus',
+        'kaliro'                            => 'UNITE Kaliro Campus',
         'unite mubende'                     => 'UNITE Mubende Campus',
         'unite muni'                        => 'UNITE Muni Campus',
         'unite unyama'                      => 'UNITE Unyama Campus',
+        'unyama'                            => 'UNITE Unyama Campus',
 
         // Muni University (after UNITE Muni to avoid false match)
         'muni university'                   => 'Muni University (All Campuses)',
