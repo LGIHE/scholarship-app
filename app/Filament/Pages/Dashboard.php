@@ -20,6 +20,7 @@ class Dashboard extends BaseDashboard
             \App\Filament\Widgets\ApplicationsByGenderChart::class,
             \App\Filament\Widgets\ApplicationsByScienceArtsChart::class,
             \App\Filament\Widgets\ApplicationsByDistrictChart::class,
+            \App\Filament\Widgets\ApplicationsByNationalityChart::class,
             \App\Filament\Widgets\RecentApplicationsWidget::class,
         ];
     }
