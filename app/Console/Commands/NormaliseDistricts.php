@@ -28,11 +28,11 @@ class NormaliseDistricts extends Command
      */
     private const DISTRICTS = [
         // Central
-        'Buikwe', 'Bukomansimbi', 'Buvuma', 'Gomba', 'Kalangala', 'Kalungu',
-        'Kampala', 'Kassanda', 'Kayunga', 'Kiboga', 'Kyankwanzi', 'Kyotera',
-        'Luweero', 'Lwengo', 'Lyantonde', 'Masaka', 'Mityana', 'Mpigi',
-        'Mubende', 'Mukono', 'Nakaseke', 'Nakasongola', 'Rakai', 'Sembabule',
-        'Wakiso',
+        'Buikwe', 'Bukomansimbi', 'Butambala', 'Buvuma', 'Gomba', 'Kalangala',
+        'Kalungu', 'Kampala', 'Kassanda', 'Kayunga', 'Kiboga', 'Kyankwanzi',
+        'Kyotera', 'Luweero', 'Lwengo', 'Lyantonde', 'Masaka', 'Mityana',
+        'Mpigi', 'Mubende', 'Mukono', 'Nakaseke', 'Nakasongola', 'Rakai',
+        'Sembabule', 'Wakiso',
         // Eastern
         'Amuria', 'Budaka', 'Bududa', 'Bugiri', 'Bugweri', 'Bukedea', 'Bukwa',
         'Bulambuli', 'Busia', 'Butebo', 'Buyende', 'Iganga', 'Jinja',

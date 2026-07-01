@@ -11,7 +11,7 @@ export const UGANDA_REGIONS = [
 
 export const DISTRICTS_BY_REGION = {
     Central: [
-        'Buikwe', 'Bukomansimbi', 'Buvuma', 'Gomba',
+        'Buikwe', 'Bukomansimbi', 'Butambala', 'Buvuma', 'Gomba',
         'Kalangala', 'Kalungu', 'Kampala', 'Kassanda', 'Kayunga', 'Kiboga',
         'Kyankwanzi', 'Kyotera', 'Luweero', 'Lwengo', 'Lyantonde',
         'Masaka', 'Mityana', 'Mpigi', 'Mubende', 'Mukono',
