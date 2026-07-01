@@ -1,125 +1,57 @@
-# Application Setup Guide
+# Setup & Deployment Guide
 
-This guide will help you deploy and set up the Laravel Scholarship Management Application.
+Complete guide for installing, configuring, and deploying the LGF Scholarship Management System.
+
+---
 
 ## Prerequisites
 
-Before running the setup script, ensure you have the following installed:
+- **PHP 8.2+** with extensions: PDO, mbstring, tokenizer, xml, ctype, json, bcmath, fileinfo, openssl
+- **Composer**
+- **Node.js + npm** (for frontend assets)
+- **Database**: MySQL, PostgreSQL, or SQLite
 
-### Required
-- **PHP 8.2 or higher** with the following extensions:
-  - PDO
-  - mbstring
-  - tokenizer
-  - xml
-  - ctype
-  - json
-  - bcmath
-  - fileinfo
-  - openssl
-- **Composer** (PHP dependency manager)
-
-### Optional but Recommended
-- **Node.js and npm** (for frontend asset compilation)
-- **Database server** (MySQL, PostgreSQL, or use SQLite)
+---
 
 ## Quick Start
 
-1. **Clone or download the application** to your server
+```bash
+# 1. Clone the repository
+git clone <repo-url> scholarship_app
+cd scholarship_app
 
-2. **Run the setup script:**
-   ```bash
-   ./setup.sh
-   ```
+# 2. Run the interactive setup script
+./setup.sh
+```
 
-3. **Follow the interactive prompts** to configure your application
+The setup script handles environment configuration, dependency installation, database setup, and admin user creation.
 
-## What the Setup Script Does
+---
 
-The setup script performs the following tasks:
-
-### 1. Environment Check
-- Verifies PHP version (8.2+)
-- Checks required PHP extensions
-- Verifies Composer installation
-- Checks Node.js and npm (optional)
-- Validates directory permissions
-
-### 2. Application Configuration
-Prompts you to configure:
-- Application name
-- Environment (local/production)
-- Debug mode
-- Application URL
-
-### 3. Database Configuration
-Choose from:
-- **SQLite** (default, no additional setup required)
-- **MySQL** (requires host, port, database name, username, password)
-- **PostgreSQL** (requires host, port, database name, username, password)
-
-### 4. Mail Configuration
-Choose from:
-- **Log** (default, emails saved to log files)
-- **SMTP** (requires host, port, credentials)
-- **Mailgun** (requires domain and secret)
-- **Postmark** (requires token)
-- **Amazon SES** (requires AWS credentials)
-
-### 5. Dependency Installation
-- Installs Composer dependencies
-- Installs npm dependencies (if Node.js is available)
-
-### 6. Application Setup
-- Generates application encryption key
-- Runs database migrations
-- Creates database tables
-
-### 7. Admin User Creation
-Prompts you to create a System Admin user:
-- Admin name
-- Admin email
-- Admin password (minimum 8 characters)
-
-The admin user will have access to the Filament admin panel.
-
-### 8. Optimization
-- Clears all caches
-- For production: caches configuration, routes, and views
-- Builds frontend assets (if npm is available)
-
-### 9. Permissions
-- Sets proper permissions for storage and cache directories
-
-## Manual Setup (Alternative)
-
-If you prefer to set up manually or the script fails:
+## Manual Setup
 
 ```bash
-# 1. Copy environment file
+# 1. Copy and edit environment file
 cp .env.example .env
-
-# 2. Edit .env file with your configuration
 nano .env
 
-# 3. Install dependencies
+# 2. Install dependencies
 composer install --no-dev --optimize-autoloader
 npm install
 
-# 4. Generate application key
+# 3. Generate app key
 php artisan key:generate
 
-# 5. Create database (for SQLite)
-touch database/database.sqlite
-
-# 6. Run migrations
+# 4. Run migrations
 php artisan migrate --force
 
-# 7. Create admin user manually
+# 5. Build frontend assets
+npm run build
+
+# 6. Create the first admin user via Tinker
 php artisan tinker
 ```
 
-Then in tinker:
 ```php
 $user = \App\Models\User::create([
     'name' => 'System Admin',
@@ -127,94 +59,16 @@ $user = \App\Models\User::create([
     'password' => bcrypt('your-password'),
     'email_verified_at' => now(),
 ]);
-
-$role = \Spatie\Permission\Models\Role::firstOrCreate([
-    'name' => 'System Admin',
-    'guard_name' => 'web'
-]);
-
 $user->assignRole('System Admin');
 ```
 
-## Post-Setup
-
-### Starting the Application
-
-**Development:**
-```bash
-php artisan serve
-```
-Access at: http://localhost:8000
-
-**Production:**
-Configure your web server (Nginx/Apache) to point to the `public` directory.
-
-### Accessing the Admin Panel
-
-Navigate to: `http://your-domain.com/admin`
-
-Login with the admin credentials you created during setup.
-
-### Available User Roles
-
-The application supports the following roles:
-- **System Admin** - Full access to admin panel
-- **Committee Member** - Access to admin panel with limited permissions
-- **Applicant** - Can submit scholarship applications
-- **Scholar** - Scholarship recipients with access to their profile
-
-## Troubleshooting
-
-### Permission Errors
-```bash
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-```
-
-### Database Connection Issues
-- Verify database credentials in `.env`
-- Ensure database server is running
-- For SQLite, ensure `database/database.sqlite` exists and is writable
-
-### Missing PHP Extensions
-Install missing extensions (Ubuntu/Debian example):
-```bash
-sudo apt-get install php8.2-mbstring php8.2-xml php8.2-bcmath php8.2-mysql
-```
-
-### Composer Memory Issues
-```bash
-COMPOSER_MEMORY_LIMIT=-1 composer install
-```
-
-### Clear All Caches
-```bash
-php artisan config:clear
-php artisan cache:clear
-php artisan view:clear
-php artisan route:clear
-```
-
-## Security Considerations
-
-Before deploying to production:
-
-1. **Set `APP_DEBUG=false`** in `.env`
-2. **Use strong passwords** for admin users
-3. **Configure proper file permissions**
-4. **Enable HTTPS** on your web server
-5. **Set up regular backups** of your database
-6. **Keep dependencies updated**: `composer update`
-7. **Configure firewall rules** appropriately
-8. **Review and secure** your `.env` file (never commit to version control)
+---
 
 ## Environment Variables Reference
 
-Key environment variables you may need to configure:
-
 ```env
 # Application
-APP_NAME="Your App Name"
+APP_NAME="LGF Scholarship System"
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://your-domain.com
@@ -223,18 +77,15 @@ APP_URL=https://your-domain.com
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=your_database
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
+DB_DATABASE=scholarship_db
+DB_USERNAME=db_user
+DB_PASSWORD=db_password
 
-# Mail (SMTP example)
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.mailtrap.io
-MAIL_PORT=2525
-MAIL_USERNAME=your_username
-MAIL_PASSWORD=your_password
+# Mail — using Resend (see Email Setup below)
+MAIL_MAILER=resend
 MAIL_FROM_ADDRESS=noreply@your-domain.com
-MAIL_FROM_NAME="${APP_NAME}"
+MAIL_FROM_NAME="Luigi Giussani Foundation"
+RESEND_API_KEY=re_your_api_key_here
 
 # Session & Cache
 SESSION_DRIVER=database
@@ -242,13 +93,189 @@ CACHE_STORE=database
 QUEUE_CONNECTION=database
 ```
 
-## Support
+---
 
-For issues or questions:
-1. Check the Laravel documentation: https://laravel.com/docs
-2. Check the Filament documentation: https://filamentphp.com/docs
-3. Review application logs in `storage/logs/laravel.log`
+## Email Setup (Resend)
 
-## License
+The app uses [Resend](https://resend.com) for transactional email.
 
-This application is open-sourced software licensed under the MIT license.
+### Configure Resend
+
+1. Create a free account at [resend.com](https://resend.com)
+2. Generate an API key under **API Keys**
+3. Add your domain and verify DNS records (SPF, DKIM, DMARC)
+4. Set these values in `.env`:
+
+```env
+MAIL_MAILER=resend
+MAIL_FROM_ADDRESS=noreply@your-verified-domain.com
+RESEND_API_KEY=re_your_api_key_here
+```
+
+### Emails Sent by the App
+
+| Trigger | Recipient | Class |
+|---------|-----------|-------|
+| Applicant registers | Applicant | `WelcomeApplicant` |
+| Application submitted | Applicant | `ApplicationReceived` |
+| Status → Under Review | Applicant | `ApplicationStatusUpdated` |
+| Application approved | Applicant | `ApplicationApproved` |
+| Application rejected | Applicant | `ApplicationRejected` |
+| System user created | New admin | `SystemUserCreated` |
+| Password reset | Any user | Laravel built-in |
+
+All emails are **queued**. Start the queue worker:
+
+```bash
+php artisan queue:work
+```
+
+For production, use Supervisor to keep the worker running.
+
+### Local Development (No Resend)
+
+Use the log driver — emails are written to `storage/logs/laravel.log`:
+
+```env
+MAIL_MAILER=log
+```
+
+---
+
+## Web Server Configuration
+
+### Apache
+
+Create a virtual host pointing `DocumentRoot` to the `public/` directory:
+
+```apache
+<VirtualHost *:80>
+    ServerName your-domain.com
+    DocumentRoot /var/www/html/scholarship_app/public
+
+    <Directory /var/www/html/scholarship_app/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Security headers
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+
+    ErrorLog ${APACHE_LOG_DIR}/scholarship_error.log
+    CustomLog ${APACHE_LOG_DIR}/scholarship_access.log combined
+</VirtualHost>
+```
+
+Enable required modules and the site:
+
+```bash
+sudo a2enmod rewrite
+sudo a2ensite your-app.conf
+sudo systemctl reload apache2
+```
+
+### Nginx
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    root /var/www/html/scholarship_app/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+```
+
+### Shared Hosting (cPanel / Plesk)
+
+If you cannot change the web root, place the Laravel app outside `public_html` and symlink the `public/` contents:
+
+```bash
+# App lives at: /home/user/scholarship_app/
+cd public_html
+ln -s ../scholarship_app/public/* .
+ln -s ../scholarship_app/public/.htaccess .
+```
+
+Then edit `public_html/index.php` to fix the paths:
+
+```php
+require __DIR__.'/../scholarship_app/vendor/autoload.php';
+$app = require_once __DIR__.'/../scholarship_app/bootstrap/app.php';
+```
+
+---
+
+## File Permissions
+
+```bash
+sudo chown -R www-data:www-data /path/to/scholarship_app
+sudo find /path/to/scholarship_app -type d -exec chmod 755 {} \;
+sudo find /path/to/scholarship_app -type f -exec chmod 644 {} \;
+sudo chmod -R 775 storage bootstrap/cache
+```
+
+---
+
+## Production Checklist
+
+- [ ] `APP_DEBUG=false` and `APP_ENV=production` in `.env`
+- [ ] Strong admin passwords
+- [ ] HTTPS configured (SSL certificate)
+- [ ] Domain verified in Resend, DNS records added
+- [ ] Queue worker running under Supervisor
+- [ ] Regular database backups scheduled
+- [ ] `.env` excluded from version control
+- [ ] Caches optimised:
+
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+composer install --optimize-autoloader --no-dev
+```
+
+---
+
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| 403 Forbidden | Check file ownership and permissions |
+| 500 Internal Server Error | Check `storage/logs/laravel.log`; ensure `.env` exists |
+| "Apache is functioning normally" | DocumentRoot is not pointing to `public/`; see Apache setup above |
+| Composer memory limit | `COMPOSER_MEMORY_LIMIT=-1 composer install` |
+| Missing PHP extensions | `sudo apt-get install php8.2-mbstring php8.2-xml php8.2-bcmath` |
+| Emails not sending | Verify `RESEND_API_KEY`, check domain verification, ensure queue is running |
+| App key not set | `php artisan key:generate` |
+
+### Clear All Caches
+
+```bash
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+php artisan route:clear
+```
+
+### Check Logs
+
+```bash
+# Laravel application log
+tail -f storage/logs/laravel.log
+
+# Apache error log
+sudo tail -f /var/log/apache2/error.log
+```

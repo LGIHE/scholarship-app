@@ -29,29 +29,31 @@ class NormaliseDistricts extends Command
     private const DISTRICTS = [
         // Central
         'Buikwe', 'Bukomansimbi', 'Buvuma', 'Gomba', 'Kalangala', 'Kalungu',
-        'Kampala', 'Kayunga', 'Kiboga', 'Kyankwanzi', 'Kyotera', 'Luweero',
-        'Lwengo', 'Lyantonde', 'Masaka', 'Mityana', 'Mpigi', 'Mubende',
-        'Mukono', 'Nakaseke', 'Nakasongola', 'Rakai', 'Sembabule', 'Wakiso',
+        'Kampala', 'Kassanda', 'Kayunga', 'Kiboga', 'Kyankwanzi', 'Kyotera',
+        'Luweero', 'Lwengo', 'Lyantonde', 'Masaka', 'Mityana', 'Mpigi',
+        'Mubende', 'Mukono', 'Nakaseke', 'Nakasongola', 'Rakai', 'Sembabule',
+        'Wakiso',
         // Eastern
         'Amuria', 'Budaka', 'Bududa', 'Bugiri', 'Bugweri', 'Bukedea', 'Bukwa',
         'Bulambuli', 'Busia', 'Butebo', 'Buyende', 'Iganga', 'Jinja',
-        'Kaberamaido', 'Kaliro', 'Kamuli', 'Kapchorwa', 'Katakwi', 'Kibuku',
-        'Kumi', 'Kween', 'Luuka', 'Manafwa', 'Mayuge', 'Mbale', 'Namayingo',
-        'Namisindwa', 'Namutumba', 'Ngora', 'Pallisa', 'Serere', 'Sironko',
-        'Soroti', 'Tororo',
+        'Kaberamaido', 'Kaliro', 'Kamuli', 'Kapchorwa', 'Kapelebyong',
+        'Katakwi', 'Kibuku', 'Kumi', 'Kween', 'Luuka', 'Manafwa', 'Mayuge',
+        'Mbale', 'Namayingo', 'Namisindwa', 'Namutumba', 'Ngora', 'Pallisa',
+        'Serere', 'Sironko', 'Soroti', 'Tororo',
         // Northern
         'Abim', 'Adjumani', 'Agago', 'Alebtong', 'Amolatar', 'Amudat', 'Amuru',
-        'Apac', 'Arua', 'Dokolo', 'Gulu', 'Kaabong', 'Kitgum', 'Koboko', 'Kole',
-        'Kotido', 'Lamwo', 'Lira', 'Maracha', 'Moroto', 'Moyo', 'Madi-Okollo',
-        'Napak', 'Nebbi', 'Nwoya', 'Obongi', 'Omoro', 'Otuke', 'Oyam', 'Pader',
+        'Apac', 'Arua', 'Dokolo', 'Gulu', 'Kaabong', 'Karenga', 'Kitgum',
+        'Koboko', 'Kole', 'Kotido', 'Kwania', 'Lamwo', 'Lira', 'Madi-Okollo',
+        'Maracha', 'Moroto', 'Moyo', 'Nabilatuk', 'Nakapiripirit', 'Napak',
+        'Nebbi', 'Nwoya', 'Obongi', 'Omoro', 'Otuke', 'Oyam', 'Pader',
         'Pakwach', 'Terego', 'Zombo',
         // Western
         'Buhweju', 'Buliisa', 'Bundibugyo', 'Bushenyi', 'Hoima', 'Ibanda',
         'Isingiro', 'Kabale', 'Kabarole', 'Kagadi', 'Kakumiro', 'Kamwenge',
-        'Kanungu', 'Kasese', 'Kibaale', 'Kikuube', 'Kiruhura', 'Kiryandongo',
-        'Kisoro', 'Kyegegwa', 'Kyenjojo', 'Masindi', 'Mbarara', 'Mitooma',
-        'Ntoroko', 'Ntungamo', 'Rubanda', 'Rubirizi', 'Rukiga', 'Rukungiri',
-        'Rwampara', 'Sheema',
+        'Kanungu', 'Kasese', 'Kazo', 'Kibaale', 'Kikuube', 'Kiruhura',
+        'Kiryandongo', 'Kisoro', 'Kitagwenda', 'Kyegegwa', 'Kyenjojo',
+        'Masindi', 'Mbarara', 'Mitooma', 'Ntoroko', 'Ntungamo', 'Rubanda',
+        'Rubirizi', 'Rukiga', 'Rukungiri', 'Rwampara', 'Sheema',
     ];
 
     /**
@@ -62,6 +64,7 @@ class NormaliseDistricts extends Command
         'kampala city'                => 'Kampala',
         'kla'                         => 'Kampala',
         'entebbe'                     => 'Wakiso',   // town in Wakiso district
+        'kasanda'                     => 'Kassanda',
         'luwero'                      => 'Luweero',
         'luweero district'            => 'Luweero',
         'luwero district'             => 'Luweero',
@@ -76,6 +79,9 @@ class NormaliseDistricts extends Command
         'masaka city'                 => 'Masaka',
         'mbale city'                  => 'Mbale',
         'soroti city'                 => 'Soroti',
+        'nakapiripirit'               => 'Nakapiripirit',
+        'madi okollo'                 => 'Madi-Okollo',
+        'madi-okollo'                 => 'Madi-Okollo',
     ];
 
     /**
