@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Exports\BreakdownReportExport;
 use App\Exports\ReportExport;
-use App\Models\Application;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
@@ -29,14 +28,19 @@ class Reports extends Page implements HasForms
     protected static ?int    $navigationSort  = 10;
     protected static string  $view            = 'filament.pages.reports';
 
-    // ── Form state ────────────────────────────────────────────────────────────
+    // ── Filament form data bag ────────────────────────────────────────────────
+    // Using statePath('data') so Filament stores everything in $this->data.
+    // Livewire calls updatedData() on every field change, which triggers a
+    // full component re-render — giving us live preview updates.
 
-    public ?string $report_type  = null;
-    public ?string $status       = null;
-    public ?string $gender       = null;
-    public ?string $nationality  = null;
-    public ?string $date_from    = null;
-    public ?string $date_to      = null;
+    public array $data = [
+        'report_type' => null,
+        'status'      => null,
+        'gender'      => null,
+        'nationality' => null,
+        'date_from'   => null,
+        'date_to'     => null,
+    ];
 
     // ── Access control ────────────────────────────────────────────────────────
 
@@ -45,11 +49,20 @@ class Reports extends Page implements HasForms
         return auth()->user()->can('report.view');
     }
 
-    // ── Report type groups ────────────────────────────────────────────────────
+    // ── Livewire lifecycle: fires on every field change ───────────────────────
 
     /**
-     * Report types that produce aggregated/breakdown rows (not per-applicant rows).
+     * Called by Livewire whenever any key inside $data changes.
+     * The empty body is intentional — Livewire re-renders the component
+     * automatically after this hook runs, which is all we need.
      */
+    public function updatedData(): void
+    {
+        // Intentionally empty — the re-render happens automatically.
+    }
+
+    // ── Report type groups ────────────────────────────────────────────────────
+
     private const BREAKDOWN_TYPES = [
         'breakdown_by_region',
         'breakdown_by_subregion',
@@ -61,7 +74,7 @@ class Reports extends Page implements HasForms
 
     private function isBreakdown(): bool
     {
-        return in_array($this->report_type, self::BREAKDOWN_TYPES, true);
+        return in_array($this->data['report_type'] ?? null, self::BREAKDOWN_TYPES, true);
     }
 
     // ── Form definition ───────────────────────────────────────────────────────
@@ -71,7 +84,7 @@ class Reports extends Page implements HasForms
         return $form
             ->schema([
                 Section::make('Report Configuration')
-                    ->description('Choose the type of report and apply any filters before generating.')
+                    ->description('Results update automatically as you change the filters below.')
                     ->schema([
                         Select::make('report_type')
                             ->label('Report Type')
@@ -98,6 +111,7 @@ class Reports extends Page implements HasForms
                             ])
                             ->native(false)
                             ->placeholder('Select a report type…')
+                            ->live()          // emit Livewire update immediately on change
                             ->columnSpan(2),
 
                         Select::make('status')
@@ -110,7 +124,8 @@ class Reports extends Page implements HasForms
                             ])
                             ->native(false)
                             ->placeholder('All statuses (excl. drafts)')
-                            ->nullable(),
+                            ->nullable()
+                            ->live(),
 
                         Select::make('gender')
                             ->label('Filter by Gender')
@@ -120,7 +135,8 @@ class Reports extends Page implements HasForms
                             ])
                             ->native(false)
                             ->placeholder('All genders')
-                            ->nullable(),
+                            ->nullable()
+                            ->live(),
 
                         Select::make('nationality')
                             ->label('Filter by Nationality')
@@ -130,21 +146,24 @@ class Reports extends Page implements HasForms
                             ])
                             ->native(false)
                             ->placeholder('All nationalities')
-                            ->nullable(),
+                            ->nullable()
+                            ->live(),
 
                         DatePicker::make('date_from')
                             ->label('Submitted From')
                             ->nullable()
-                            ->displayFormat('d/m/Y'),
+                            ->displayFormat('d/m/Y')
+                            ->live(onBlur: true),   // update when user leaves the field
 
                         DatePicker::make('date_to')
                             ->label('Submitted To')
                             ->nullable()
-                            ->displayFormat('d/m/Y'),
+                            ->displayFormat('d/m/Y')
+                            ->live(onBlur: true),
                     ])
                     ->columns(3),
             ])
-            ->statePath('');   // bind directly to component properties
+            ->statePath('data');
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -152,11 +171,11 @@ class Reports extends Page implements HasForms
     private function buildFilters(): array
     {
         return array_filter([
-            'status'      => $this->status,
-            'gender'      => $this->gender,
-            'nationality' => $this->nationality,
-            'date_from'   => $this->date_from,
-            'date_to'     => $this->date_to,
+            'status'      => $this->data['status']      ?? null,
+            'gender'      => $this->data['gender']      ?? null,
+            'nationality' => $this->data['nationality'] ?? null,
+            'date_from'   => $this->data['date_from']   ?? null,
+            'date_to'     => $this->data['date_to']     ?? null,
         ]);
     }
 
@@ -164,18 +183,24 @@ class Reports extends Page implements HasForms
     {
         $parts = [];
 
-        if ($this->status)      $parts[] = 'Status: ' . ucwords(str_replace('_', ' ', $this->status));
-        if ($this->gender)      $parts[] = 'Gender: ' . ucfirst($this->gender);
-        if ($this->nationality) $parts[] = 'Nationality: ' . ($this->nationality === 'ugandan' ? 'Ugandan' : 'Non-Ugandan');
-        if ($this->date_from)   $parts[] = 'From: ' . \Carbon\Carbon::parse($this->date_from)->format('d M Y');
-        if ($this->date_to)     $parts[] = 'To: ' . \Carbon\Carbon::parse($this->date_to)->format('d M Y');
+        $status      = $this->data['status']      ?? null;
+        $gender      = $this->data['gender']      ?? null;
+        $nationality = $this->data['nationality'] ?? null;
+        $dateFrom    = $this->data['date_from']   ?? null;
+        $dateTo      = $this->data['date_to']     ?? null;
+
+        if ($status)      $parts[] = 'Status: '      . ucwords(str_replace('_', ' ', $status));
+        if ($gender)      $parts[] = 'Gender: '      . ucfirst($gender);
+        if ($nationality) $parts[] = 'Nationality: ' . ($nationality === 'ugandan' ? 'Ugandan' : 'Non-Ugandan');
+        if ($dateFrom)    $parts[] = 'From: '        . \Carbon\Carbon::parse($dateFrom)->format('d M Y');
+        if ($dateTo)      $parts[] = 'To: '          . \Carbon\Carbon::parse($dateTo)->format('d M Y');
 
         return implode(' | ', $parts) ?: 'None (all submitted applications)';
     }
 
     private function reportTitle(): string
     {
-        return match ($this->report_type) {
+        return match ($this->data['report_type'] ?? null) {
             'applications_summary'     => 'Applications Summary Report',
             'applicant_details'        => 'Applicant Details Report',
             'scoring_report'           => 'Scoring Report',
@@ -196,7 +221,7 @@ class Reports extends Page implements HasForms
 
     private function validateForm(): bool
     {
-        if (empty($this->report_type)) {
+        if (empty($this->data['report_type'])) {
             Notification::make()
                 ->title('Please select a report type')
                 ->warning()
@@ -207,17 +232,17 @@ class Reports extends Page implements HasForms
         return true;
     }
 
-    /** Build the correct export instance based on report type. */
     private function makeExport(): ReportExport|BreakdownReportExport
     {
+        $type    = $this->data['report_type'];
         $filters = $this->buildFilters();
 
         return $this->isBreakdown()
-            ? new BreakdownReportExport($this->report_type, $filters)
-            : new ReportExport($this->report_type, $filters);
+            ? new BreakdownReportExport($type, $filters)
+            : new ReportExport($type, $filters);
     }
 
-    // ── Actions ───────────────────────────────────────────────────────────────
+    // ── Export actions ────────────────────────────────────────────────────────
 
     public function exportExcel(): BinaryFileResponse
     {
@@ -225,7 +250,7 @@ class Reports extends Page implements HasForms
             return response()->file(tempnam(sys_get_temp_dir(), 'rpt'));
         }
 
-        $filename = $this->report_type . '_' . now()->format('Y-m-d_His') . '.xlsx';
+        $filename = ($this->data['report_type']) . '_' . now()->format('Y-m-d_His') . '.xlsx';
 
         return Excel::download($this->makeExport(), $filename);
     }
@@ -247,7 +272,7 @@ class Reports extends Page implements HasForms
             'filterSummary' => $this->filterSummary(),
         ])->setPaper('a4', 'landscape');
 
-        $filename = $this->report_type . '_' . now()->format('Y-m-d_His') . '.pdf';
+        $filename = ($this->data['report_type']) . '_' . now()->format('Y-m-d_His') . '.pdf';
 
         return response()->streamDownload(
             fn () => print($pdf->output()),
@@ -255,11 +280,18 @@ class Reports extends Page implements HasForms
         );
     }
 
-    // ── Preview data ──────────────────────────────────────────────────────────
+    // ── Reactive preview ──────────────────────────────────────────────────────
 
+    /**
+     * Called from the Blade view on every render.
+     * Because all form fields are ->live(), any change triggers a re-render,
+     * which calls this method with the latest $this->data values.
+     */
     public function getPreviewData(): array
     {
-        if (empty($this->report_type)) {
+        $reportType = $this->data['report_type'] ?? null;
+
+        if (empty($reportType)) {
             return ['headings' => [], 'rows' => [], 'total' => 0, 'is_breakdown' => false];
         }
 
@@ -268,8 +300,8 @@ class Reports extends Page implements HasForms
         $allRows  = $export->collection();
         $total    = $allRows->count();
 
-        // Breakdown reports: show all rows (typically small); detail reports: cap at 10
-        $preview = $this->isBreakdown() ? $allRows : $allRows->take(10);
+        // Breakdown: show all rows (small set). Detail: cap at 15 for preview.
+        $preview = $this->isBreakdown() ? $allRows : $allRows->take(15);
         $rows    = $preview->map(fn ($row) => $export->map($row))->toArray();
 
         return [
