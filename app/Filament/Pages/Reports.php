@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Exports\BreakdownReportExport;
 use App\Exports\ReportExport;
 use App\Models\Application;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -44,6 +45,25 @@ class Reports extends Page implements HasForms
         return auth()->user()->can('report.view');
     }
 
+    // ── Report type groups ────────────────────────────────────────────────────
+
+    /**
+     * Report types that produce aggregated/breakdown rows (not per-applicant rows).
+     */
+    private const BREAKDOWN_TYPES = [
+        'breakdown_by_region',
+        'breakdown_by_subregion',
+        'breakdown_by_district',
+        'breakdown_by_university',
+        'breakdown_by_country',
+        'breakdown_by_nationality',
+    ];
+
+    private function isBreakdown(): bool
+    {
+        return in_array($this->report_type, self::BREAKDOWN_TYPES, true);
+    }
+
     // ── Form definition ───────────────────────────────────────────────────────
 
     public function form(Form $form): Form
@@ -57,14 +77,24 @@ class Reports extends Page implements HasForms
                             ->label('Report Type')
                             ->required()
                             ->options([
-                                'applications_summary' => 'Applications Summary',
-                                'applicant_details'    => 'Applicant Details',
-                                'scoring_report'       => 'Scoring Report',
-                                'district_report'      => 'Applications by District / Region',
-                                'university_report'    => 'Applications by University',
-                                'gender_report'        => 'Applications by Gender',
-                                'financial_report'     => 'Financial Needs Report',
-                                'approved_scholars'    => 'Approved Scholars List',
+                                'Detailed Reports' => [
+                                    'applications_summary' => 'Applications Summary',
+                                    'applicant_details'    => 'Applicant Details',
+                                    'scoring_report'       => 'Scoring Report',
+                                    'district_report'      => 'District / Region (per applicant)',
+                                    'university_report'    => 'University (per applicant)',
+                                    'gender_report'        => 'Gender (per applicant)',
+                                    'financial_report'     => 'Financial Needs Report',
+                                    'approved_scholars'    => 'Approved Scholars List',
+                                ],
+                                'Breakdown / Summary Reports' => [
+                                    'breakdown_by_region'      => 'Breakdown by Region',
+                                    'breakdown_by_subregion'   => 'Breakdown by Subregion',
+                                    'breakdown_by_district'    => 'Breakdown by District',
+                                    'breakdown_by_university'  => 'Breakdown by University / Institution',
+                                    'breakdown_by_country'     => 'Breakdown by Country',
+                                    'breakdown_by_nationality' => 'Breakdown by Nationality',
+                                ],
                             ])
                             ->native(false)
                             ->placeholder('Select a report type…')
@@ -146,15 +176,21 @@ class Reports extends Page implements HasForms
     private function reportTitle(): string
     {
         return match ($this->report_type) {
-            'applications_summary' => 'Applications Summary Report',
-            'applicant_details'    => 'Applicant Details Report',
-            'scoring_report'       => 'Scoring Report',
-            'district_report'      => 'Applications by District / Region',
-            'university_report'    => 'Applications by University',
-            'gender_report'        => 'Applications by Gender',
-            'financial_report'     => 'Financial Needs Report',
-            'approved_scholars'    => 'Approved Scholars List',
-            default                => 'Report',
+            'applications_summary'     => 'Applications Summary Report',
+            'applicant_details'        => 'Applicant Details Report',
+            'scoring_report'           => 'Scoring Report',
+            'district_report'          => 'Applications by District / Region',
+            'university_report'        => 'Applications by University',
+            'gender_report'            => 'Applications by Gender',
+            'financial_report'         => 'Financial Needs Report',
+            'approved_scholars'        => 'Approved Scholars List',
+            'breakdown_by_region'      => 'Breakdown by Region',
+            'breakdown_by_subregion'   => 'Breakdown by Subregion',
+            'breakdown_by_district'    => 'Breakdown by District',
+            'breakdown_by_university'  => 'Breakdown by University / Institution',
+            'breakdown_by_country'     => 'Breakdown by Country',
+            'breakdown_by_nationality' => 'Breakdown by Nationality',
+            default                    => 'Report',
         };
     }
 
@@ -171,21 +207,27 @@ class Reports extends Page implements HasForms
         return true;
     }
 
+    /** Build the correct export instance based on report type. */
+    private function makeExport(): ReportExport|BreakdownReportExport
+    {
+        $filters = $this->buildFilters();
+
+        return $this->isBreakdown()
+            ? new BreakdownReportExport($this->report_type, $filters)
+            : new ReportExport($this->report_type, $filters);
+    }
+
     // ── Actions ───────────────────────────────────────────────────────────────
 
     public function exportExcel(): BinaryFileResponse
     {
         if (!$this->validateForm()) {
-            // Return a dummy response (Livewire won't use it since validate fails)
             return response()->file(tempnam(sys_get_temp_dir(), 'rpt'));
         }
 
         $filename = $this->report_type . '_' . now()->format('Y-m-d_His') . '.xlsx';
 
-        return Excel::download(
-            new ReportExport($this->report_type, $this->buildFilters()),
-            $filename
-        );
+        return Excel::download($this->makeExport(), $filename);
     }
 
     public function exportPdf(): StreamedResponse
@@ -194,9 +236,9 @@ class Reports extends Page implements HasForms
             return response()->streamDownload(fn () => null, 'error.pdf');
         }
 
-        $export   = new ReportExport($this->report_type, $this->buildFilters());
+        $export   = $this->makeExport();
         $headings = $export->headings();
-        $rows     = $export->collection()->map(fn ($app) => $export->map($app))->toArray();
+        $rows     = $export->collection()->map(fn ($row) => $export->map($row))->toArray();
 
         $pdf = Pdf::loadView('reports.pdf', [
             'title'         => $this->reportTitle(),
@@ -218,20 +260,23 @@ class Reports extends Page implements HasForms
     public function getPreviewData(): array
     {
         if (empty($this->report_type)) {
-            return ['headings' => [], 'rows' => [], 'total' => 0];
+            return ['headings' => [], 'rows' => [], 'total' => 0, 'is_breakdown' => false];
         }
 
-        $export   = new ReportExport($this->report_type, $this->buildFilters());
+        $export   = $this->makeExport();
         $headings = $export->headings();
+        $allRows  = $export->collection();
+        $total    = $allRows->count();
 
-        // Show first 10 rows as preview
-        $rows = $export->collection()
-            ->take(10)
-            ->map(fn ($app) => $export->map($app))
-            ->toArray();
+        // Breakdown reports: show all rows (typically small); detail reports: cap at 10
+        $preview = $this->isBreakdown() ? $allRows : $allRows->take(10);
+        $rows    = $preview->map(fn ($row) => $export->map($row))->toArray();
 
-        $total = $export->collection()->count();
-
-        return compact('headings', 'rows', 'total');
+        return [
+            'headings'     => $headings,
+            'rows'         => $rows,
+            'total'        => $total,
+            'is_breakdown' => $this->isBreakdown(),
+        ];
     }
 }

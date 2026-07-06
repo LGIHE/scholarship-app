@@ -41,10 +41,17 @@
     <div class="mt-6">
         <div class="flex items-center justify-between mb-2">
             <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100">
-                Preview
-                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
-                    (first {{ min(10, $preview['total']) }} of {{ $preview['total'] }} records)
-                </span>
+                @if ($preview['is_breakdown'])
+                    Summary Preview
+                    <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                        ({{ $preview['total'] }} group{{ $preview['total'] !== 1 ? 's' : '' }})
+                    </span>
+                @else
+                    Data Preview
+                    <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                        (first {{ min(10, $preview['total']) }} of {{ $preview['total'] }} records)
+                    </span>
+                @endif
             </h3>
         </div>
 
@@ -60,30 +67,30 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
-                    @forelse ($preview['rows'] as $row)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    @forelse ($preview['rows'] as $rowIndex => $row)
+                        @php
+                            // Highlight the totals footer row for breakdown reports
+                            $isTotalsRow = $preview['is_breakdown']
+                                && $rowIndex === array_key_last($preview['rows'])
+                                && in_array('TOTAL', $row);
+                        @endphp
+                        <tr class="{{ $isTotalsRow
+                            ? 'bg-blue-50 dark:bg-blue-950 font-semibold'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800' }} transition-colors">
                             @foreach ($row as $cell)
-                                <td class="px-3 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                <td class="px-3 py-2 {{ $isTotalsRow ? 'text-blue-800 dark:text-blue-200' : 'text-gray-700 dark:text-gray-300' }} whitespace-nowrap">
                                     @php
                                         $statusMap = [
-                                            'Submitted'    => 'fi-badge-color-primary',
-                                            'Under Review' => 'fi-badge-color-warning',
-                                            'Approved'     => 'fi-badge-color-success',
-                                            'Rejected'     => 'fi-badge-color-danger',
-                                            'Draft'        => 'fi-badge-color-gray',
-                                        ];
-                                        $statusColorClass = $statusMap[(string) $cell] ?? null;
-                                    @endphp
-                                    @if ($statusColorClass)
-                                        <x-filament::badge :color="match((string) $cell) {
                                             'Submitted'    => 'primary',
                                             'Under Review' => 'warning',
                                             'Approved'     => 'success',
                                             'Rejected'     => 'danger',
-                                            default        => 'gray',
-                                        }">
-                                            {{ $cell }}
-                                        </x-filament::badge>
+                                            'Draft'        => 'gray',
+                                        ];
+                                        $badgeColor = $statusMap[(string) $cell] ?? null;
+                                    @endphp
+                                    @if ($badgeColor)
+                                        <x-filament::badge :color="$badgeColor">{{ $cell }}</x-filament::badge>
                                     @else
                                         {{ $cell }}
                                     @endif
@@ -101,7 +108,7 @@
             </table>
         </div>
 
-        @if ($preview['total'] > 10)
+        @if (!$preview['is_breakdown'] && $preview['total'] > 10)
             <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
                 Showing 10 of {{ $preview['total'] }} records. Export to see the full dataset.
             </p>
@@ -111,7 +118,12 @@
         <div class="mt-8 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-10 text-center">
             <x-heroicon-o-chart-bar class="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" />
             <p class="text-gray-500 dark:text-gray-400 font-medium">Select a report type above to preview data</p>
-            <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Apply filters then export to Excel or PDF.</p>
+            <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                Apply filters then export to Excel or PDF.<br>
+                <span class="text-xs">
+                    <strong>Breakdown reports</strong> show aggregated counts grouped by region, district, university, country, or nationality.
+                </span>
+            </p>
         </div>
     @endif
 
