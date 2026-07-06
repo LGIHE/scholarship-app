@@ -196,9 +196,11 @@ class ApplicationsByDistrictChart extends ChartWidget
 
         Application::query()
             ->whereNotNull('personal_info')
+            ->whereNotIn('status', ['draft'])
             ->get(['personal_info'])
             ->each(function ($app) use (&$grouped) {
                 $raw = trim((string) ($app->personal_info['residence_district'] ?? ''));
+
                 if ($raw === '') {
                     return;
                 }

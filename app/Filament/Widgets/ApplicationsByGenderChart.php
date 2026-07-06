@@ -21,8 +21,10 @@ class ApplicationsByGenderChart extends ChartWidget
         $counts = ['Female' => 0, 'Male' => 0, 'Other' => 0];
 
         // Use model cast to read personal_info array directly — no DB::raw needed
+        // Only count submitted applications (excludes drafts)
         Application::query()
             ->whereNotNull('personal_info')
+            ->whereNotIn('status', ['draft'])
             ->get(['personal_info'])
             ->each(function ($app) use (&$counts) {
                 $nin    = trim((string) ($app->personal_info['nin'] ?? ''));

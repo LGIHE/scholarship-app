@@ -105,6 +105,7 @@ class ApplicationsByUniversityChart extends ChartWidget
 
         Application::query()
             ->whereNotNull('personal_info')
+            ->whereNotIn('status', ['draft'])
             ->get(['personal_info'])
             ->each(function ($app) use (&$counts, &$others) {
                 $raw        = (string) ($app->personal_info['institution'] ?? '');

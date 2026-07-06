@@ -39,8 +39,10 @@ class ApplicationsByScienceArtsChart extends ChartWidget
         $counts = ['Sciences' => 0, 'Arts' => 0];
 
         // Use model cast to read personal_info directly — no DB::raw needed
+        // Only count submitted applications (excludes drafts)
         Application::query()
             ->whereNotNull('personal_info')
+            ->whereNotIn('status', ['draft'])
             ->get(['personal_info'])
             ->each(function ($app) use (&$counts) {
                 foreach (['teaching_subjects_1', 'teaching_subjects_2'] as $field) {

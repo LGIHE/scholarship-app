@@ -19,11 +19,10 @@ class ApplicationsByStatusChart extends ChartWidget
     protected function getData(): array
     {
         $statuses = [
-            'draft' => 'Draft',
-            'submitted' => 'Submitted',
+            'submitted'    => 'Submitted',
             'under_review' => 'Under Review',
-            'approved' => 'Approved',
-            'rejected' => 'Rejected',
+            'approved'     => 'Approved',
+            'rejected'     => 'Rejected',
         ];
 
         $data = [];
@@ -37,7 +36,6 @@ class ApplicationsByStatusChart extends ChartWidget
                     'label' => 'Applications',
                     'data' => $data,
                     'backgroundColor' => [
-                        'rgb(156, 163, 175)', // gray for draft
                         'rgb(59, 130, 246)',  // blue for submitted
                         'rgb(251, 191, 36)',  // yellow for under review
                         'rgb(34, 197, 94)',   // green for approved

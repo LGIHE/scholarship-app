@@ -22,6 +22,7 @@ class ApplicationsByNationalityChart extends ChartWidget
 
         Application::query()
             ->whereNotNull('personal_info')
+            ->whereNotIn('status', ['draft'])
             ->get(['personal_info'])
             ->each(function ($app) use (&$grouped) {
                 $isUgandan = strtolower(trim((string) ($app->personal_info['is_ugandan'] ?? '')));
