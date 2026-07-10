@@ -70,6 +70,9 @@ class Reports extends Page implements HasForms
         'breakdown_by_university',
         'breakdown_by_country',
         'breakdown_by_nationality',
+        'breakdown_by_disability',
+        'breakdown_by_refugee',
+        'breakdown_by_entry_level',
     ];
 
     private function isBreakdown(): bool
@@ -107,6 +110,9 @@ class Reports extends Page implements HasForms
                                     'breakdown_by_university'  => 'Breakdown by University / Institution',
                                     'breakdown_by_country'     => 'Breakdown by Country',
                                     'breakdown_by_nationality' => 'Breakdown by Nationality',
+                                    'breakdown_by_disability'  => 'Breakdown by Disability',
+                                    'breakdown_by_refugee'     => 'Breakdown by Refugee Status',
+                                    'breakdown_by_entry_level' => 'Breakdown by Entry Level',
                                 ],
                             ])
                             ->native(false)
@@ -215,6 +221,9 @@ class Reports extends Page implements HasForms
             'breakdown_by_university'  => 'Breakdown by University / Institution',
             'breakdown_by_country'     => 'Breakdown by Country',
             'breakdown_by_nationality' => 'Breakdown by Nationality',
+            'breakdown_by_disability'  => 'Breakdown by Disability',
+            'breakdown_by_refugee'     => 'Breakdown by Refugee Status',
+            'breakdown_by_entry_level' => 'Breakdown by Entry Level',
             default                    => 'Report',
         };
     }

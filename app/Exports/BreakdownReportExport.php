@@ -23,6 +23,9 @@ use Illuminate\Support\Collection;
  *   breakdown_by_university    – Institution / university counts
  *   breakdown_by_country       – Country of residence counts (plus nationality grouping)
  *   breakdown_by_nationality   – Ugandan vs Non-Ugandan (with country breakdown)
+ *   breakdown_by_disability    – With disability / without / type breakdown
+ *   breakdown_by_refugee       – Refugee vs non-refugee vs Ugandan
+ *   breakdown_by_entry_level   – A-Level / Diploma / HEAC / Mature Entry admission route
  */
 class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithTitle
 {
@@ -76,6 +79,9 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
             'breakdown_by_university'  => 'By University',
             'breakdown_by_country'     => 'By Country',
             'breakdown_by_nationality' => 'By Nationality',
+            'breakdown_by_disability'  => 'By Disability',
+            'breakdown_by_refugee'     => 'By Refugee Status',
+            'breakdown_by_entry_level' => 'By Entry Level',
             default                    => 'Breakdown',
         };
     }
@@ -111,6 +117,18 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
                 'Nationality', 'Country / Details', 'Total Applications', '% of Total',
                 'Submitted', 'Under Review', 'Approved', 'Rejected',
             ],
+            'breakdown_by_disability' => [
+                'Disability Status', 'Disability Type / Detail', 'Total Applications', '% of Total',
+                'Submitted', 'Under Review', 'Approved', 'Rejected',
+            ],
+            'breakdown_by_refugee' => [
+                'Category', 'Total Applications', '% of Total',
+                'Submitted', 'Under Review', 'Approved', 'Rejected',
+            ],
+            'breakdown_by_entry_level' => [
+                'Entry / Admission Level', 'Total Applications', '% of Total',
+                'Submitted', 'Under Review', 'Approved', 'Rejected',
+            ],
             default => ['Group', 'Total Applications', '% of Total'],
         };
     }
@@ -130,6 +148,9 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
             'breakdown_by_university'  => $this->groupByUniversity($apps),
             'breakdown_by_country'     => $this->groupByCountry($apps),
             'breakdown_by_nationality' => $this->groupByNationality($apps),
+            'breakdown_by_disability'  => $this->groupByDisability($apps),
+            'breakdown_by_refugee'     => $this->groupByRefugee($apps),
+            'breakdown_by_entry_level' => $this->groupByEntryLevel($apps),
             default                    => collect(),
         };
     }
@@ -169,7 +190,7 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
             }
         }
 
-        return $query->get(['personal_info', 'status']);
+        return $query->get(['personal_info', 'disability_info', 'status']);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -392,6 +413,226 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
             $t['submitted'], $t['under_review'], $t['approved'], $t['rejected']];
 
         return collect($rows);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Breakdown by Disability
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private function groupByDisability(Collection $apps): Collection
+    {
+        // Rows:
+        //   "With Disability"  → broken down by disability type (from disability_info)
+        //   "Without Disability"
+        //   "Not Specified"
+        $bags  = [];
+        $grand = 0;
+
+        // Disability difficulty labels
+        $difficultyLabels = [
+            'difficulty_walking'       => 'Physical / Walking',
+            'difficulty_seeing'        => 'Visual',
+            'difficulty_hearing'       => 'Hearing',
+            'difficulty_communicating' => 'Communication / Speech',
+            'difficulty_picking'       => 'Manual / Picking Objects',
+            'difficulty_self_care'     => 'Self-Care',
+            'difficulty_emotions'      => 'Psychosocial / Emotional',
+        ];
+
+        foreach ($apps as $app) {
+            $p  = $app->personal_info   ?? [];
+            $di = $app->disability_info ?? [];
+
+            $hasDisability = strtolower(trim((string) ($p['has_disability'] ?? '')));
+
+            if ($hasDisability === 'yes') {
+                // Collect all marked difficulty types
+                $types = [];
+                foreach ($difficultyLabels as $field => $label) {
+                    if (!empty($di[$field])) {
+                        $types[] = $label;
+                    }
+                }
+
+                // Functional level as extra context
+                $level = trim((string) ($di['functionality_level'] ?? ''));
+
+                if (!empty($types)) {
+                    foreach ($types as $type) {
+                        $key = 'With Disability|' . $type;
+                        if (!isset($bags[$key])) {
+                            $bags[$key] = $this->emptyBag() + [
+                                'status_label' => 'With Disability',
+                                'detail'       => $type,
+                            ];
+                        }
+                        $this->incrementBag($bags[$key], $app->status);
+                    }
+                } else {
+                    // Has disability flagged but no specific type ticked
+                    $detail = $level !== '' ? 'Unspecified (Level: ' . $level . ')' : 'Unspecified';
+                    $key    = 'With Disability|' . $detail;
+                    if (!isset($bags[$key])) {
+                        $bags[$key] = $this->emptyBag() + [
+                            'status_label' => 'With Disability',
+                            'detail'       => $detail,
+                        ];
+                    }
+                    $this->incrementBag($bags[$key], $app->status);
+                }
+            } elseif ($hasDisability === 'no') {
+                $key = 'Without Disability|—';
+                if (!isset($bags[$key])) {
+                    $bags[$key] = $this->emptyBag() + [
+                        'status_label' => 'Without Disability',
+                        'detail'       => '—',
+                    ];
+                }
+                $this->incrementBag($bags[$key], $app->status);
+            } else {
+                $key = 'Not Specified|—';
+                if (!isset($bags[$key])) {
+                    $bags[$key] = $this->emptyBag() + [
+                        'status_label' => 'Not Specified',
+                        'detail'       => '—',
+                    ];
+                }
+                $this->incrementBag($bags[$key], $app->status);
+            }
+
+            $grand++;
+        }
+
+        // Custom sort: With Disability first, Without second, Not Specified last
+        $order = ['With Disability' => 0, 'Without Disability' => 1, 'Not Specified' => 2];
+        uasort($bags, function ($a, $b) use ($order) {
+            $oa = $order[$a['status_label']] ?? 9;
+            $ob = $order[$b['status_label']] ?? 9;
+            return $oa !== $ob ? $oa <=> $ob : $b['total'] <=> $a['total'];
+        });
+
+        $rows = [];
+        foreach ($bags as $bag) {
+            $pct    = $grand > 0 ? round($bag['total'] / $grand * 100, 1) : 0;
+            $rows[] = [
+                $bag['status_label'], $bag['detail'], $bag['total'], $pct . '%',
+                $bag['submitted'], $bag['under_review'], $bag['approved'], $bag['rejected'],
+            ];
+        }
+
+        $t = $this->emptyBag();
+        foreach ($bags as $b) { foreach (array_keys($t) as $k) $t[$k] += $b[$k]; }
+        // Grand total counts each disability type separately for "With Disability" apps,
+        // so recalculate from original $grand for the totals footer
+        $rows[] = ['TOTAL', '', $grand, '100%',
+            $t['submitted'], $t['under_review'], $t['approved'], $t['rejected']];
+
+        return collect($rows);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Breakdown by Refugee Status
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private function groupByRefugee(Collection $apps): Collection
+    {
+        // Categories:
+        //   Ugandan Citizen
+        //   Refugee (non-Ugandan with a refugee_card_number)
+        //   Non-Ugandan (non-refugee)
+        //   Not Specified
+        $bags  = [];
+        $grand = 0;
+
+        foreach ($apps as $app) {
+            $p          = $app->personal_info ?? [];
+            $isUgandan  = strtolower(trim((string) ($p['is_ugandan'] ?? '')));
+            $refugee    = trim((string) ($p['refugee_card_number'] ?? ''));
+            $passportNo = trim((string) ($p['passport_number'] ?? ''));
+            $foreignId  = trim((string) ($p['foreign_id_number'] ?? ''));
+
+            if ($isUgandan === 'yes') {
+                $label = 'Ugandan Citizen';
+            } elseif ($isUgandan === 'no') {
+                if ($refugee !== '') {
+                    $label = 'Refugee';
+                } else {
+                    $label = 'Non-Ugandan (Non-Refugee)';
+                }
+            } else {
+                $label = 'Not Specified';
+            }
+
+            if (!isset($bags[$label])) $bags[$label] = $this->emptyBag();
+            $this->incrementBag($bags[$label], $app->status);
+            $grand++;
+        }
+
+        // Sort: Ugandan first, Refugee, Non-Ugandan, Not Specified
+        $order = [
+            'Ugandan Citizen'           => 0,
+            'Refugee'                   => 1,
+            'Non-Ugandan (Non-Refugee)' => 2,
+            'Not Specified'             => 3,
+        ];
+        uksort($bags, fn ($a, $b) => ($order[$a] ?? 9) <=> ($order[$b] ?? 9));
+
+        return $this->bagsToRows($bags, $grand, fn ($key, $bag, $pct) => [
+            $key, $bag['total'], $pct . '%',
+            $bag['submitted'], $bag['under_review'], $bag['approved'], $bag['rejected'],
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Breakdown by Entry / Admission Level
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private function groupByEntryLevel(Collection $apps): Collection
+    {
+        // Determine entry route from which admission field group is filled.
+        // An applicant may technically have data in more than one group
+        // (partial fills), so we pick the "most complete" one.
+        // Priority: A-Level → Diploma → HEAC → Mature Entry → Not Specified
+        $bags  = [];
+        $grand = 0;
+
+        foreach ($apps as $app) {
+            $p = $app->personal_info ?? [];
+
+            $hasAlevel  = !empty(trim((string) ($p['alevel_school_exam'] ?? '')))
+                       || !empty(trim((string) ($p['alevel_index']      ?? '')));
+            $hasDiploma = !empty(trim((string) ($p['diploma_school'] ?? '')))
+                       || !empty(trim((string) ($p['diploma_index']  ?? '')));
+            $hasHeac    = !empty(trim((string) ($p['heac_school'] ?? '')))
+                       || !empty(trim((string) ($p['heac_index']  ?? '')));
+            $hasMature  = !empty(trim((string) ($p['mature_school'] ?? '')))
+                       || !empty(trim((string) ($p['mature_index']  ?? '')));
+
+            if ($hasAlevel) {
+                $label = "A' Level";
+            } elseif ($hasDiploma) {
+                $label = 'Diploma';
+            } elseif ($hasHeac) {
+                $label = 'HEAC';
+            } elseif ($hasMature) {
+                $label = 'Mature Entry';
+            } else {
+                $label = 'Not Specified';
+            }
+
+            if (!isset($bags[$label])) $bags[$label] = $this->emptyBag();
+            $this->incrementBag($bags[$label], $app->status);
+            $grand++;
+        }
+
+        // Fixed display order
+        $order = ["A' Level" => 0, 'Diploma' => 1, 'HEAC' => 2, 'Mature Entry' => 3, 'Not Specified' => 4];
+        uksort($bags, fn ($a, $b) => ($order[$a] ?? 9) <=> ($order[$b] ?? 9));
+
+        return $this->bagsToRows($bags, $grand, fn ($key, $bag, $pct) => [
+            $key, $bag['total'], $pct . '%',
+            $bag['submitted'], $bag['under_review'], $bag['approved'], $bag['rejected'],
+        ]);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
