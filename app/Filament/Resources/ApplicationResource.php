@@ -445,8 +445,18 @@ class ApplicationResource extends Resource
                             \Illuminate\Support\Facades\Mail::to($record->user)->send(
                                 new \App\Mail\ApplicationStatusUpdated($record, $oldStatus, 'under_review')
                             );
+                            activity('email')
+                                ->causedBy(auth()->user())
+                                ->performedOn($record)
+                                ->withProperties(['recipient' => $record->user->email, 'type' => 'ApplicationStatusUpdated', 'from' => $oldStatus, 'to' => 'under_review'])
+                                ->log('Email sent: Application status updated to Under Review');
                         } catch (\Exception $e) {
                             \Illuminate\Support\Facades\Log::error('Failed to send status update email: ' . $e->getMessage());
+                            activity('email')
+                                ->causedBy(auth()->user())
+                                ->performedOn($record)
+                                ->withProperties(['error' => $e->getMessage(), 'type' => 'ApplicationStatusUpdated'])
+                                ->log('Email failed: Application status update notification');
                         }
                     })
                     ->hidden(fn (Application $record) => $record->status !== 'submitted')
@@ -468,8 +478,18 @@ class ApplicationResource extends Resource
                         // Send approval email
                         try {
                             \Illuminate\Support\Facades\Mail::to($user)->send(new \App\Mail\ApplicationApproved($record));
+                            activity('email')
+                                ->causedBy(auth()->user())
+                                ->performedOn($record)
+                                ->withProperties(['recipient' => $user->email, 'type' => 'ApplicationApproved'])
+                                ->log('Email sent: Application approval notification');
                         } catch (\Exception $e) {
                             \Illuminate\Support\Facades\Log::error('Failed to send approval email: ' . $e->getMessage());
+                            activity('email')
+                                ->causedBy(auth()->user())
+                                ->performedOn($record)
+                                ->withProperties(['error' => $e->getMessage(), 'type' => 'ApplicationApproved'])
+                                ->log('Email failed: Application approval notification');
                         }
 
                         // Create Scholar record
@@ -499,8 +519,18 @@ class ApplicationResource extends Resource
                             \Illuminate\Support\Facades\Mail::to($record->user)->send(
                                 new \App\Mail\ApplicationRejected($record)
                             );
+                            activity('email')
+                                ->causedBy(auth()->user())
+                                ->performedOn($record)
+                                ->withProperties(['recipient' => $record->user->email, 'type' => 'ApplicationRejected'])
+                                ->log('Email sent: Application rejection notification');
                         } catch (\Exception $e) {
                             \Illuminate\Support\Facades\Log::error('Failed to send rejection email: ' . $e->getMessage());
+                            activity('email')
+                                ->causedBy(auth()->user())
+                                ->performedOn($record)
+                                ->withProperties(['error' => $e->getMessage(), 'type' => 'ApplicationRejected'])
+                                ->log('Email failed: Application rejection notification');
                         }
                     })
                     ->hidden(fn (Application $record) => in_array($record->status, ['rejected', 'approved']))

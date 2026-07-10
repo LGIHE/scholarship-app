@@ -280,8 +280,18 @@ class ApplicationController extends Controller
 
         try {
             \Illuminate\Support\Facades\Mail::to($request->user())->send(new \App\Mail\ApplicationReceived($application));
+            activity('email')
+                ->causedBy($request->user())
+                ->performedOn($application)
+                ->withProperties(['recipient' => $request->user()->email, 'type' => 'ApplicationReceived'])
+                ->log('Email sent: Application received confirmation');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to send application email: ' . $e->getMessage());
+            activity('email')
+                ->causedBy($request->user())
+                ->performedOn($application)
+                ->withProperties(['error' => $e->getMessage(), 'type' => 'ApplicationReceived'])
+                ->log('Email failed: Application received confirmation');
         }
 
         return redirect()->route('portal')->with('success', 'Application submitted successfully.');

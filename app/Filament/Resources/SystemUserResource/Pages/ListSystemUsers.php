@@ -29,12 +29,24 @@ class ListSystemUsers extends ListRecords
                     return $data;
                 })
                 ->after(function ($record, array $data) {
+                    // Log system user creation
+                    activity('auth')
+                        ->causedBy(auth()->user())
+                        ->performedOn($record)
+                        ->withProperties(['email' => $record->email, 'roles' => $record->getRoleNames()->toArray()])
+                        ->log('System user account created');
+
                     // Send setup email if password was not provided
                     if ($data['send_setup_email'] ?? false) {
                         try {
                             \Illuminate\Support\Facades\Mail::to($record)->send(
                                 new \App\Mail\SystemUserCreated($record)
                             );
+                            activity('email')
+                                ->causedBy(auth()->user())
+                                ->performedOn($record)
+                                ->withProperties(['recipient' => $record->email, 'type' => 'SystemUserCreated'])
+                                ->log('Email sent: System user setup invitation');
                             
                             // Show success notification
                             \Filament\Notifications\Notification::make()
@@ -44,6 +56,11 @@ class ListSystemUsers extends ListRecords
                                 ->send();
                         } catch (\Exception $e) {
                             \Illuminate\Support\Facades\Log::error('Failed to send system user creation email: ' . $e->getMessage());
+                            activity('email')
+                                ->causedBy(auth()->user())
+                                ->performedOn($record)
+                                ->withProperties(['error' => $e->getMessage(), 'type' => 'SystemUserCreated'])
+                                ->log('Email failed: System user setup invitation');
                             
                             // Show notification to admin
                             \Filament\Notifications\Notification::make()

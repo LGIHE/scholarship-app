@@ -30,9 +30,26 @@ class SendWelcomeEmail implements ShouldQueue
         if ($event->user->hasRole('Applicant')) {
             try {
                 Mail::to($event->user)->send(new WelcomeApplicant($event->user));
+                activity('email')
+                    ->causedBy($event->user)
+                    ->performedOn($event->user)
+                    ->withProperties(['recipient' => $event->user->email, 'type' => 'WelcomeApplicant'])
+                    ->log('Email sent: Welcome email to new applicant');
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Failed to send welcome email: ' . $e->getMessage());
+                activity('email')
+                    ->causedBy($event->user)
+                    ->performedOn($event->user)
+                    ->withProperties(['error' => $e->getMessage(), 'type' => 'WelcomeApplicant'])
+                    ->log('Email failed: Welcome email to new applicant');
             }
         }
+
+        // Log user signup regardless of role
+        activity('auth')
+            ->causedBy($event->user)
+            ->performedOn($event->user)
+            ->withProperties(['email' => $event->user->email, 'role' => $event->user->getRoleNames()->first() ?? 'none'])
+            ->log('New user registered');
     }
 }
