@@ -11,7 +11,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Section;
 use Spatie\Activitylog\Models\Activity;
-use Illuminate\Support\Facades\Log as LaravelLog;
+use App\Models\User;
 use Carbon\Carbon;
 
 class Logs extends Page implements HasForms
@@ -28,12 +28,13 @@ class Logs extends Page implements HasForms
     // ── Filter state ──────────────────────────────────────────────────────────
 
     public array $data = [
-        'log_name'   => null,
-        'event'      => null,
-        'search'     => null,
-        'date_from'  => null,
-        'date_to'    => null,
-        'tab'        => 'activity', // 'activity' | 'error'
+        'log_name'    => null,
+        'event'       => null,
+        'search'      => null,
+        'date_from'   => null,
+        'date_to'     => null,
+        'error_limit' => '50',
+        'tab'         => 'activity', // 'activity' | 'error'
     ];
 
     public int $perPage = 25;
@@ -57,66 +58,98 @@ class Logs extends Page implements HasForms
         $this->data['tab'] = $tab;
     }
 
-    // ── Form ──────────────────────────────────────────────────────────────────
+    // ── Forms — one per tab so filters are contextual ─────────────────────────
 
     public function form(Form $form): Form
     {
+        $tab = $this->data['tab'] ?? 'activity';
+
+        $sharedFields = [
+            TextInput::make('search')
+                ->label('Search by name, email or description')
+                ->placeholder('e.g. John Doe, john@example.com, "status updated"…')
+                ->prefixIcon('heroicon-o-magnifying-glass')
+                ->nullable()
+                ->live(onBlur: true),
+
+            DatePicker::make('date_from')
+                ->label('From')
+                ->nullable()
+                ->displayFormat('d/m/Y')
+                ->live(onBlur: true),
+
+            DatePicker::make('date_to')
+                ->label('To')
+                ->nullable()
+                ->displayFormat('d/m/Y')
+                ->live(onBlur: true),
+        ];
+
+        if ($tab === 'activity') {
+            $schema = [
+                Select::make('log_name')
+                    ->label('Channel')
+                    ->options([
+                        'application' => 'Applications',
+                        'scholar'     => 'Scholars',
+                        'email'       => 'Emails',
+                        'auth'        => 'Auth / Signups',
+                    ])
+                    ->native(false)
+                    ->placeholder('All channels')
+                    ->nullable()
+                    ->live(),
+
+                Select::make('event')
+                    ->label('Event Type')
+                    ->options([
+                        'created' => 'Created',
+                        'updated' => 'Updated',
+                        'deleted' => 'Deleted',
+                    ])
+                    ->native(false)
+                    ->placeholder('All events')
+                    ->nullable()
+                    ->live(),
+
+                ...$sharedFields,
+            ];
+            $columns = 5;
+        } else {
+            // Error tab — channel/event irrelevant; show limit instead
+            $schema = [
+                Select::make('error_limit')
+                    ->label('Show most recent')
+                    ->options([
+                        '25'  => '25 entries',
+                        '50'  => '50 entries',
+                        '100' => '100 entries',
+                        '200' => '200 entries',
+                        '500' => '500 entries',
+                    ])
+                    ->native(false)
+                    ->live(),
+
+                ...$sharedFields,
+            ];
+            $columns = 4;
+        }
+
         return $form
             ->schema([
                 Section::make()
-                    ->schema([
-                        Select::make('log_name')
-                            ->label('Log Channel')
-                            ->options([
-                                'application' => 'Applications',
-                                'scholar'     => 'Scholars',
-                                'email'       => 'Emails',
-                                'auth'        => 'Auth / Signups',
-                            ])
-                            ->native(false)
-                            ->placeholder('All channels')
-                            ->nullable()
-                            ->live(),
-
-                        Select::make('event')
-                            ->label('Event Type')
-                            ->options([
-                                'created' => 'Created',
-                                'updated' => 'Updated',
-                                'deleted' => 'Deleted',
-                            ])
-                            ->native(false)
-                            ->placeholder('All events')
-                            ->nullable()
-                            ->live(),
-
-                        TextInput::make('search')
-                            ->label('Search description')
-                            ->placeholder('e.g. "email sent" or applicant name…')
-                            ->nullable()
-                            ->live(onBlur: true),
-
-                        DatePicker::make('date_from')
-                            ->label('From')
-                            ->nullable()
-                            ->displayFormat('d/m/Y')
-                            ->live(onBlur: true),
-
-                        DatePicker::make('date_to')
-                            ->label('To')
-                            ->nullable()
-                            ->displayFormat('d/m/Y')
-                            ->live(onBlur: true),
-                    ])
-                    ->columns(5),
+                    ->schema($schema)
+                    ->columns($columns),
             ])
             ->statePath('data');
     }
 
-    // ── Data helpers ──────────────────────────────────────────────────────────
+    // ── Activity log query ────────────────────────────────────────────────────
 
     public function getActivityLogs(): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
+        $search = trim($this->data['search'] ?? '');
+
         $query = Activity::with('causer', 'subject')
             ->orderByDesc('created_at');
 
@@ -128,8 +161,17 @@ class Logs extends Page implements HasForms
             $query->where('event', $event);
         }
 
-        if ($search = $this->data['search'] ?? null) {
-            $query->where('description', 'like', "%{$search}%");
+        if ($search !== '') {
+            // Match the description OR the causer's name/email via a subquery
+            $matchingCauserIds = User::where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->pluck('id');
+
+            $query->where(function ($q) use ($search, $matchingCauserIds) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhereIn('causer_id', $matchingCauserIds)
+                  ->orWhere('properties', 'like', "%{$search}%");
+            });
         }
 
         if ($from = $this->data['date_from'] ?? null) {
@@ -142,6 +184,8 @@ class Logs extends Page implements HasForms
 
         return $query->paginate($this->perPage);
     }
+
+    // ── Error log reader ──────────────────────────────────────────────────────
 
     public function getErrorLogs(): array
     {
@@ -156,7 +200,6 @@ class Logs extends Page implements HasForms
         $current = null;
 
         foreach ($lines as $line) {
-            // Laravel log entries start with a timestamp like [2026-07-10 ...]
             if (preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] (\w+)\.(\w+): (.+)$/', $line, $m)) {
                 if ($current) {
                     $entries[] = $current;
@@ -177,15 +220,18 @@ class Logs extends Page implements HasForms
             $entries[] = $current;
         }
 
-        // Most recent first, cap at 200 lines
+        // Most recent first
         $entries = array_reverse($entries);
 
-        // Apply search filter
-        if ($search = $this->data['search'] ?? null) {
-            $entries = array_filter($entries, fn ($e) => stripos($e['message'], $search) !== false);
+        // Search: match message, stack trace, or any email/name in the full entry text
+        if ($search = trim($this->data['search'] ?? '')) {
+            $entries = array_filter($entries, function ($e) use ($search) {
+                $haystack = $e['message'] . ' ' . $e['context'];
+                return stripos($haystack, $search) !== false;
+            });
         }
 
-        // Apply date filter
+        // Date filters
         if ($from = $this->data['date_from'] ?? null) {
             $fromTs  = Carbon::parse($from)->startOfDay();
             $entries = array_filter($entries, fn ($e) => Carbon::parse($e['timestamp'])->gte($fromTs));
@@ -196,8 +242,13 @@ class Logs extends Page implements HasForms
             $entries = array_filter($entries, fn ($e) => Carbon::parse($e['timestamp'])->lte($toTs));
         }
 
-        return array_values(array_slice($entries, 0, 200));
+        // Apply the "show most recent N" limit
+        $limit = (int) ($this->data['error_limit'] ?? 50);
+
+        return array_values(array_slice(array_values($entries), 0, $limit));
     }
+
+    // ── Stats ─────────────────────────────────────────────────────────────────
 
     public function getLogStats(): array
     {
