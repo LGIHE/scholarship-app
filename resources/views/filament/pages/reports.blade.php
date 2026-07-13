@@ -27,6 +27,18 @@
             <span wire:loading.remove wire:target="exportPdf">Export to PDF</span>
             <span wire:loading wire:target="exportPdf">Generating…</span>
         </x-filament::button>
+
+        @if ($this->isSplitMode())
+        <x-filament::button
+            wire:click="exportZip"
+            color="warning"
+            icon="heroicon-o-archive-box-arrow-down"
+            wire:loading.attr="disabled"
+        >
+            <span wire:loading.remove wire:target="exportZip">Download Split Reports (ZIP)</span>
+            <span wire:loading wire:target="exportZip">Generating ZIP…</span>
+        </x-filament::button>
+        @endif
     </div>
 
     {{-- ── Live preview ────────────────────────────────────────────────── --}}
@@ -39,7 +51,7 @@
         {{-- Loading overlay — visible while Livewire is processing a field change --}}
         <div
             wire:loading
-            wire:target="updatedData,data.report_type,data.status,data.gender,data.nationality,data.date_from,data.date_to"
+            wire:target="updatedData,data.report_type,data.status,data.gender,data.nationality,data.date_from,data.date_to,data.university_filter,data.district_filter,data.gender_filter,data.split_by_group"
             class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm"
         >
             <div class="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300">

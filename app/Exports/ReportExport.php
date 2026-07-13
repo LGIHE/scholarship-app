@@ -83,8 +83,28 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
             }
         }
 
-        return $query->get();
-    }
+        // ── Granular per-group filters (used when splitting reports) ──────────
+
+        // University filter (exact match on institution field)
+        if (!empty($this->filters['university_filter'])) {
+            $query->where('personal_info->institution', $this->filters['university_filter']);
+        }
+
+        // District filter (case-insensitive match on residence_district)
+        if (!empty($this->filters['district_filter'])) {
+            $query->whereRaw(
+                "LOWER(JSON_UNQUOTE(JSON_EXTRACT(personal_info, '$.residence_district'))) = ?",
+                [strtolower($this->filters['district_filter'])]
+            );
+        }
+
+        // Gender filter for gender_report split (Female / Male derived from NIN prefix)
+        if (!empty($this->filters['gender_filter'])) {
+            $prefix = $this->filters['gender_filter'] === 'Female' ? 'CF' : 'CM';
+            $query->where('personal_info->nin', 'like', $prefix . '%');
+        }
+
+        return $query->get();    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Headings per report type

@@ -4,10 +4,13 @@ namespace App\Filament\Pages;
 
 use App\Exports\BreakdownReportExport;
 use App\Exports\ReportExport;
+use App\Models\Application;
+use App\Support\DistrictHelper;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -16,6 +19,7 @@ use Filament\Pages\Page;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use ZipArchive;
 
 class Reports extends Page implements HasForms
 {
@@ -34,12 +38,18 @@ class Reports extends Page implements HasForms
     // full component re-render — giving us live preview updates.
 
     public array $data = [
-        'report_type' => null,
-        'status'      => null,
-        'gender'      => null,
-        'nationality' => null,
-        'date_from'   => null,
-        'date_to'     => null,
+        'report_type'       => null,
+        'status'            => null,
+        'gender'            => null,
+        'nationality'       => null,
+        'date_from'         => null,
+        'date_to'           => null,
+        // Granular filters for per-applicant report types
+        'university_filter' => null,
+        'district_filter'   => null,
+        'gender_filter'     => null,
+        // Split-by-group option (downloads a zip of separate reports)
+        'split_by_group'    => false,
     ];
 
     // ── Access control ────────────────────────────────────────────────────────
@@ -117,8 +127,63 @@ class Reports extends Page implements HasForms
                             ])
                             ->native(false)
                             ->placeholder('Select a report type…')
-                            ->live()          // emit Livewire update immediately on change
+                            ->live()
                             ->columnSpan(2),
+
+                        // ── University filter (shown only for university_report) ──────────
+                        Select::make('university_filter')
+                            ->label('Filter by University')
+                            ->options(fn () => $this->getUniversityOptions())
+                            ->native(false)
+                            ->placeholder('All universities')
+                            ->nullable()
+                            ->searchable()
+                            ->live()
+                            ->visible(fn () => ($this->data['report_type'] ?? null) === 'university_report')
+                            ->columnSpan(2),
+
+                        // ── District filter (shown only for district_report) ──────────────
+                        Select::make('district_filter')
+                            ->label('Filter by District / Region')
+                            ->options(fn () => $this->getDistrictOptions())
+                            ->native(false)
+                            ->placeholder('All districts')
+                            ->nullable()
+                            ->searchable()
+                            ->live()
+                            ->visible(fn () => ($this->data['report_type'] ?? null) === 'district_report')
+                            ->columnSpan(2),
+
+                        // ── Gender filter (shown only for gender_report) ──────────────────
+                        Select::make('gender_filter')
+                            ->label('Filter by Gender')
+                            ->options([
+                                'Female' => 'Female',
+                                'Male'   => 'Male',
+                            ])
+                            ->native(false)
+                            ->placeholder('All genders')
+                            ->nullable()
+                            ->live()
+                            ->visible(fn () => ($this->data['report_type'] ?? null) === 'gender_report')
+                            ->columnSpan(2),
+
+                        // ── Split-by-group toggle (shown for the three per-applicant types) ─
+                        Toggle::make('split_by_group')
+                            ->label(fn () => match ($this->data['report_type'] ?? null) {
+                                'university_report' => 'Split into separate reports per university (download as ZIP)',
+                                'district_report'   => 'Split into separate reports per district (download as ZIP)',
+                                'gender_report'     => 'Split into separate reports per gender (download as ZIP)',
+                                default             => 'Split into separate reports (download as ZIP)',
+                            })
+                            ->default(false)
+                            ->live()
+                            ->visible(fn () => in_array(
+                                $this->data['report_type'] ?? null,
+                                ['university_report', 'district_report', 'gender_report'],
+                                true
+                            ))
+                            ->columnSpan(3),
 
                         Select::make('status')
                             ->label('Filter by Status')
@@ -159,7 +224,7 @@ class Reports extends Page implements HasForms
                             ->label('Submitted From')
                             ->nullable()
                             ->displayFormat('d/m/Y')
-                            ->live(onBlur: true),   // update when user leaves the field
+                            ->live(onBlur: true),
 
                         DatePicker::make('date_to')
                             ->label('Submitted To')
@@ -177,29 +242,135 @@ class Reports extends Page implements HasForms
     private function buildFilters(): array
     {
         return array_filter([
-            'status'      => $this->data['status']      ?? null,
-            'gender'      => $this->data['gender']      ?? null,
-            'nationality' => $this->data['nationality'] ?? null,
-            'date_from'   => $this->data['date_from']   ?? null,
-            'date_to'     => $this->data['date_to']     ?? null,
+            'status'            => $this->data['status']            ?? null,
+            'gender'            => $this->data['gender']            ?? null,
+            'nationality'       => $this->data['nationality']       ?? null,
+            'date_from'         => $this->data['date_from']         ?? null,
+            'date_to'           => $this->data['date_to']           ?? null,
+            'university_filter' => $this->data['university_filter'] ?? null,
+            'district_filter'   => $this->data['district_filter']   ?? null,
+            'gender_filter'     => $this->data['gender_filter']     ?? null,
         ]);
+    }
+
+    /**
+     * Returns a unique sorted list of normalised university names from the DB,
+     * used to populate the university filter select.
+     */
+    private function getUniversityOptions(): array
+    {
+        $raw = Application::whereNotIn('status', ['draft'])
+            ->pluck('personal_info')
+            ->map(fn ($p) => trim((string) ($p['institution'] ?? '')))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        $options = [];
+        foreach ($raw as $name) {
+            $options[$name] = $name;
+        }
+
+        return $options;
+    }
+
+    /**
+     * Returns a unique sorted list of residence districts from the DB,
+     * used to populate the district filter select.
+     */
+    private function getDistrictOptions(): array
+    {
+        $raw = Application::whereNotIn('status', ['draft'])
+            ->pluck('personal_info')
+            ->map(fn ($p) => ucwords(strtolower(trim((string) ($p['residence_district'] ?? '')))))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        $options = [];
+        foreach ($raw as $name) {
+            $options[$name] = $name;
+        }
+
+        return $options;
+    }
+
+    /**
+     * Determine the distinct group values for splitting.
+     * Returns [ 'GroupLabel' => filterValue ] pairs.
+     */
+    private function getSplitGroups(): array
+    {
+        $type = $this->data['report_type'] ?? null;
+
+        $apps = Application::whereNotIn('status', ['draft'])
+            ->when(!empty($this->data['status']), fn ($q) => $q->where('status', $this->data['status']))
+            ->when(!empty($this->data['date_from']), fn ($q) => $q->whereDate('created_at', '>=', $this->data['date_from']))
+            ->when(!empty($this->data['date_to']), fn ($q) => $q->whereDate('created_at', '<=', $this->data['date_to']))
+            ->when(!empty($this->data['gender']), function ($q) {
+                $prefix = $this->data['gender'] === 'female' ? 'CF' : 'CM';
+                $q->where('personal_info->nin', 'like', $prefix . '%');
+            })
+            ->when(!empty($this->data['nationality']), function ($q) {
+                $q->where('personal_info->is_ugandan', $this->data['nationality'] === 'ugandan' ? 'yes' : 'no');
+            })
+            ->pluck('personal_info');
+
+        if ($type === 'university_report') {
+            return $apps
+                ->map(fn ($p) => trim((string) ($p['institution'] ?? '')))
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values()
+                ->mapWithKeys(fn ($v) => [$v => $v])
+                ->all();
+        }
+
+        if ($type === 'district_report') {
+            return $apps
+                ->map(fn ($p) => ucwords(strtolower(trim((string) ($p['residence_district'] ?? '')))))
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values()
+                ->mapWithKeys(fn ($v) => [$v => $v])
+                ->all();
+        }
+
+        if ($type === 'gender_report') {
+            return [
+                'Female' => 'Female',
+                'Male'   => 'Male',
+            ];
+        }
+
+        return [];
     }
 
     private function filterSummary(): string
     {
         $parts = [];
 
-        $status      = $this->data['status']      ?? null;
-        $gender      = $this->data['gender']      ?? null;
-        $nationality = $this->data['nationality'] ?? null;
-        $dateFrom    = $this->data['date_from']   ?? null;
-        $dateTo      = $this->data['date_to']     ?? null;
+        $status          = $this->data['status']            ?? null;
+        $gender          = $this->data['gender']            ?? null;
+        $nationality     = $this->data['nationality']       ?? null;
+        $dateFrom        = $this->data['date_from']         ?? null;
+        $dateTo          = $this->data['date_to']           ?? null;
+        $universityFilter = $this->data['university_filter'] ?? null;
+        $districtFilter  = $this->data['district_filter']   ?? null;
+        $genderFilter    = $this->data['gender_filter']     ?? null;
 
-        if ($status)      $parts[] = 'Status: '      . ucwords(str_replace('_', ' ', $status));
-        if ($gender)      $parts[] = 'Gender: '      . ucfirst($gender);
-        if ($nationality) $parts[] = 'Nationality: ' . ($nationality === 'ugandan' ? 'Ugandan' : 'Non-Ugandan');
-        if ($dateFrom)    $parts[] = 'From: '        . \Carbon\Carbon::parse($dateFrom)->format('d M Y');
-        if ($dateTo)      $parts[] = 'To: '          . \Carbon\Carbon::parse($dateTo)->format('d M Y');
+        if ($universityFilter) $parts[] = 'University: '       . $universityFilter;
+        if ($districtFilter)   $parts[] = 'District: '         . $districtFilter;
+        if ($genderFilter)     $parts[] = 'Gender group: '     . $genderFilter;
+        if ($status)           $parts[] = 'Status: '           . ucwords(str_replace('_', ' ', $status));
+        if ($gender)           $parts[] = 'Gender: '           . ucfirst($gender);
+        if ($nationality)      $parts[] = 'Nationality: '      . ($nationality === 'ugandan' ? 'Ugandan' : 'Non-Ugandan');
+        if ($dateFrom)         $parts[] = 'From: '             . \Carbon\Carbon::parse($dateFrom)->format('d M Y');
+        if ($dateTo)           $parts[] = 'To: '               . \Carbon\Carbon::parse($dateTo)->format('d M Y');
 
         return implode(' | ', $parts) ?: 'None (all submitted applications)';
     }
@@ -289,7 +460,92 @@ class Reports extends Page implements HasForms
         );
     }
 
+    /**
+     * Export one Excel file per group (university / district / gender)
+     * and bundle them into a ZIP archive for download.
+     */
+    public function exportZip(): StreamedResponse
+    {
+        if (!$this->validateForm()) {
+            return response()->streamDownload(fn () => null, 'error.zip');
+        }
+
+        $type   = $this->data['report_type'];
+        $groups = $this->getSplitGroups();
+
+        if (empty($groups)) {
+            Notification::make()
+                ->title('No groups found to split by')
+                ->warning()
+                ->send();
+
+            return response()->streamDownload(fn () => null, 'empty.zip');
+        }
+
+        // Build all Excel files in a temp directory
+        $tmpDir  = sys_get_temp_dir() . '/report_zip_' . uniqid();
+        mkdir($tmpDir, 0755, true);
+        $zipPath = $tmpDir . '/reports.zip';
+
+        $zip = new ZipArchive();
+        $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+        $baseFilters = $this->buildFilters();
+
+        foreach ($groups as $label => $value) {
+            // Merge group-specific filter
+            $groupFilters = array_merge($baseFilters, [
+                match ($type) {
+                    'university_report' => 'university_filter',
+                    'district_report'   => 'district_filter',
+                    'gender_report'     => 'gender_filter',
+                    default             => '__noop__',
+                } => $value,
+            ]);
+
+            $export   = new ReportExport($type, $groupFilters);
+            $safe     = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $label);
+            $fileName = $type . '_' . $safe . '_' . now()->format('Y-m-d') . '.xlsx';
+            $filePath = $tmpDir . '/' . $fileName;
+
+            $writer = \Maatwebsite\Excel\Facades\Excel::raw($export, \Maatwebsite\Excel\Excel::XLSX);
+            file_put_contents($filePath, $writer);
+
+            $zip->addFile($filePath, $fileName);
+        }
+
+        $zip->close();
+
+        $zipFilename = $type . '_split_' . now()->format('Y-m-d_His') . '.zip';
+        $zipContents = file_get_contents($zipPath);
+
+        // Clean up temp files after reading
+        foreach (glob($tmpDir . '/*') as $f) {
+            @unlink($f);
+        }
+        @rmdir($tmpDir);
+
+        return response()->streamDownload(
+            fn () => print($zipContents),
+            $zipFilename,
+            ['Content-Type' => 'application/zip']
+        );
+    }
+
     // ── Reactive preview ──────────────────────────────────────────────────────
+
+    /**
+     * Whether "split into separate reports" is active for the current type.
+     */
+    public function isSplitMode(): bool
+    {
+        return !empty($this->data['split_by_group'])
+            && in_array(
+                $this->data['report_type'] ?? null,
+                ['university_report', 'district_report', 'gender_report'],
+                true
+            );
+    }
 
     /**
      * Called from the Blade view on every render.
