@@ -380,6 +380,7 @@ class ApplicationResource extends Resource
                               ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%"));
                         });
                     }),
+
                 Tables\Columns\TextColumn::make('nationality')
                     ->label('Nationality')
                     ->getStateUsing(function ($record): string {
@@ -391,6 +392,7 @@ class ApplicationResource extends Resource
                     })
                     ->badge()
                     ->color(fn (string $state): string => $state === 'Ugandan' ? 'success' : ($state === '—' ? 'gray' : 'warning')),
+
                 Tables\Columns\TextColumn::make('age')
                     ->label('Age')
                     ->getStateUsing(function ($record): string {
@@ -399,6 +401,7 @@ class ApplicationResource extends Resource
                         try { return (string) \Carbon\Carbon::parse($dob)->age; }
                         catch (\Exception) { return '—'; }
                     }),
+
                 Tables\Columns\IconColumn::make('disability')
                     ->label('Disability')
                     ->getStateUsing(fn ($record): bool => ($record->personal_info['has_disability'] ?? null) === 'yes')
@@ -407,134 +410,129 @@ class ApplicationResource extends Resource
                     ->falseColor('gray')
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-minus-circle'),
+
+                Tables\Columns\IconColumn::make('refugee')
+                    ->label('Refugee')
+                    ->getStateUsing(function ($record): bool {
+                        $info = $record->personal_info ?? [];
+                        return ($info['is_ugandan'] ?? null) === 'no'
+                            && !empty($info['refugee_card_number']);
+                    })
+                    ->boolean()
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-minus-circle'),
+
+                Tables\Columns\TextColumn::make('district_of_origin')
+                    ->label('District of Origin')
+                    ->getStateUsing(fn ($record): string =>
+                        $record->personal_info['origin_district'] ?? '—'
+                    ),
+
                 Tables\Columns\BadgeColumn::make('status')
+                    ->label('Status')
                     ->colors([
-                        'primary' => 'submitted',
-                        'warning' => 'under_review',
-                        'success' => 'approved',
-                        'danger' => 'rejected',
+                        'primary'   => 'submitted',
+                        'warning'   => 'under_review',
+                        'success'   => 'approved',
+                        'danger'    => 'rejected',
                         'secondary' => 'draft',
-                    ]),
-                Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                    ])
+                    ->formatStateUsing(fn ($state) => ucwords(str_replace('_', ' ', $state ?? ''))),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'draft' => 'Draft',
-                        'submitted' => 'Submitted',
+                        'draft'        => 'Draft',
+                        'submitted'    => 'Submitted',
                         'under_review' => 'Under Review',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
+                        'approved'     => 'Approved',
+                        'rejected'     => 'Rejected',
                     ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->visible(fn () => auth()->user()->can('application.view')),
-                Tables\Actions\EditAction::make()
-                    ->visible(fn () => auth()->user()->can('application.edit')),
-                Tables\Actions\Action::make('Under Review')
-                    ->icon('heroicon-o-eye')
+
+                Tables\Actions\Action::make('change_status')
+                    ->label('Change Status')
+                    ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->requiresConfirmation()
-                    ->action(function (Application $record) {
+                    ->visible(fn () => auth()->user()->can('application.review')
+                        || auth()->user()->can('application.approve')
+                        || auth()->user()->can('application.reject'))
+                    ->form([
+                        Forms\Components\Select::make('status')
+                            ->label('New Status')
+                            ->options([
+                                'submitted'    => 'Submitted',
+                                'under_review' => 'Under Review',
+                                'approved'     => 'Approved',
+                                'rejected'     => 'Rejected',
+                            ])
+                            ->required(),
+                    ])
+                    ->fillForm(fn (Application $record): array => [
+                        'status' => $record->status,
+                    ])
+                    ->modalHeading('Change Application Status')
+                    ->modalSubmitActionLabel('Update Status')
+                    ->action(function (Application $record, array $data): void {
+                        $newStatus = $data['status'];
                         $oldStatus = $record->status;
-                        $record->update(['status' => 'under_review']);
-                        
-                        // Send status update email
-                        try {
-                            \Illuminate\Support\Facades\Mail::to($record->user)->send(
-                                new \App\Mail\ApplicationStatusUpdated($record, $oldStatus, 'under_review')
+
+                        if ($newStatus === $oldStatus) {
+                            return;
+                        }
+
+                        $record->update(['status' => $newStatus]);
+
+                        if ($newStatus === 'approved') {
+                            $user = $record->user;
+                            if (!$user->hasRole('Scholar')) {
+                                $user->assignRole('Scholar');
+                            }
+                            \App\Models\Scholar::firstOrCreate(
+                                ['user_id' => $user->id],
+                                ['application_id' => $record->id, 'university' => 'Pending Entry', 'course' => 'Pending Entry', 'student_id' => 'TBD']
                             );
-                            activity('email')
-                                ->causedBy(auth()->user())
-                                ->performedOn($record)
-                                ->withProperties(['recipient' => $record->user->email, 'type' => 'ApplicationStatusUpdated', 'from' => $oldStatus, 'to' => 'under_review'])
-                                ->log('Email sent: Application status updated to Under Review');
-                        } catch (\Exception $e) {
-                            \Illuminate\Support\Facades\Log::error('Failed to send status update email: ' . $e->getMessage());
-                            activity('email')
-                                ->causedBy(auth()->user())
-                                ->performedOn($record)
-                                ->withProperties(['error' => $e->getMessage(), 'type' => 'ApplicationStatusUpdated'])
-                                ->log('Email failed: Application status update notification');
-                        }
-                    })
-                    ->hidden(fn (Application $record) => $record->status !== 'submitted')
-                    ->visible(fn () => auth()->user()->can('application.review')),
-
-                Tables\Actions\Action::make('Approve')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->action(function (Application $record) {
-                        $record->update(['status' => 'approved']);
-                        
-                        // Assign Scholar role
-                        $user = $record->user;
-                        if (!$user->hasRole('Scholar')) {
-                            $user->assignRole('Scholar');
                         }
 
-                        // Send approval email
                         try {
-                            \Illuminate\Support\Facades\Mail::to($user)->send(new \App\Mail\ApplicationApproved($record));
+                            match ($newStatus) {
+                                'approved' => \Illuminate\Support\Facades\Mail::to($record->user)
+                                    ->send(new \App\Mail\ApplicationApproved($record)),
+                                'rejected' => \Illuminate\Support\Facades\Mail::to($record->user)
+                                    ->send(new \App\Mail\ApplicationRejected($record)),
+                                default    => \Illuminate\Support\Facades\Mail::to($record->user)
+                                    ->send(new \App\Mail\ApplicationStatusUpdated($record, $oldStatus, $newStatus)),
+                            };
+
                             activity('email')
                                 ->causedBy(auth()->user())
                                 ->performedOn($record)
-                                ->withProperties(['recipient' => $user->email, 'type' => 'ApplicationApproved'])
-                                ->log('Email sent: Application approval notification');
+                                ->withProperties([
+                                    'recipient' => $record->user->email,
+                                    'from'      => $oldStatus,
+                                    'to'        => $newStatus,
+                                ])
+                                ->log('Email sent: Application status changed');
                         } catch (\Exception $e) {
-                            \Illuminate\Support\Facades\Log::error('Failed to send approval email: ' . $e->getMessage());
+                            \Illuminate\Support\Facades\Log::error('Failed to send status change email: ' . $e->getMessage());
                             activity('email')
                                 ->causedBy(auth()->user())
                                 ->performedOn($record)
-                                ->withProperties(['error' => $e->getMessage(), 'type' => 'ApplicationApproved'])
-                                ->log('Email failed: Application approval notification');
+                                ->withProperties(['error' => $e->getMessage()])
+                                ->log('Email failed: Application status change notification');
                         }
 
-                        // Create Scholar record
-                        \App\Models\Scholar::firstOrCreate(
-                            ['user_id' => $user->id],
-                            ['application_id' => $record->id, 'university' => 'Pending Entry', 'course' => 'Pending Entry', 'student_id' => 'TBD']
-                        );
-
-                        \Filament\Notifications\Notification::make()
-                            ->title('Application Approved')
+                        Notification::make()
+                            ->title('Status Updated')
                             ->success()
-                            ->body("{$user->name} has been marked as a Scholar.")
+                            ->body('Application status changed to ' . ucwords(str_replace('_', ' ', $newStatus)) . '.')
                             ->send();
-                    })
-                    ->hidden(fn (Application $record) => in_array($record->status, ['approved', 'draft']))
-                    ->visible(fn () => auth()->user()->can('application.approve')),
-
-                Tables\Actions\Action::make('Reject')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->action(function (Application $record) {
-                        $record->update(['status' => 'rejected']);
-                        
-                        // Send rejection email
-                        try {
-                            \Illuminate\Support\Facades\Mail::to($record->user)->send(
-                                new \App\Mail\ApplicationRejected($record)
-                            );
-                            activity('email')
-                                ->causedBy(auth()->user())
-                                ->performedOn($record)
-                                ->withProperties(['recipient' => $record->user->email, 'type' => 'ApplicationRejected'])
-                                ->log('Email sent: Application rejection notification');
-                        } catch (\Exception $e) {
-                            \Illuminate\Support\Facades\Log::error('Failed to send rejection email: ' . $e->getMessage());
-                            activity('email')
-                                ->causedBy(auth()->user())
-                                ->performedOn($record)
-                                ->withProperties(['error' => $e->getMessage(), 'type' => 'ApplicationRejected'])
-                                ->log('Email failed: Application rejection notification');
-                        }
-                    })
-                    ->hidden(fn (Application $record) => in_array($record->status, ['rejected', 'approved']))
-                    ->visible(fn () => auth()->user()->can('application.reject')),
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -542,6 +540,7 @@ class ApplicationResource extends Resource
                 ]),
             ]);
     }
+
 
     public static function getRelations(): array
     {

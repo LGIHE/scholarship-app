@@ -13,6 +13,162 @@ use Illuminate\Support\Collection;
 
 class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
 {
+    /**
+     * All available exportable columns.
+     * Key   = internal identifier (used in $selectedColumns)
+     * Value = column heading label
+     */
+    public static function availableColumns(): array
+    {
+        return [
+            // Meta
+            'application_id'            => 'Application ID',
+            'status'                     => 'Status',
+            'submitted_on'               => 'Submitted On',
+            'last_updated'               => 'Last Updated',
+            // Account
+            'account_name'               => 'Account Name',
+            'account_email'              => 'Account Email',
+            // Personal
+            'surname'                    => 'Surname',
+            'other_names'                => 'Other Names',
+            'date_of_birth'              => 'Date of Birth',
+            'nin'                        => 'NIN',
+            'telephone'                  => 'Telephone',
+            'personal_email'             => 'Personal Email',
+            'marital_status'             => 'Marital Status',
+            'ugandan_national'           => 'Ugandan National',
+            'non_ugandan_explanation'    => 'Non-Ugandan Explanation',
+            'has_disability'             => 'Has Disability',
+            'disability_details'         => 'Disability Details',
+            // Next of Kin
+            'nok1_name'                  => 'Next of Kin 1 Name',
+            'nok1_relationship'          => 'Next of Kin 1 Relationship',
+            'nok1_telephone'             => 'Next of Kin 1 Telephone',
+            'nok2_name'                  => 'Next of Kin 2 Name',
+            'nok2_relationship'          => 'Next of Kin 2 Relationship',
+            'nok2_telephone'             => 'Next of Kin 2 Telephone',
+            // Place of Birth
+            'birth_village'              => 'Birth Village/Parish',
+            'birth_district'             => 'Birth District',
+            'birth_region'               => 'Birth Region',
+            'birth_country'              => 'Birth Country',
+            // Place of Origin
+            'origin_village'             => 'Origin Village/Parish',
+            'origin_district'            => 'Origin District',
+            'origin_region'              => 'Origin Region',
+            'origin_country'             => 'Origin Country',
+            // Place of Residence
+            'residence_village'          => 'Residence Village/Parish',
+            'residence_district'         => 'Residence District',
+            'residence_region'           => 'Residence Region',
+            'residence_country'          => 'Residence Country',
+            // Academic
+            'academic_programme'         => 'Academic Programme',
+            'institution'                => 'Institution',
+            'teaching_subject_1'         => 'Teaching Subject 1',
+            'teaching_subject_2'         => 'Teaching Subject 2',
+            'admission_number'           => 'Admission Number',
+            // Schools Attended
+            'primary_school_name'        => 'Primary School Name',
+            'primary_school_district'    => 'Primary School District',
+            'primary_school_dates'       => 'Primary School Dates',
+            'primary_school_responsible' => 'Primary School Responsible',
+            'olevel_school_name'         => "O'Level School Name",
+            'olevel_school_district'     => "O'Level School District",
+            'olevel_school_dates'        => "O'Level School Dates",
+            'olevel_school_responsible'  => "O'Level School Responsible",
+            'alevel_school_name'         => "A'Level School Name",
+            'alevel_school_district'     => "A'Level School District",
+            'alevel_school_dates'        => "A'Level School Dates",
+            'alevel_school_responsible'  => "A'Level School Responsible",
+            'university_name'            => 'University Name',
+            'university_district'        => 'University District',
+            'university_dates'           => 'University Dates',
+            'university_responsible'     => 'University Responsible',
+            // Mode of Admission
+            'alevel_institution'         => "A'Level Institution",
+            'alevel_year'                => "A'Level Year",
+            'alevel_index'               => "A'Level Index",
+            'alevel_points'              => "A'Level Points",
+            'diploma_institution'        => 'Diploma Institution',
+            'diploma_year'               => 'Diploma Year',
+            'diploma_index'              => 'Diploma Index',
+            'diploma_cgpa'               => 'Diploma CGPA',
+            'heac_institution'           => 'HEAC Institution',
+            'heac_year'                  => 'HEAC Year',
+            'heac_index'                 => 'HEAC Index',
+            'heac_points'                => 'HEAC Points',
+            'mature_institution'         => 'Mature Entry Institution',
+            'mature_year'                => 'Mature Entry Year',
+            'mature_index'               => 'Mature Entry Index',
+            'mature_points'              => 'Mature Entry Points',
+            // Disability Info
+            'functionality_level'        => 'Functionality Level',
+            'difficulty_walking'         => 'Difficulty Walking',
+            'difficulty_seeing'          => 'Difficulty Seeing',
+            'difficulty_hearing'         => 'Difficulty Hearing',
+            'difficulty_communicating'   => 'Difficulty Communicating',
+            'difficulty_picking'         => 'Difficulty Picking Objects',
+            'difficulty_self_care'       => 'Difficulty Self-Care',
+            'difficulty_emotions'        => 'Difficulty Controlling Emotions',
+            'assistive_support'          => 'Assistive Support Needed',
+            // Dependants
+            'spouse_surname'             => 'Spouse Surname',
+            'spouse_other_names'         => 'Spouse Other Names',
+            'spouse_education_level'     => 'Spouse Education Level',
+            'spouse_occupation'          => 'Spouse Occupation',
+            'marriage_balance_plan'      => 'Marriage/Studies Balance Plan',
+            'num_children'               => 'Number of Children',
+            'oldest_child_age'           => 'Age of Oldest Child',
+            'youngest_child_age'         => 'Age of Youngest Child',
+            'childcare_plan'             => 'Childcare Plan',
+            'spouse_support'             => 'Spouse Support',
+            'non_financial_support'      => 'Non-Financial Support Needed',
+            // Financial
+            'household_income'           => 'Household Income (UGX/year)',
+            'financial_dependents'       => 'Number of Financial Dependents',
+            'income_source'              => 'Primary Income Source',
+            'other_financial_support'    => 'Other Financial Support',
+            // Essay
+            'motivation_statement'       => 'Motivation Statement',
+            // Guardian
+            'guardian_surname'           => 'Guardian Surname',
+            'guardian_other_names'       => 'Guardian Other Names',
+            'guardian_telephone'         => 'Guardian Telephone',
+            'guardian_relation'          => 'Guardian Relation',
+            'guardian_occupation'        => 'Guardian Occupation',
+            'guardian_district'          => 'Guardian District',
+            'guardian_region'            => 'Guardian Region',
+            'guardian_address'           => 'Guardian Address',
+            // Declaration
+            'criminal_offence'           => 'Criminal Offence?',
+            'criminal_details'           => 'Criminal Details',
+            // How heard
+            'hearing_source'             => 'How They Heard About the Scholarship',
+            'hearing_source_other'       => 'Other Source (Specified)',
+            // Scoring
+            'score_financial_need'       => 'Score – Financial Need',
+            'score_academic_merit'       => 'Score – Academic Merit',
+            'score_demographics'         => 'Score – Demographics',
+            'score_commitment'           => 'Score – Commitment',
+            'score_essay_quality'        => 'Score – Essay Quality',
+            'score_total'                => 'Total Score',
+        ];
+    }
+
+    /** @var array<string> */
+    protected array $selectedColumns;
+
+    /**
+     * @param array<string>|null $selectedColumns  Keys from availableColumns().
+     *                                             Pass null to export every column.
+     */
+    public function __construct(?array $selectedColumns = null)
+    {
+        $this->selectedColumns = $selectedColumns ?? array_keys(static::availableColumns());
+    }
+
     public function collection(): Collection
     {
         return Application::with('user')->get();
@@ -20,60 +176,11 @@ class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, W
 
     public function headings(): array
     {
-        return [
-            // Meta
-            'Application ID', 'Status', 'Submitted On', 'Last Updated',
-            // Account
-            'Account Name', 'Account Email',
-            // Personal
-            'Surname', 'Other Names', 'Date of Birth', 'NIN',
-            'Telephone', 'Personal Email', 'Marital Status',
-            'Ugandan National', 'Non-Ugandan Explanation',
-            'Has Disability', 'Disability Details',
-            // Next of Kin
-            'Next of Kin 1 Name', 'Next of Kin 1 Relationship', 'Next of Kin 1 Telephone',
-            'Next of Kin 2 Name', 'Next of Kin 2 Relationship', 'Next of Kin 2 Telephone',
-            // Place of Birth
-            'Birth Village/Parish', 'Birth District', 'Birth Region', 'Birth Country',
-            // Place of Origin
-            'Origin Village/Parish', 'Origin District', 'Origin Region', 'Origin Country',
-            // Place of Residence
-            'Residence Village/Parish', 'Residence District', 'Residence Region', 'Residence Country',
-            // Academic
-            'Academic Programme', 'Institution', 'Teaching Subject 1', 'Teaching Subject 2', 'Admission Number',
-            // Schools Attended
-            'Primary School Name', 'Primary School District', 'Primary School Dates', 'Primary School Responsible',
-            "O'Level School Name", "O'Level School District", "O'Level School Dates", "O'Level School Responsible",
-            "A'Level School Name", "A'Level School District", "A'Level School Dates", "A'Level School Responsible",
-            'University Name', 'University District', 'University Dates', 'University Responsible',
-            // Mode of Admission
-            "A'Level Institution", "A'Level Year", "A'Level Index", "A'Level Points",
-            'Diploma Institution', 'Diploma Year', 'Diploma Index', 'Diploma CGPA',
-            'HEAC Institution', 'HEAC Year', 'HEAC Index', 'HEAC Points',
-            'Mature Entry Institution', 'Mature Entry Year', 'Mature Entry Index', 'Mature Entry Points',
-            // Disability
-            'Functionality Level', 'Difficulty Walking', 'Difficulty Seeing', 'Difficulty Hearing',
-            'Difficulty Communicating', 'Difficulty Picking Objects', 'Difficulty Self-Care',
-            'Difficulty Controlling Emotions', 'Assistive Support Needed',
-            // Dependants
-            'Spouse Surname', 'Spouse Other Names', 'Spouse Education Level', 'Spouse Occupation',
-            'Marriage/Studies Balance Plan', 'Number of Children', 'Age of Oldest Child',
-            'Age of Youngest Child', 'Childcare Plan', 'Spouse Support', 'Non-Financial Support Needed',
-            // Financial
-            'Household Income (UGX/year)', 'Number of Financial Dependents', 'Primary Income Source', 'Other Financial Support',
-            // Essay
-            'Motivation Statement',
-            // Guardian
-            'Guardian Surname', 'Guardian Other Names', 'Guardian Telephone', 'Guardian Relation',
-            'Guardian Occupation', 'Guardian District', 'Guardian Region', 'Guardian Address',
-            // Declaration
-            'Criminal Offence?', 'Criminal Details',
-            // How heard
-            'How They Heard About the Scholarship', 'Other Source (Specified)',
-            // Scoring
-            'Score – Financial Need', 'Score – Academic Merit', 'Score – Demographics',
-            'Score – Commitment', 'Score – Essay Quality', 'Total Score',
-        ];
+        $all = static::availableColumns();
+
+        return array_values(
+            array_map(fn (string $key) => $all[$key] ?? $key, $this->selectedColumns)
+        );
     }
 
     public function map($app): array
@@ -90,81 +197,128 @@ class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, W
 
         $bool = fn ($v) => $v ? 'Yes' : 'No';
 
-        return [
-            // Meta
-            $app->id,
-            ucwords(str_replace('_', ' ', $app->status ?? '')),
-            $app->created_at?->format('Y-m-d H:i:s'),
-            $app->updated_at?->format('Y-m-d H:i:s'),
-            // Account
-            $app->user?->name,
-            $app->user?->email,
-            // Personal
-            $p['surname'] ?? '', $p['other_names'] ?? '', $p['date_of_birth'] ?? '', $p['nin'] ?? '',
-            $p['phone'] ?? '', $p['email'] ?? '', $p['marital_status'] ?? '',
-            isset($p['is_ugandan']) ? ($p['is_ugandan'] === 'yes' ? 'Yes' : 'No') : '',
-            $p['non_ugandan_explanation'] ?? '',
-            isset($p['has_disability']) ? ($p['has_disability'] === 'yes' ? 'Yes' : 'No') : '',
-            $p['disability_specify'] ?? '',
-            // Next of Kin
-            $nok[0]['name'] ?? '', $nok[0]['relationship'] ?? '', $nok[0]['telephone'] ?? '',
-            $nok[1]['name'] ?? '', $nok[1]['relationship'] ?? '', $nok[1]['telephone'] ?? '',
-            // Place of Birth
-            $p['birth_village'] ?? '', $p['birth_district'] ?? '', $p['birth_region'] ?? '', $p['birth_country'] ?? '',
-            // Place of Origin
-            $p['origin_village'] ?? '', $p['origin_district'] ?? '', $p['origin_region'] ?? '', $p['origin_country'] ?? '',
-            // Place of Residence
-            $p['residence_village'] ?? '', $p['residence_district'] ?? '', $p['residence_region'] ?? '', $p['residence_country'] ?? '',
-            // Academic
-            $p['academic_programme'] ?? '', $p['institution'] ?? '',
-            $p['teaching_subjects_1'] ?? '', $p['teaching_subjects_2'] ?? '', $p['student_admission_number'] ?? '',
-            // Schools Attended
-            $p['primary_school_name'] ?? '', $p['primary_school_district'] ?? '', $p['primary_school_dates'] ?? '', $p['primary_school_responsible'] ?? '',
-            $p['olevel_school_name'] ?? '', $p['olevel_school_district'] ?? '', $p['olevel_school_dates'] ?? '', $p['olevel_school_responsible'] ?? '',
-            $p['alevel_school_name'] ?? '', $p['alevel_school_district'] ?? '', $p['alevel_school_dates'] ?? '', $p['alevel_school_responsible'] ?? '',
-            $p['university_name'] ?? '', $p['university_district'] ?? '', $p['university_dates'] ?? '', $p['university_responsible'] ?? '',
-            // Mode of Admission
-            $p['alevel_school_exam'] ?? '', $p['alevel_year'] ?? '', $p['alevel_index'] ?? '', $p['alevel_points'] ?? '',
-            $p['diploma_school'] ?? '', $p['diploma_year'] ?? '', $p['diploma_index'] ?? '', $p['diploma_cgpa'] ?? '',
-            $p['heac_school'] ?? '', $p['heac_year'] ?? '', $p['heac_index'] ?? '', $p['heac_points'] ?? '',
-            $p['mature_school'] ?? '', $p['mature_year'] ?? '', $p['mature_index'] ?? '', $p['mature_points'] ?? '',
-            // Disability
-            $di['functionality_level'] ?? '',
-            $bool($di['difficulty_walking'] ?? false),
-            $bool($di['difficulty_seeing'] ?? false),
-            $bool($di['difficulty_hearing'] ?? false),
-            $bool($di['difficulty_communicating'] ?? false),
-            $bool($di['difficulty_picking'] ?? false),
-            $bool($di['difficulty_self_care'] ?? false),
-            $bool($di['difficulty_emotions'] ?? false),
-            $di['assistive_support'] ?? '',
-            // Dependants
-            $de['spouse_surname'] ?? '', $de['spouse_other_names'] ?? '',
-            $de['spouse_education_level'] ?? '', $de['spouse_occupation'] ?? '',
-            $de['marriage_balance_plan'] ?? '',
-            $de['num_children'] ?? '', $de['oldest_child_age'] ?? '', $de['youngest_child_age'] ?? '',
-            $de['childcare_plan'] ?? '', $de['spouse_support'] ?? '', $de['non_financial_support_needed'] ?? '',
-            // Financial
-            $fi['household_income'] ?? '', $fi['number_of_dependents'] ?? '',
-            $fi['income_source'] ?? '', $fi['other_financial_support'] ?? '',
-            // Essay
-            strip_tags($e['motivation'] ?? ''),
-            // Guardian
-            $g['guardian_surname'] ?? '', $g['guardian_other_names'] ?? '',
-            $g['guardian_telephone'] ?? '', $g['guardian_relation'] ?? '',
-            $g['guardian_occupation'] ?? '', $g['guardian_district'] ?? '',
-            $g['guardian_region'] ?? '', $g['guardian_address'] ?? '',
-            // Declaration
-            isset($d['criminal_offence']) ? ($d['criminal_offence'] === 'yes' ? 'Yes' : 'No') : '',
-            $d['criminal_details'] ?? '',
-            // How heard
-            $p['hearing_source'] ?? '',
-            $p['hearing_source_other'] ?? '',
-            // Scoring
-            $sc['financial_need'] ?? 0, $sc['academic_merit'] ?? 0,
-            $sc['demographics'] ?? 0, $sc['commitment'] ?? 0,
-            $sc['essay_quality'] ?? 0, $sc['total'] ?? 0,
+        /** All possible values, keyed by column identifier */
+        $all = [
+            'application_id'            => $app->id,
+            'status'                     => ucwords(str_replace('_', ' ', $app->status ?? '')),
+            'submitted_on'               => $app->created_at?->format('Y-m-d H:i:s'),
+            'last_updated'               => $app->updated_at?->format('Y-m-d H:i:s'),
+            'account_name'               => $app->user?->name,
+            'account_email'              => $app->user?->email,
+            'surname'                    => $p['surname'] ?? '',
+            'other_names'                => $p['other_names'] ?? '',
+            'date_of_birth'              => $p['date_of_birth'] ?? '',
+            'nin'                        => $p['nin'] ?? '',
+            'telephone'                  => $p['phone'] ?? '',
+            'personal_email'             => $p['email'] ?? '',
+            'marital_status'             => $p['marital_status'] ?? '',
+            'ugandan_national'           => isset($p['is_ugandan']) ? ($p['is_ugandan'] === 'yes' ? 'Yes' : 'No') : '',
+            'non_ugandan_explanation'    => $p['non_ugandan_explanation'] ?? '',
+            'has_disability'             => isset($p['has_disability']) ? ($p['has_disability'] === 'yes' ? 'Yes' : 'No') : '',
+            'disability_details'         => $p['disability_specify'] ?? '',
+            'nok1_name'                  => $nok[0]['name'] ?? '',
+            'nok1_relationship'          => $nok[0]['relationship'] ?? '',
+            'nok1_telephone'             => $nok[0]['telephone'] ?? '',
+            'nok2_name'                  => $nok[1]['name'] ?? '',
+            'nok2_relationship'          => $nok[1]['relationship'] ?? '',
+            'nok2_telephone'             => $nok[1]['telephone'] ?? '',
+            'birth_village'              => $p['birth_village'] ?? '',
+            'birth_district'             => $p['birth_district'] ?? '',
+            'birth_region'               => $p['birth_region'] ?? '',
+            'birth_country'              => $p['birth_country'] ?? '',
+            'origin_village'             => $p['origin_village'] ?? '',
+            'origin_district'            => $p['origin_district'] ?? '',
+            'origin_region'              => $p['origin_region'] ?? '',
+            'origin_country'             => $p['origin_country'] ?? '',
+            'residence_village'          => $p['residence_village'] ?? '',
+            'residence_district'         => $p['residence_district'] ?? '',
+            'residence_region'           => $p['residence_region'] ?? '',
+            'residence_country'          => $p['residence_country'] ?? '',
+            'academic_programme'         => $p['academic_programme'] ?? '',
+            'institution'                => $p['institution'] ?? '',
+            'teaching_subject_1'         => $p['teaching_subjects_1'] ?? '',
+            'teaching_subject_2'         => $p['teaching_subjects_2'] ?? '',
+            'admission_number'           => $p['student_admission_number'] ?? '',
+            'primary_school_name'        => $p['primary_school_name'] ?? '',
+            'primary_school_district'    => $p['primary_school_district'] ?? '',
+            'primary_school_dates'       => $p['primary_school_dates'] ?? '',
+            'primary_school_responsible' => $p['primary_school_responsible'] ?? '',
+            'olevel_school_name'         => $p['olevel_school_name'] ?? '',
+            'olevel_school_district'     => $p['olevel_school_district'] ?? '',
+            'olevel_school_dates'        => $p['olevel_school_dates'] ?? '',
+            'olevel_school_responsible'  => $p['olevel_school_responsible'] ?? '',
+            'alevel_school_name'         => $p['alevel_school_name'] ?? '',
+            'alevel_school_district'     => $p['alevel_school_district'] ?? '',
+            'alevel_school_dates'        => $p['alevel_school_dates'] ?? '',
+            'alevel_school_responsible'  => $p['alevel_school_responsible'] ?? '',
+            'university_name'            => $p['university_name'] ?? '',
+            'university_district'        => $p['university_district'] ?? '',
+            'university_dates'           => $p['university_dates'] ?? '',
+            'university_responsible'     => $p['university_responsible'] ?? '',
+            'alevel_institution'         => $p['alevel_school_exam'] ?? '',
+            'alevel_year'                => $p['alevel_year'] ?? '',
+            'alevel_index'               => $p['alevel_index'] ?? '',
+            'alevel_points'              => $p['alevel_points'] ?? '',
+            'diploma_institution'        => $p['diploma_school'] ?? '',
+            'diploma_year'               => $p['diploma_year'] ?? '',
+            'diploma_index'              => $p['diploma_index'] ?? '',
+            'diploma_cgpa'               => $p['diploma_cgpa'] ?? '',
+            'heac_institution'           => $p['heac_school'] ?? '',
+            'heac_year'                  => $p['heac_year'] ?? '',
+            'heac_index'                 => $p['heac_index'] ?? '',
+            'heac_points'                => $p['heac_points'] ?? '',
+            'mature_institution'         => $p['mature_school'] ?? '',
+            'mature_year'                => $p['mature_year'] ?? '',
+            'mature_index'               => $p['mature_index'] ?? '',
+            'mature_points'              => $p['mature_points'] ?? '',
+            'functionality_level'        => $di['functionality_level'] ?? '',
+            'difficulty_walking'         => $bool($di['difficulty_walking'] ?? false),
+            'difficulty_seeing'          => $bool($di['difficulty_seeing'] ?? false),
+            'difficulty_hearing'         => $bool($di['difficulty_hearing'] ?? false),
+            'difficulty_communicating'   => $bool($di['difficulty_communicating'] ?? false),
+            'difficulty_picking'         => $bool($di['difficulty_picking'] ?? false),
+            'difficulty_self_care'       => $bool($di['difficulty_self_care'] ?? false),
+            'difficulty_emotions'        => $bool($di['difficulty_emotions'] ?? false),
+            'assistive_support'          => $di['assistive_support'] ?? '',
+            'spouse_surname'             => $de['spouse_surname'] ?? '',
+            'spouse_other_names'         => $de['spouse_other_names'] ?? '',
+            'spouse_education_level'     => $de['spouse_education_level'] ?? '',
+            'spouse_occupation'          => $de['spouse_occupation'] ?? '',
+            'marriage_balance_plan'      => $de['marriage_balance_plan'] ?? '',
+            'num_children'               => $de['num_children'] ?? '',
+            'oldest_child_age'           => $de['oldest_child_age'] ?? '',
+            'youngest_child_age'         => $de['youngest_child_age'] ?? '',
+            'childcare_plan'             => $de['childcare_plan'] ?? '',
+            'spouse_support'             => $de['spouse_support'] ?? '',
+            'non_financial_support'      => $de['non_financial_support_needed'] ?? '',
+            'household_income'           => $fi['household_income'] ?? '',
+            'financial_dependents'       => $fi['number_of_dependents'] ?? '',
+            'income_source'              => $fi['income_source'] ?? '',
+            'other_financial_support'    => $fi['other_financial_support'] ?? '',
+            'motivation_statement'       => strip_tags($e['motivation'] ?? ''),
+            'guardian_surname'           => $g['guardian_surname'] ?? '',
+            'guardian_other_names'       => $g['guardian_other_names'] ?? '',
+            'guardian_telephone'         => $g['guardian_telephone'] ?? '',
+            'guardian_relation'          => $g['guardian_relation'] ?? '',
+            'guardian_occupation'        => $g['guardian_occupation'] ?? '',
+            'guardian_district'          => $g['guardian_district'] ?? '',
+            'guardian_region'            => $g['guardian_region'] ?? '',
+            'guardian_address'           => $g['guardian_address'] ?? '',
+            'criminal_offence'           => isset($d['criminal_offence']) ? ($d['criminal_offence'] === 'yes' ? 'Yes' : 'No') : '',
+            'criminal_details'           => $d['criminal_details'] ?? '',
+            'hearing_source'             => $p['hearing_source'] ?? '',
+            'hearing_source_other'       => $p['hearing_source_other'] ?? '',
+            'score_financial_need'       => $sc['financial_need'] ?? 0,
+            'score_academic_merit'       => $sc['academic_merit'] ?? 0,
+            'score_demographics'         => $sc['demographics'] ?? 0,
+            'score_commitment'           => $sc['commitment'] ?? 0,
+            'score_essay_quality'        => $sc['essay_quality'] ?? 0,
+            'score_total'                => $sc['total'] ?? 0,
         ];
+
+        return array_values(
+            array_map(fn (string $key) => $all[$key] ?? '', $this->selectedColumns)
+        );
     }
 
     public function styles(Worksheet $sheet): array

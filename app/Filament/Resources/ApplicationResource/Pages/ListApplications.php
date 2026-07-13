@@ -5,9 +5,9 @@ namespace App\Filament\Resources\ApplicationResource\Pages;
 use App\Exports\ApplicationsExport;
 use App\Filament\Resources\ApplicationResource;
 use Filament\Actions;
+use Filament\Forms;
 use Filament\Resources\Pages\ListRecords;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ListApplications extends ListRecords
 {
@@ -15,15 +15,51 @@ class ListApplications extends ListRecords
 
     protected function getHeaderActions(): array
     {
+        $allColumns   = ApplicationsExport::availableColumns();  // ['key' => 'Label', ...]
+        $columnKeys   = array_keys($allColumns);
+        $columnLabels = array_values($allColumns);
+
+        // Build checkbox list options: ['key' => 'Label', ...]
+        $options = $allColumns;
+
         return [
             Actions\Action::make('export')
                 ->label('Export to Excel')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->action(fn (): BinaryFileResponse => Excel::download(
-                    new ApplicationsExport(),
-                    'applications_' . now()->format('Y-m-d_His') . '.xlsx'
-                )),
+                // ── Column-picker modal ──────────────────────────────────────
+                ->form([
+                    Forms\Components\CheckboxList::make('columns')
+                        ->label('Select columns to export')
+                        ->options($options)
+                        ->default($columnKeys)          // all ticked by default
+                        ->columns(3)
+                        ->selectAllAction(
+                            fn (Forms\Components\Actions\Action $action) => $action->label('Select all')
+                        )
+                        ->deselectAllAction(
+                            fn (Forms\Components\Actions\Action $action) => $action->label('Deselect all')
+                        )
+                        ->bulkToggleable()              // renders the Select all / Deselect all links
+                        ->required()
+                        ->minItems(1)
+                        ->validationMessages([
+                            'min_items' => 'Please select at least one column.',
+                        ]),
+                ])
+                ->modalHeading('Choose columns to export')
+                ->modalSubmitActionLabel('Export')
+                ->modalWidth('4xl')
+                // ── Download on submit ───────────────────────────────────────
+                ->action(function (array $data) {
+                    $selected = $data['columns'] ?? array_keys(ApplicationsExport::availableColumns());
+
+                    return Excel::download(
+                        new ApplicationsExport($selected),
+                        'applications_' . now()->format('Y-m-d_His') . '.xlsx'
+                    );
+                }),
+
             Actions\CreateAction::make(),
         ];
     }
