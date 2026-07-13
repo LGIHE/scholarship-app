@@ -33,7 +33,7 @@ export const DISTRICTS_BY_REGION = {
         'Kotido', 'Kwania', 'Lamwo', 'Lira', 'Madi-Okollo', 'Maracha',
         'Moroto', 'Moyo', 'Nabilatuk', 'Nakapiripirit', 'Napak', 'Nebbi',
         'Nwoya', 'Obongi', 'Omoro', 'Otuke', 'Oyam', 'Pader',
-        'Pakwach', 'Terego', 'Zombo',
+        'Pakwach', 'Terego', 'Yumbe', 'Zombo',
     ],
     Western: [
         'Buhweju', 'Buliisa', 'Bundibugyo', 'Bushenyi',
