@@ -49,6 +49,7 @@ class Reports extends Page implements HasForms
         'gender_filter'     => null,
         // Split-by-group option (downloads a zip of separate reports)
         'split_by_group'    => false,
+        'zip_format'        => 'pdf',   // 'pdf' or 'excel'
     ];
 
     // ── Access control ────────────────────────────────────────────────────────
@@ -182,7 +183,20 @@ class Reports extends Page implements HasForms
                                 ['university_report', 'district_report', 'gender_report'],
                                 true
                             ))
-                            ->columnSpan(3),
+                            ->columnSpan(2),
+
+                        // ── ZIP format selector (only when split mode is on) ─────────────
+                        Select::make('zip_format')
+                            ->label('ZIP file format')
+                            ->options([
+                                'pdf'   => 'PDF files',
+                                'excel' => 'Excel files (.xlsx)',
+                            ])
+                            ->native(false)
+                            ->default('pdf')
+                            ->live()
+                            ->visible(fn () => $this->isSplitMode())
+                            ->columnSpan(1),
 
                         Select::make('status')
                             ->label('Filter by Status')
@@ -460,8 +474,9 @@ class Reports extends Page implements HasForms
     }
 
     /**
-     * Export one PDF per group (university / district / gender)
+     * Export one PDF or Excel file per group (university / district / gender)
      * and bundle them into a ZIP archive for download.
+     * Format is controlled by $this->data['zip_format'] ('pdf' or 'excel').
      */
     public function exportZip(): StreamedResponse
     {
@@ -469,8 +484,9 @@ class Reports extends Page implements HasForms
             return response()->streamDownload(fn () => null, 'error.zip');
         }
 
-        $type   = $this->data['report_type'];
-        $groups = $this->getSplitGroups();
+        $type      = $this->data['report_type'];
+        $groups    = $this->getSplitGroups();
+        $format    = $this->data['zip_format'] ?? 'pdf';   // 'pdf' | 'excel'
 
         if (empty($groups)) {
             Notification::make()
@@ -481,7 +497,6 @@ class Reports extends Page implements HasForms
             return response()->streamDownload(fn () => null, 'empty.zip');
         }
 
-        // Build all PDF files in a temp directory
         $tmpDir  = sys_get_temp_dir() . '/report_zip_' . uniqid();
         mkdir($tmpDir, 0755, true);
         $zipPath = $tmpDir . '/reports.zip';
@@ -499,32 +514,38 @@ class Reports extends Page implements HasForms
 
         foreach ($groups as $label => $value) {
             $groupFilters = array_merge($baseFilters, [$filterKey => $value]);
+            $export       = new ReportExport($type, $groupFilters);
+            $safe         = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $label);
 
-            $export   = new ReportExport($type, $groupFilters);
-            $headings = $export->headings();
-            $rows     = $export->collection()->map(fn ($row) => $export->map($row))->toArray();
+            if ($format === 'excel') {
+                $fileName = $type . '_' . $safe . '_' . now()->format('Y-m-d') . '.xlsx';
+                $filePath = $tmpDir . '/' . $fileName;
 
-            // Build a per-group title that includes the group label
-            $groupTitle = $this->reportTitle() . ' — ' . $label;
+                $raw = \Maatwebsite\Excel\Facades\Excel::raw($export, \Maatwebsite\Excel\Excel::XLSX);
+                file_put_contents($filePath, $raw);
+            } else {
+                // PDF (default)
+                $groupTitle = $this->reportTitle() . ' — ' . $label;
+                $summary    = $this->filterSummary();
+                if ($summary === 'None (all submitted applications)') {
+                    $summary = $groupTitle;
+                }
 
-            // Build filter summary that reflects this specific group
-            $groupSummary = $this->filterSummary();
-            if ($groupSummary === 'None (all submitted applications)') {
-                $groupSummary = $groupTitle;
+                $headings = $export->headings();
+                $rows     = $export->collection()->map(fn ($row) => $export->map($row))->toArray();
+
+                $pdf = Pdf::loadView('reports.pdf', [
+                    'title'         => $groupTitle,
+                    'headings'      => $headings,
+                    'rows'          => $rows,
+                    'filterSummary' => $summary,
+                ])->setPaper('a4', 'landscape');
+
+                $fileName = $type . '_' . $safe . '_' . now()->format('Y-m-d') . '.pdf';
+                $filePath = $tmpDir . '/' . $fileName;
+
+                file_put_contents($filePath, $pdf->output());
             }
-
-            $pdf = Pdf::loadView('reports.pdf', [
-                'title'         => $groupTitle,
-                'headings'      => $headings,
-                'rows'          => $rows,
-                'filterSummary' => $groupSummary,
-            ])->setPaper('a4', 'landscape');
-
-            $safe     = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $label);
-            $fileName = $type . '_' . $safe . '_' . now()->format('Y-m-d') . '.pdf';
-            $filePath = $tmpDir . '/' . $fileName;
-
-            file_put_contents($filePath, $pdf->output());
 
             $zip->addFile($filePath, $fileName);
         }
@@ -534,7 +555,6 @@ class Reports extends Page implements HasForms
         $zipFilename = $type . '_split_' . now()->format('Y-m-d_His') . '.zip';
         $zipContents = file_get_contents($zipPath);
 
-        // Clean up temp files after reading
         foreach (glob($tmpDir . '/*') as $f) {
             @unlink($f);
         }
