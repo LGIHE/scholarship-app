@@ -5,7 +5,6 @@ namespace App\Filament\Pages;
 use App\Exports\BreakdownReportExport;
 use App\Exports\ReportExport;
 use App\Models\Application;
-use App\Support\DistrictHelper;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
@@ -461,7 +460,7 @@ class Reports extends Page implements HasForms
     }
 
     /**
-     * Export one Excel file per group (university / district / gender)
+     * Export one PDF per group (university / district / gender)
      * and bundle them into a ZIP archive for download.
      */
     public function exportZip(): StreamedResponse
@@ -482,7 +481,7 @@ class Reports extends Page implements HasForms
             return response()->streamDownload(fn () => null, 'empty.zip');
         }
 
-        // Build all Excel files in a temp directory
+        // Build all PDF files in a temp directory
         $tmpDir  = sys_get_temp_dir() . '/report_zip_' . uniqid();
         mkdir($tmpDir, 0755, true);
         $zipPath = $tmpDir . '/reports.zip';
@@ -491,25 +490,41 @@ class Reports extends Page implements HasForms
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         $baseFilters = $this->buildFilters();
+        $filterKey   = match ($type) {
+            'university_report' => 'university_filter',
+            'district_report'   => 'district_filter',
+            'gender_report'     => 'gender_filter',
+            default             => '__noop__',
+        };
 
         foreach ($groups as $label => $value) {
-            // Merge group-specific filter
-            $groupFilters = array_merge($baseFilters, [
-                match ($type) {
-                    'university_report' => 'university_filter',
-                    'district_report'   => 'district_filter',
-                    'gender_report'     => 'gender_filter',
-                    default             => '__noop__',
-                } => $value,
-            ]);
+            $groupFilters = array_merge($baseFilters, [$filterKey => $value]);
 
             $export   = new ReportExport($type, $groupFilters);
+            $headings = $export->headings();
+            $rows     = $export->collection()->map(fn ($row) => $export->map($row))->toArray();
+
+            // Build a per-group title that includes the group label
+            $groupTitle = $this->reportTitle() . ' — ' . $label;
+
+            // Build filter summary that reflects this specific group
+            $groupSummary = $this->filterSummary();
+            if ($groupSummary === 'None (all submitted applications)') {
+                $groupSummary = $groupTitle;
+            }
+
+            $pdf = Pdf::loadView('reports.pdf', [
+                'title'         => $groupTitle,
+                'headings'      => $headings,
+                'rows'          => $rows,
+                'filterSummary' => $groupSummary,
+            ])->setPaper('a4', 'landscape');
+
             $safe     = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $label);
-            $fileName = $type . '_' . $safe . '_' . now()->format('Y-m-d') . '.xlsx';
+            $fileName = $type . '_' . $safe . '_' . now()->format('Y-m-d') . '.pdf';
             $filePath = $tmpDir . '/' . $fileName;
 
-            $writer = \Maatwebsite\Excel\Facades\Excel::raw($export, \Maatwebsite\Excel\Excel::XLSX);
-            file_put_contents($filePath, $writer);
+            file_put_contents($filePath, $pdf->output());
 
             $zip->addFile($filePath, $fileName);
         }
