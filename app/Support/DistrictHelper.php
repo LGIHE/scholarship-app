@@ -103,6 +103,7 @@ class DistrictHelper
         'koboko'          => 'West Nile',
         'maracha'         => 'West Nile',
         'nebbi'           => 'West Nile',
+        'yumbe'           => 'West Nile',
         'zombo'           => 'West Nile',
         'pakwach'         => 'West Nile',
         'adjumani'        => 'West Nile',
@@ -114,8 +115,11 @@ class DistrictHelper
         'moroto'          => 'Karamoja',
         'kaabong'         => 'Karamoja',
         'kotido'          => 'Karamoja',
+        'nakapiripirit'   => 'Karamoja',
         'napak'           => 'Karamoja',
         'abim'            => 'Karamoja',
+        'nabilatuk'       => 'Karamoja',
+        'karenga'         => 'Karamoja',
         'amudat'          => 'Karamoja',
 
         // ── WESTERN ──────────────────────────────────────────────────────────

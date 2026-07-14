@@ -102,6 +102,8 @@ export const DISTRICT_ALIASES = {
     'moyo district': 'Moyo',
     'nebbi district': 'Nebbi',
     'zombo district': 'Zombo',
+    'yumbe district': 'Yumbe',
+    'yumbe': 'Yumbe',
     'kwania district': 'Kwania',
     'nabilatuk district': 'Nabilatuk',
     'nakapiripirit': 'Nakapiripirit',
