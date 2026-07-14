@@ -38,11 +38,16 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
         'kyambogo'                      => 'Kyambogo University',
         'kyam'                          => 'Kyambogo University',
         'busitema'                      => 'Busitema University',
+        // Islamic University — kabojja/females campus variants before generic patterns
+        'kabojja'                       => 'Islamic University in Uganda',
+        'females campus'                => 'Islamic University in Uganda',
         'islamic university in uganda'  => 'Islamic University in Uganda',
         'islamic university'            => 'Islamic University in Uganda',
         'iuiu'                          => 'Islamic University in Uganda',
         'gulu university'               => 'Gulu University',
+        // Mountains of the Moon — handle missing 's' misspelling
         'mountains of the moon'         => 'Mountains of the Moon University',
+        'mountain of the moon'          => 'Mountains of the Moon University',
         'mmu'                           => 'Mountains of the Moon University',
         'mbarara university of science' => 'Mbarara University of Science and Technology',
         'mbarara university'            => 'Mbarara University of Science and Technology',
@@ -50,6 +55,8 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
         'uganda martyrs'                => 'Uganda Martyrs University',
         'umu'                           => 'Uganda Martyrs University',
         'kabale university'             => 'Kabale University',
+        // UNITE campuses — reversed "mubende unite" variant before generic patterns
+        'mubende unite'                 => 'UNITE Mubende Campus',
         'unite kabale'                  => 'UNITE Kabale Campus',
         'unite kaliro'                  => 'UNITE Kaliro Campus',
         'kaliro'                        => 'UNITE Kaliro Campus',
@@ -335,6 +342,12 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
         foreach ($apps as $app) {
             $raw   = trim((string) ($app->personal_info['institution'] ?? ''));
             $label = $this->normaliseUniversity($raw);
+
+            // Skip blank or unrecognised institutions — they are not on the
+            // approved list and must not appear in analytics or reports.
+            if ($label === null) {
+                continue;
+            }
 
             if (!isset($bags[$label])) $bags[$label] = $this->emptyBag();
             $this->incrementBag($bags[$label], $app->status);
@@ -639,9 +652,13 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
     // University normalisation
     // ─────────────────────────────────────────────────────────────────────────
 
-    private function normaliseUniversity(string $raw): string
+    /**
+     * Map a raw institution string to its canonical display name.
+     * Returns null for unrecognised values — callers should skip those.
+     */
+    private function normaliseUniversity(string $raw): ?string
     {
-        if ($raw === '') return 'Not Specified';
+        if ($raw === '') return null;
 
         $lower = mb_strtolower($raw);
         foreach (self::KEYWORD_MAP as $keyword => $canonical) {
@@ -650,8 +667,8 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
             }
         }
 
-        // Return as-is (title-cased) if not recognised
-        return ucwords(strtolower($raw));
+        // Not on the approved list — exclude from analytics
+        return null;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

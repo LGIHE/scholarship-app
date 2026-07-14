@@ -19,9 +19,10 @@ class NormaliseInstitutions extends Command
     protected $description = 'Normalise free-text institution names to the approved canonical list';
 
     /**
-     * Canonical institution names (the single source of truth).
+     * Canonical institution names as stored in the database.
+     * The application form saves these exact strings.
      */
-    private const CANONICAL = [
+    public const CANONICAL = [
         'Makerere University (All Campuses)',
         'Kyambogo University (All Campuses)',
         'Busitema University (All Campuses)',
@@ -44,18 +45,21 @@ class NormaliseInstitutions extends Command
      * Keys are lowercase fragments found in free-text entries.
      * Order matters: more specific patterns first.
      */
-    private const KEYWORD_MAP = [
+    public const KEYWORD_MAP = [
         // Makerere
         'makerere'                          => 'Makerere University (All Campuses)',
 
-        // Kyambogo — also catches abbreviations starting with "kyam"
+        // Kyambogo
         'kyambogo'                          => 'Kyambogo University (All Campuses)',
         'kyam'                              => 'Kyambogo University (All Campuses)',
 
-        // Busitema (catches "Busitema University/Nangorera Campus" etc.)
+        // Busitema
         'busitema'                          => 'Busitema University (All Campuses)',
 
-        // Islamic University in Uganda — catches iuiu anywhere in the string
+        // Islamic University in Uganda
+        // "kabojja" is a known campus variant — must come before generic iuiu/islamic
+        'kabojja'                           => 'Islamic University in Uganda (All Campuses)',
+        'females campus'                    => 'Islamic University in Uganda (All Campuses)',
         'islamic university in uganda'      => 'Islamic University in Uganda (All Campuses)',
         'islamic university'                => 'Islamic University in Uganda (All Campuses)',
         'iuiu'                              => 'Islamic University in Uganda (All Campuses)',
@@ -63,8 +67,9 @@ class NormaliseInstitutions extends Command
         // Gulu University
         'gulu university'                   => 'Gulu University (All Campuses)',
 
-        // Mountains of the Moon
+        // Mountains of the Moon — handle misspellings: "mountain of the moon" (no s)
         'mountains of the moon'             => 'Mountains of the Moon University',
+        'mountain of the moon'              => 'Mountains of the Moon University',
         'mmu'                               => 'Mountains of the Moon University',
 
         // Mbarara University of Science and Technology
@@ -79,7 +84,9 @@ class NormaliseInstitutions extends Command
         // Kabale University (must come before generic "kabale" to avoid conflict with UNITE Kabale)
         'kabale university'                 => 'Kabale University (All Campuses)',
 
-        // UNITE campuses — check specific campuses BEFORE generic "unite"
+        // UNITE campuses — specific patterns before generic "unite"
+        // "mubende unite" is a known reversed variant
+        'mubende unite'                     => 'UNITE Mubende Campus',
         'unite kabale'                      => 'UNITE Kabale Campus',
         'unite kaliro'                      => 'UNITE Kaliro Campus',
         'kaliro'                            => 'UNITE Kaliro Campus',
@@ -104,8 +111,8 @@ class NormaliseInstitutions extends Command
 
         Application::whereNotNull('personal_info')->chunkById(100, function ($applications) use (&$updated, &$skipped, &$unknown, $apply) {
             foreach ($applications as $app) {
-                $info        = $app->personal_info ?? [];
-                $raw         = trim($info['institution'] ?? '');
+                $info = $app->personal_info ?? [];
+                $raw  = trim($info['institution'] ?? '');
 
                 if ($raw === '') {
                     $skipped++;
@@ -118,7 +125,7 @@ class NormaliseInstitutions extends Command
                     continue;
                 }
 
-                $normalised = $this->normalise($raw);
+                $normalised = self::normalise($raw);
 
                 if ($normalised === null) {
                     $this->line("  <comment>[ID {$app->id}] Could not match:</comment> {$raw}");
@@ -138,7 +145,7 @@ class NormaliseInstitutions extends Command
         });
 
         $this->newLine();
-        $this->info("Summary:");
+        $this->info('Summary:');
         $this->table(['Action', 'Count'], [
             [$apply ? 'Updated' : 'Would update', $updated],
             ['Already canonical / blank', $skipped],
@@ -156,10 +163,11 @@ class NormaliseInstitutions extends Command
     /**
      * Attempt to map a raw institution string to a canonical name.
      * Returns null when no match is found.
+     * Public static so the Filament page and other classes can reuse it.
      */
-    private function normalise(string $raw): ?string
+    public static function normalise(string $raw): ?string
     {
-        $lower = mb_strtolower($raw);
+        $lower = mb_strtolower(trim($raw));
 
         foreach (self::KEYWORD_MAP as $keyword => $canonical) {
             if (str_contains($lower, $keyword)) {

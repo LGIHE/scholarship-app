@@ -47,11 +47,16 @@ class ApplicationsByUniversityChart extends ChartWidget
         'kyambogo'                      => 'Kyambogo University (All Campuses)',
         'kyam'                          => 'Kyambogo University (All Campuses)',
         'busitema'                      => 'Busitema University (All Campuses)',
+        // Islamic University — kabojja/females campus variants before generic patterns
+        'kabojja'                       => 'Islamic University in Uganda (All Campuses)',
+        'females campus'                => 'Islamic University in Uganda (All Campuses)',
         'islamic university in uganda'  => 'Islamic University in Uganda (All Campuses)',
         'islamic university'            => 'Islamic University in Uganda (All Campuses)',
         'iuiu'                          => 'Islamic University in Uganda (All Campuses)',
         'gulu university'               => 'Gulu University (All Campuses)',
+        // Mountains of the Moon — handle missing 's' misspelling
         'mountains of the moon'         => 'Mountains of the Moon University',
+        'mountain of the moon'          => 'Mountains of the Moon University',
         'mmu'                           => 'Mountains of the Moon University',
         'mbarara university of science' => 'Mbarara University of Science and Technology (All Campuses)',
         'mbarara university'            => 'Mbarara University of Science and Technology (All Campuses)',
@@ -59,6 +64,8 @@ class ApplicationsByUniversityChart extends ChartWidget
         'uganda martyrs'                => 'Uganda Martyrs University (All Campuses)',
         'umu'                           => 'Uganda Martyrs University (All Campuses)',
         'kabale university'             => 'Kabale University (All Campuses)',
+        // UNITE campuses — reversed "mubende unite" variant before generic patterns
+        'mubende unite'                 => 'UNITE Mubende Campus',
         'unite kabale'                  => 'UNITE Kabale Campus',
         'unite kaliro'                  => 'UNITE Kaliro Campus',
         'kaliro'                        => 'UNITE Kaliro Campus',
