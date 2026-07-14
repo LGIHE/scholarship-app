@@ -7,38 +7,69 @@
     </form>
 
     {{-- ── Export buttons ──────────────────────────────────────────────── --}}
+    @php $reportType = $this->data['report_type'] ?? null; @endphp
+
     <div class="flex flex-wrap items-center gap-3 mt-4">
-        <x-filament::button
-            wire:click="exportExcel"
-            color="success"
-            icon="heroicon-o-table-cells"
-            wire:loading.attr="disabled"
-        >
-            <span wire:loading.remove wire:target="exportExcel">Export to Excel</span>
-            <span wire:loading wire:target="exportExcel">Generating…</span>
-        </x-filament::button>
 
-        <x-filament::button
-            wire:click="exportPdf"
-            color="danger"
-            icon="heroicon-o-document-arrow-down"
-            wire:loading.attr="disabled"
-        >
-            <span wire:loading.remove wire:target="exportPdf">Export to PDF</span>
-            <span wire:loading wire:target="exportPdf">Generating…</span>
-        </x-filament::button>
+        @if ($reportType === 'general_breakdown_pdf')
+            {{-- Combined PDF: single dedicated button --}}
+            <x-filament::button
+                wire:click="exportGeneralBreakdownPdf"
+                color="danger"
+                icon="heroicon-o-document-arrow-down"
+                wire:loading.attr="disabled"
+            >
+                <span wire:loading.remove wire:target="exportGeneralBreakdownPdf">Download General Breakdown (PDF)</span>
+                <span wire:loading wire:target="exportGeneralBreakdownPdf">Generating PDF…</span>
+            </x-filament::button>
 
-        @if ($this->isSplitMode())
-        <x-filament::button
-            wire:click="exportZip"
-            color="warning"
-            icon="heroicon-o-archive-box-arrow-down"
-            wire:loading.attr="disabled"
-        >
-            <span wire:loading.remove wire:target="exportZip">Download Split Reports (ZIP)</span>
-            <span wire:loading wire:target="exportZip">Generating ZIP…</span>
-        </x-filament::button>
+        @elseif ($reportType === 'general_breakdown_excel')
+            {{-- Combined Excel: single dedicated button --}}
+            <x-filament::button
+                wire:click="exportGeneralBreakdownExcel"
+                color="success"
+                icon="heroicon-o-table-cells"
+                wire:loading.attr="disabled"
+            >
+                <span wire:loading.remove wire:target="exportGeneralBreakdownExcel">Download General Breakdown (Excel)</span>
+                <span wire:loading wire:target="exportGeneralBreakdownExcel">Generating Excel…</span>
+            </x-filament::button>
+
+        @elseif ($reportType)
+            {{-- Standard per-type export buttons --}}
+            <x-filament::button
+                wire:click="exportExcel"
+                color="success"
+                icon="heroicon-o-table-cells"
+                wire:loading.attr="disabled"
+            >
+                <span wire:loading.remove wire:target="exportExcel">Export to Excel</span>
+                <span wire:loading wire:target="exportExcel">Generating…</span>
+            </x-filament::button>
+
+            <x-filament::button
+                wire:click="exportPdf"
+                color="danger"
+                icon="heroicon-o-document-arrow-down"
+                wire:loading.attr="disabled"
+            >
+                <span wire:loading.remove wire:target="exportPdf">Export to PDF</span>
+                <span wire:loading wire:target="exportPdf">Generating…</span>
+            </x-filament::button>
+
+            @if ($this->isSplitMode())
+            <x-filament::button
+                wire:click="exportZip"
+                color="warning"
+                icon="heroicon-o-archive-box-arrow-down"
+                wire:loading.attr="disabled"
+            >
+                <span wire:loading.remove wire:target="exportZip">Download Split Reports (ZIP)</span>
+                <span wire:loading wire:target="exportZip">Generating ZIP…</span>
+            </x-filament::button>
+            @endif
         @endif
+
     </div>
 
     {{-- ── Live preview ────────────────────────────────────────────────── --}}
@@ -63,7 +94,39 @@
             </div>
         </div>
 
-        @if (!empty($preview['headings']))
+        @if (!empty($preview['is_general_breakdown']))
+
+            {{-- Info panel for combined breakdown types — no single preview table --}}
+            <div class="rounded-xl border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-950 p-8 text-center">
+                @if ($preview['format'] === 'PDF')
+                    <x-heroicon-o-document-arrow-down class="mx-auto h-12 w-12 text-blue-400 dark:text-blue-500 mb-3" />
+                @else
+                    <x-heroicon-o-table-cells class="mx-auto h-12 w-12 text-blue-400 dark:text-blue-500 mb-3" />
+                @endif
+                <p class="text-blue-800 dark:text-blue-200 font-semibold text-base">
+                    General Breakdown Report &mdash; {{ $preview['format'] }}
+                </p>
+                <p class="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                    Generates a single {{ $preview['format'] === 'PDF' ? 'PDF with 9 pages' : 'Excel workbook with 9 sheets' }},
+                    one per breakdown type.
+                </p>
+                <ul class="mt-4 inline-block text-left text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
+                    <li>Breakdown by Country</li>
+                    <li>Breakdown by Region</li>
+                    <li>Breakdown by Subregion</li>
+                    <li>Breakdown by District</li>
+                    <li>Breakdown by University / Institution</li>
+                    <li>Breakdown by Nationality</li>
+                    <li>Breakdown by Disability</li>
+                    <li>Breakdown by Refugee Status</li>
+                    <li>Breakdown by Entry Level</li>
+                </ul>
+                <p class="mt-4 text-xs text-blue-500 dark:text-blue-500">
+                    Apply filters above to scope all sections, then click the download button.
+                </p>
+            </div>
+
+        @elseif (!empty($preview['headings']))
 
             {{-- Header bar --}}
             <div class="flex items-center justify-between mb-3">
@@ -157,7 +220,8 @@
                     Results update live as you change filters. Export to Excel or PDF when ready.
                 </p>
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    <strong>Breakdown reports</strong> show aggregated counts by region, district, university, country, or nationality.
+                    <strong>General Breakdown</strong> reports generate a single PDF (9 pages) or Excel (9 sheets)
+                    covering country, region, subregion, district, university, nationality, disability, refugee status, and entry level.
                 </p>
             </div>
 

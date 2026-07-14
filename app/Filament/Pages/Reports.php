@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Exports\BreakdownReportExport;
+use App\Exports\GeneralBreakdownExport;
 use App\Exports\ReportExport;
 use App\Models\Application;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -73,6 +74,7 @@ class Reports extends Page implements HasForms
 
     // ── Report type groups ────────────────────────────────────────────────────
 
+    /** Individual breakdown types still used by legacy preview + makeExport(). */
     private const BREAKDOWN_TYPES = [
         'breakdown_by_region',
         'breakdown_by_subregion',
@@ -85,9 +87,43 @@ class Reports extends Page implements HasForms
         'breakdown_by_entry_level',
     ];
 
+    /** Ordered list used to build the combined PDF/Excel exports. */
+    private const GENERAL_BREAKDOWN_ORDER = [
+        'breakdown_by_country',
+        'breakdown_by_region',
+        'breakdown_by_subregion',
+        'breakdown_by_district',
+        'breakdown_by_university',
+        'breakdown_by_nationality',
+        'breakdown_by_disability',
+        'breakdown_by_refugee',
+        'breakdown_by_entry_level',
+    ];
+
+    private const GENERAL_BREAKDOWN_TITLES = [
+        'breakdown_by_country'     => 'Breakdown by Country',
+        'breakdown_by_region'      => 'Breakdown by Region',
+        'breakdown_by_subregion'   => 'Breakdown by Subregion',
+        'breakdown_by_district'    => 'Breakdown by District',
+        'breakdown_by_university'  => 'Breakdown by University / Institution',
+        'breakdown_by_nationality' => 'Breakdown by Nationality',
+        'breakdown_by_disability'  => 'Breakdown by Disability',
+        'breakdown_by_refugee'     => 'Breakdown by Refugee Status',
+        'breakdown_by_entry_level' => 'Breakdown by Entry Level',
+    ];
+
     private function isBreakdown(): bool
     {
         return in_array($this->data['report_type'] ?? null, self::BREAKDOWN_TYPES, true);
+    }
+
+    private function isGeneralBreakdown(): bool
+    {
+        return in_array(
+            $this->data['report_type'] ?? null,
+            ['general_breakdown_pdf', 'general_breakdown_excel'],
+            true
+        );
     }
 
     // ── Form definition ───────────────────────────────────────────────────────
@@ -114,15 +150,8 @@ class Reports extends Page implements HasForms
                                     'approved_scholars'    => 'Approved Scholars List',
                                 ],
                                 'Breakdown / Summary Reports' => [
-                                    'breakdown_by_region'      => 'Breakdown by Region',
-                                    'breakdown_by_subregion'   => 'Breakdown by Subregion',
-                                    'breakdown_by_district'    => 'Breakdown by District',
-                                    'breakdown_by_university'  => 'Breakdown by University / Institution',
-                                    'breakdown_by_country'     => 'Breakdown by Country',
-                                    'breakdown_by_nationality' => 'Breakdown by Nationality',
-                                    'breakdown_by_disability'  => 'Breakdown by Disability',
-                                    'breakdown_by_refugee'     => 'Breakdown by Refugee Status',
-                                    'breakdown_by_entry_level' => 'Breakdown by Entry Level',
+                                    'general_breakdown_pdf'   => 'General Breakdown (PDF)',
+                                    'general_breakdown_excel' => 'General Breakdown (Excel)',
                                 ],
                             ])
                             ->native(false)
@@ -399,15 +428,8 @@ class Reports extends Page implements HasForms
             'gender_report'            => 'Applications by Gender',
             'financial_report'         => 'Financial Needs Report',
             'approved_scholars'        => 'Approved Scholars List',
-            'breakdown_by_region'      => 'Breakdown by Region',
-            'breakdown_by_subregion'   => 'Breakdown by Subregion',
-            'breakdown_by_district'    => 'Breakdown by District',
-            'breakdown_by_university'  => 'Breakdown by University / Institution',
-            'breakdown_by_country'     => 'Breakdown by Country',
-            'breakdown_by_nationality' => 'Breakdown by Nationality',
-            'breakdown_by_disability'  => 'Breakdown by Disability',
-            'breakdown_by_refugee'     => 'Breakdown by Refugee Status',
-            'breakdown_by_entry_level' => 'Breakdown by Entry Level',
+            'general_breakdown_pdf'    => 'General Breakdown Report (PDF)',
+            'general_breakdown_excel'  => 'General Breakdown Report (Excel)',
             default                    => 'Report',
         };
     }
@@ -429,6 +451,12 @@ class Reports extends Page implements HasForms
     {
         $type    = $this->data['report_type'];
         $filters = $this->buildFilters();
+
+        // The two combined breakdown types have their own dedicated export methods.
+        // makeExport() should never be called with them, but guard defensively.
+        if ($this->isGeneralBreakdown()) {
+            throw new \LogicException('Use exportGeneralBreakdownPdf/Excel for combined breakdown types.');
+        }
 
         return $this->isBreakdown()
             ? new BreakdownReportExport($type, $filters)
@@ -567,6 +595,54 @@ class Reports extends Page implements HasForms
         );
     }
 
+    // ── Combined general breakdown exports ───────────────────────────────────
+
+    /**
+     * Download a single PDF containing all 9 breakdown sections,
+     * one per page, in the canonical order defined by GENERAL_BREAKDOWN_ORDER.
+     */
+    public function exportGeneralBreakdownPdf(): StreamedResponse
+    {
+        $filters = $this->buildFilters();
+        $sections = [];
+
+        foreach (self::GENERAL_BREAKDOWN_ORDER as $type) {
+            $export = new BreakdownReportExport($type, $filters);
+            $rows   = $export->collection()->map(fn ($row) => $export->map($row))->toArray();
+
+            $sections[] = [
+                'title'                  => self::GENERAL_BREAKDOWN_TITLES[$type],
+                'headings'               => $export->headings(),
+                'rows'                   => $rows,
+                'is_total_row_included'  => count($rows) > 0,
+            ];
+        }
+
+        $pdf = Pdf::loadView('reports.breakdown_pdf', [
+            'sections'      => $sections,
+            'filterSummary' => $this->filterSummary(),
+        ])->setPaper('a4', 'landscape');
+
+        $filename = 'general_breakdown_' . now()->format('Y-m-d_His') . '.pdf';
+
+        return response()->streamDownload(
+            fn () => print($pdf->output()),
+            $filename
+        );
+    }
+
+    /**
+     * Download a single Excel workbook with all 9 breakdown types as separate
+     * sheets, in the canonical order defined by GENERAL_BREAKDOWN_ORDER.
+     */
+    public function exportGeneralBreakdownExcel(): BinaryFileResponse
+    {
+        $filters  = $this->buildFilters();
+        $filename = 'general_breakdown_' . now()->format('Y-m-d_His') . '.xlsx';
+
+        return Excel::download(new GeneralBreakdownExport($filters), $filename);
+    }
+
     // ── Reactive preview ──────────────────────────────────────────────────────
 
     /**
@@ -592,7 +668,19 @@ class Reports extends Page implements HasForms
         $reportType = $this->data['report_type'] ?? null;
 
         if (empty($reportType)) {
-            return ['headings' => [], 'rows' => [], 'total' => 0, 'is_breakdown' => false];
+            return ['headings' => [], 'rows' => [], 'total' => 0, 'is_breakdown' => false, 'is_general_breakdown' => false];
+        }
+
+        // Combined breakdown types — no single table preview; show description instead.
+        if ($this->isGeneralBreakdown()) {
+            return [
+                'headings'             => [],
+                'rows'                 => [],
+                'total'                => 0,
+                'is_breakdown'         => false,
+                'is_general_breakdown' => true,
+                'format'               => $reportType === 'general_breakdown_pdf' ? 'PDF' : 'Excel',
+            ];
         }
 
         $export   = $this->makeExport();
@@ -605,10 +693,11 @@ class Reports extends Page implements HasForms
         $rows    = $preview->map(fn ($row) => $export->map($row))->toArray();
 
         return [
-            'headings'     => $headings,
-            'rows'         => $rows,
-            'total'        => $total,
-            'is_breakdown' => $this->isBreakdown(),
+            'headings'             => $headings,
+            'rows'                 => $rows,
+            'total'                => $total,
+            'is_breakdown'         => $this->isBreakdown(),
+            'is_general_breakdown' => false,
         ];
     }
 }
