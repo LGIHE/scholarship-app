@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\Cohort;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -10,38 +11,61 @@ use Inertia\Response;
 class ApplicationController extends Controller
 {
     /**
+     * Resolve the active cohort and its effective deadline.
+     * Returns an array ready to be spread into Inertia props.
+     */
+    private function cohortProps(): array
+    {
+        $cohort   = Cohort::current();
+        $deadline = Cohort::effectiveDeadline();
+
+        return [
+            'cohort'              => $cohort ? [
+                'id'                     => $cohort->id,
+                'name'                   => $cohort->name,
+                'academic_year'          => $cohort->academic_year,
+                'slug'                   => $cohort->slug,
+                'scholarships_available' => $cohort->scholarships_available,
+                'closes_at'              => $cohort->closes_at?->toDateTimeString(),
+            ] : null,
+            'deadlinePassed'      => $deadline ? now()->greaterThan($deadline) : false,
+            'applicationDeadline' => $deadline?->toDateString(),
+        ];
+    }
+
+    /**
+     * Check whether the application deadline has passed.
+     */
+    private function isDeadlinePassed(): bool
+    {
+        $deadline = Cohort::effectiveDeadline();
+        return $deadline ? now()->greaterThan($deadline) : false;
+    }
+
+    /**
      * Show the multi-step application form.
      */
     public function form(Request $request): Response
     {
+        $cohort = Cohort::current();
+
         $application = Application::where('user_id', $request->user()->id)
+            ->when($cohort, fn ($q) => $q->where('cohort_id', $cohort->id))
             ->where('status', 'draft')
             ->latest()
             ->first();
 
         if (! $application) {
             $application = Application::where('user_id', $request->user()->id)
+                ->when($cohort, fn ($q) => $q->where('cohort_id', $cohort->id))
                 ->latest()
                 ->first();
         }
 
-        $deadline = \Carbon\Carbon::parse(config('scholarship.application_deadline'))->setTime(23, 59, 59);
-
-        return Inertia::render('Application/Form', [
-            'application'      => $application,
-            'deadlinePassed'   => now()->greaterThan($deadline),
-            'applicationDeadline' => $deadline->toDateString(),
-        ]);
-    }
-
-    /**
-     * Check whether the application deadline has passed.
-     * The deadline expires at 23:59:59 on the configured date.
-     */
-    private function isDeadlinePassed(): bool
-    {
-        $deadline = \Carbon\Carbon::parse(config('scholarship.application_deadline'))->setTime(23, 59, 59);
-        return now()->greaterThan($deadline);
+        return Inertia::render('Application/Form', array_merge(
+            ['application' => $application],
+            $this->cohortProps()
+        ));
     }
 
     /**
@@ -55,6 +79,8 @@ class ApplicationController extends Controller
             ], 403);
         }
 
+        $cohort = Cohort::current();
+
         // Parse JSON fields
         $personalInfo    = json_decode($request->input('personal_info', '{}'), true) ?? [];
         $disabilityInfo  = json_decode($request->input('disability_info', '{}'), true) ?? [];
@@ -64,8 +90,9 @@ class ApplicationController extends Controller
         $guardianInfo    = json_decode($request->input('guardian_info', '{}'), true) ?? [];
         $declarationInfo = json_decode($request->input('declaration_info', '{}'), true) ?? [];
 
-        // Find existing draft or submitted application (submitted can still be edited before deadline)
+        // Find existing draft or submitted application for the active cohort
         $application = Application::where('user_id', $request->user()->id)
+            ->when($cohort, fn ($q) => $q->where('cohort_id', $cohort->id))
             ->whereIn('status', ['draft', 'submitted'])
             ->latest()
             ->first();
@@ -113,8 +140,9 @@ class ApplicationController extends Controller
             $application->update($updateData);
         } else {
             $application = Application::create(array_merge($updateData, [
-                'user_id' => $request->user()->id,
-                'status'  => 'draft',
+                'user_id'   => $request->user()->id,
+                'cohort_id' => $cohort?->id,
+                'status'    => 'draft',
             ]));
         }
 
@@ -136,8 +164,11 @@ class ApplicationController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        // Get existing draft or submitted application for previously uploaded documents
+        $cohort = Cohort::current();
+
+        // Get existing draft or submitted application for the active cohort
         $existingDraft = Application::where('user_id', $request->user()->id)
+            ->when($cohort, fn ($q) => $q->where('cohort_id', $cohort->id))
             ->whereIn('status', ['draft', 'submitted'])
             ->latest()
             ->first();
@@ -153,7 +184,6 @@ class ApplicationController extends Controller
             'personal_info.surname'             => 'required|string|max:255',
             'personal_info.other_names'         => 'required|string|max:255',
             'personal_info.date_of_birth'       => 'required|date',
-            // NIN required only for Ugandans; non-Ugandans must supply at least one alternative ID
             'personal_info.nin'                 => $isUgandan ? 'required|string|min:4|max:14' : 'nullable|string|max:14',
             'personal_info.passport_number'     => !$isUgandan ? 'nullable|string|max:50' : 'nullable',
             'personal_info.foreign_id_number'   => !$isUgandan ? 'nullable|string|max:100' : 'nullable',
@@ -267,7 +297,8 @@ class ApplicationController extends Controller
             $application = $existingDraft;
         } else {
             $application = Application::create(array_merge($submitData, [
-                'user_id' => $request->user()->id,
+                'user_id'   => $request->user()->id,
+                'cohort_id' => $cohort?->id,
             ]));
         }
 
@@ -276,6 +307,7 @@ class ApplicationController extends Controller
 
         \Illuminate\Support\Facades\Log::info('Application submitted successfully', [
             'application_id' => $application->id,
+            'cohort_id'      => $application->cohort_id,
         ]);
 
         try {

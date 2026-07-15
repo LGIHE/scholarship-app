@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import PublicHeader from '@/Components/PublicHeader';
 import PublicFooter from '@/Components/PublicFooter';
@@ -38,6 +38,11 @@ const stats = [
 ];
 
 export default function Scholarships() {
+    const { activeCohort, allCohorts } = usePage().props;
+
+    // Past cohorts = all non-active ones, already sorted desc by id from backend
+    const pastCohorts = (allCohorts ?? []).filter((c) => !c.is_active);
+
     return (
         <>
             <Head title="Scholarships — LGF" />
@@ -195,7 +200,7 @@ export default function Scholarships() {
                         </div>
                     </section>
 
-                    {/* Current Call */}
+                    {/* Current / Active Call */}
                     <section id="current-call" className="bg-white py-16 scroll-mt-8">
                         <div className="mx-auto max-w-7xl px-6 lg:px-8">
                             <motion.div
@@ -213,67 +218,127 @@ export default function Scholarships() {
                                 </h2>
                             </motion.div>
 
-                            {/* Active call card */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 16 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.45, delay: 0.1 }}
-                                className="relative overflow-hidden rounded-2xl border-2 border-[#035A7D] bg-gradient-to-br from-[#035A7D]/5 to-blue-50 p-8 shadow-sm"
-                            >
-                                {/* Active badge */}
-                                <span className="absolute right-6 top-6 inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                                    Now Open
-                                </span>
+                            {activeCohort ? (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 16 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.45, delay: 0.1 }}
+                                    className="relative overflow-hidden rounded-2xl border-2 border-[#035A7D] bg-gradient-to-br from-[#035A7D]/5 to-blue-50 p-8 shadow-sm"
+                                >
+                                    {/* Status badge */}
+                                    {activeCohort.is_open ? (
+                                        <span className="absolute right-6 top-6 inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                                            Now Open
+                                        </span>
+                                    ) : activeCohort.deadline_passed ? (
+                                        <span className="absolute right-6 top-6 inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                                            Closed
+                                        </span>
+                                    ) : (
+                                        <span className="absolute right-6 top-6 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                                            Coming Soon
+                                        </span>
+                                    )}
 
-                                <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-                                    <div>
-                                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#035A7D]">
-                                            2026/2027 Academic Year
-                                        </p>
-                                        <h3 className="mt-2 text-2xl font-bold text-gray-900">
-                                            Female STEM Student Teachers' Scholarship — Call for Applications
-                                        </h3>
-                                        <p className="mt-3 text-gray-600">
-                                            400 scholarships are available for pre-service female STEM student teachers
-                                            — Ugandan citizens, refugees, and young women with disabilities — admitted
-                                            to pursue a Bachelor of Science with Education (BScEd) for the 2026/2027
-                                            academic year.
-                                        </p>
+                                    <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+                                        <div>
+                                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#035A7D]">
+                                                {activeCohort.academic_year} Academic Year
+                                            </p>
+                                            <h3 className="mt-2 text-2xl font-bold text-gray-900">
+                                                Female STEM Student Teachers' Scholarship — Call for Applications
+                                            </h3>
+                                            {activeCohort.description && (
+                                                <p className="mt-3 text-gray-600">{activeCohort.description}</p>
+                                            )}
 
-                                        <div className="mt-6 flex flex-wrap gap-6 text-sm">
-                                            <div>
-                                                <span className="font-semibold text-gray-700">Scholarships available</span>
-                                                <p className="text-[#035A7D] font-bold text-lg">400</p>
-                                            </div>
-                                            <div>
-                                                <span className="font-semibold text-gray-700">Application deadline</span>
-                                                <p className="text-amber-700 font-bold text-lg">July 15, 2026</p>
-                                            </div>
-                                            <div>
-                                                <span className="font-semibold text-gray-700">Award includes</span>
-                                                <p className="text-gray-600">Tuition · Accommodation · Laptop</p>
+                                            <div className="mt-6 flex flex-wrap gap-6 text-sm">
+                                                <div>
+                                                    <span className="font-semibold text-gray-700">Scholarships available</span>
+                                                    <p className="text-[#035A7D] font-bold text-lg">
+                                                        {activeCohort.scholarships_available.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                {activeCohort.deadline_label && (
+                                                    <div>
+                                                        <span className="font-semibold text-gray-700">Application deadline</span>
+                                                        <p className={`font-bold text-lg ${activeCohort.deadline_passed ? 'text-red-700' : 'text-amber-700'}`}>
+                                                            {activeCohort.deadline_label}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <span className="font-semibold text-gray-700">Award includes</span>
+                                                    <p className="text-gray-600">Tuition · Accommodation · Laptop</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="flex flex-col gap-3 lg:items-end lg:min-w-[180px]">
-                                        <Link
-                                            href={route('scholarship.call', { year: '2026-2027' })}
-                                            className="rounded-full bg-[#035A7D] px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#024a6b]"
-                                        >
-                                            View Full Details
-                                        </Link>
-                                        <Link
-                                            href={route('register')}
-                                            className="rounded-full bg-white px-6 py-3 text-center text-sm font-semibold text-gray-700 ring-1 ring-gray-300 transition hover:bg-gray-50"
-                                        >
-                                            Apply Now
-                                        </Link>
+                                        <div className="flex flex-col gap-3 lg:items-end lg:min-w-[180px]">
+                                            <Link
+                                                href={route('scholarship.call', { slug: activeCohort.slug })}
+                                                className="rounded-full bg-[#035A7D] px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#024a6b]"
+                                            >
+                                                View Full Details
+                                            </Link>
+                                            {!activeCohort.deadline_passed && (
+                                                <Link
+                                                    href={route('register')}
+                                                    className="rounded-full bg-white px-6 py-3 text-center text-sm font-semibold text-gray-700 ring-1 ring-gray-300 transition hover:bg-gray-50"
+                                                >
+                                                    Apply Now
+                                                </Link>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 16 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.45, delay: 0.1 }}
+                                    className="rounded-2xl border border-gray-200 bg-gray-50 p-8 text-center text-gray-500"
+                                >
+                                    <p className="text-lg font-medium">No active scholarship call at this time.</p>
+                                    <p className="mt-2 text-sm">Check back soon or contact us for updates.</p>
+                                </motion.div>
+                            )}
+
+                            {/* Past Calls */}
+                            {pastCohorts.length > 0 && (
+                                <div className="mt-12">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Previous Calls</h3>
+                                    <div className="space-y-4">
+                                        {pastCohorts.map((cohort, i) => (
+                                            <motion.div
+                                                key={cohort.id}
+                                                initial={{ opacity: 0, y: 12 }}
+                                                whileInView={{ opacity: 1, y: 0 }}
+                                                viewport={{ once: true }}
+                                                transition={{ duration: 0.35, delay: i * 0.07 }}
+                                                className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm"
+                                            >
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">{cohort.name}</p>
+                                                    <p className="text-sm text-gray-500">
+                                                        {cohort.academic_year}
+                                                        {cohort.deadline_label && ` · Deadline: ${cohort.deadline_label}`}
+                                                    </p>
+                                                </div>
+                                                <Link
+                                                    href={route('scholarship.call', { slug: cohort.slug })}
+                                                    className="text-sm font-medium text-[#035A7D] hover:underline"
+                                                >
+                                                    View Details →
+                                                </Link>
+                                            </motion.div>
+                                        ))}
                                     </div>
                                 </div>
-                            </motion.div>
+                            )}
                         </div>
                     </section>
 

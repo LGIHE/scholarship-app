@@ -215,6 +215,11 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
             }
         }
 
+        // Cohort filter
+        if (!empty($this->filters['cohort_id'])) {
+            $query->where('cohort_id', $this->filters['cohort_id']);
+        }
+
         return $query->get(['personal_info', 'disability_info', 'status']);
     }
 

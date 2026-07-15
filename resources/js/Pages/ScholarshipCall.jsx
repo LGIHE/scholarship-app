@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import PublicHeader from '@/Components/PublicHeader';
 import PublicFooter from '@/Components/PublicFooter';
@@ -36,9 +36,11 @@ const tocSections = [
 ];
 
 export default function ScholarshipCall() {
+    const { cohort } = usePage().props;
+
     return (
         <>
-            <Head title="2026/2027 Scholarship Call — LGF" />
+            <Head title={`${cohort.academic_year} Scholarship Call — LGF`} />
 
             <div className="relative min-h-screen bg-gray-50 text-gray-900 selection:bg-[#035A7D] selection:text-white">
                 <div
@@ -63,7 +65,7 @@ export default function ScholarshipCall() {
                             Scholarships
                         </Link>
                         <span>/</span>
-                        <span className="text-gray-900 font-medium">2026/2027 Call for Applications</span>
+                        <span className="text-gray-900 font-medium">{cohort.academic_year} Call for Applications</span>
                     </nav>
                 </div>
 
@@ -78,7 +80,7 @@ export default function ScholarshipCall() {
                             className="max-w-4xl"
                         >
                             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#035A7D]">
-                                Application Call — 2026/2027 Academic Year
+                                Application Call — {cohort.academic_year} Academic Year
                             </p>
                             <h1 className="mt-3 text-4xl font-bold leading-tight text-gray-900 sm:text-5xl">
                                 Female STEM Student Teachers' Scholarship
@@ -87,19 +89,29 @@ export default function ScholarshipCall() {
                                 Leaders in Teaching Uganda Program
                             </p>
                             <p className="mt-4 text-lg leading-8 text-gray-600">
-                                The Leaders in Teaching Uganda Program is pleased to announce a call for
-                                applications for <strong>400 scholarships</strong> for pre-service female
-                                STEM students — Ugandan citizens, refugees, and young women with disabilities
-                                — admitted to pursue a Bachelor of Science with Education (BScEd) during the
-                                2026/2027 Academic Year.
+                                {cohort.description
+                                    ? cohort.description
+                                    : (
+                                        <>
+                                            The Leaders in Teaching Uganda Program is pleased to announce a call for
+                                            applications for{' '}
+                                            <strong>{cohort.scholarships_available.toLocaleString()} scholarships</strong>{' '}
+                                            for pre-service female STEM students — Ugandan citizens, refugees, and young
+                                            women with disabilities — admitted to pursue a Bachelor of Science with
+                                            Education (BScEd) during the {cohort.academic_year} Academic Year.
+                                        </>
+                                    )
+                                }
                             </p>
                             <div className="mt-8 flex flex-wrap gap-4">
-                                <Link
-                                    href={route('register')}
-                                    className="rounded-full bg-[#035A7D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#024a6b]"
-                                >
-                                    Apply Now
-                                </Link>
+                                {!cohort.deadline_passed && (
+                                    <Link
+                                        href={route('register')}
+                                        className="rounded-full bg-[#035A7D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#024a6b]"
+                                    >
+                                        Apply Now
+                                    </Link>
+                                )}
                                 <a
                                     href="#eligibility"
                                     className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-gray-700 ring-1 ring-gray-300 transition hover:bg-gray-50"
@@ -111,17 +123,28 @@ export default function ScholarshipCall() {
                     </section>
 
                     {/* Deadline banner */}
-                    <div className="border-y border-amber-200 bg-amber-50">
-                        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-6 py-4 lg:px-8">
-                            <span className="text-sm font-bold uppercase tracking-wide text-amber-700">
-                                ⏰ Deadline:
-                            </span>
-                            <span className="font-semibold text-amber-800">July 15, 2026</span>
-                            <span className="text-sm text-amber-600">
-                                — Submit completed applications and supporting documents before this date.
-                            </span>
+                    {cohort.deadline_label && (
+                        <div className={`border-y ${cohort.deadline_passed ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
+                            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-6 py-4 lg:px-8">
+                                <span className={`text-sm font-bold uppercase tracking-wide ${cohort.deadline_passed ? 'text-red-700' : 'text-amber-700'}`}>
+                                    {cohort.deadline_passed ? '🔒 Deadline Passed:' : '⏰ Deadline:'}
+                                </span>
+                                <span className={`font-semibold ${cohort.deadline_passed ? 'text-red-800' : 'text-amber-800'}`}>
+                                    {cohort.deadline_label}
+                                </span>
+                                {!cohort.deadline_passed && (
+                                    <span className="text-sm text-amber-600">
+                                        — Submit completed applications and supporting documents before this date.
+                                    </span>
+                                )}
+                                {cohort.deadline_passed && (
+                                    <span className="text-sm text-red-600">
+                                        — This call is now closed. No late submissions are accepted.
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Two-column layout: ToC sidebar + content */}
                     <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
@@ -150,12 +173,14 @@ export default function ScholarshipCall() {
                                         ))}
                                     </nav>
                                     <div className="mt-6 space-y-2 border-t border-gray-100 pt-4">
-                                        <Link
-                                            href={route('register')}
-                                            className="block rounded-full bg-[#035A7D] px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-[#024a6b]"
-                                        >
-                                            Apply Now
-                                        </Link>
+                                        {!cohort.deadline_passed && (
+                                            <Link
+                                                href={route('register')}
+                                                className="block rounded-full bg-[#035A7D] px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-[#024a6b]"
+                                            >
+                                                Apply Now
+                                            </Link>
+                                        )}
                                         <Link
                                             href={route('scholarships')}
                                             className="block text-center text-sm text-[#035A7D] hover:underline"
@@ -344,7 +369,7 @@ export default function ScholarshipCall() {
                                                 description:
                                                     'Each scholar receives a laptop to support academic work and access digital learning resources throughout the programme.',
                                             },
-                                        ].map((benefit, i) => (
+                                        ].map((benefit) => (
                                             <div
                                                 key={benefit.title}
                                                 className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
@@ -406,7 +431,9 @@ export default function ScholarshipCall() {
                                                     'Log in or create a new account',
                                                     'Follow the prompts to complete the application form',
                                                     'Upload all required supporting documents',
-                                                    'Submit before the July 15, 2026 deadline',
+                                                    cohort.deadline_label
+                                                        ? `Submit before the ${cohort.deadline_label} deadline`
+                                                        : 'Submit before the deadline',
                                                 ].map((step, i) => (
                                                     <li key={i} className="flex items-start gap-4">
                                                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#035A7D] text-xs font-bold text-white">
@@ -474,26 +501,30 @@ export default function ScholarshipCall() {
                                 >
                                     <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
                                         <div>
-                                            <h2 className="text-2xl font-bold text-white">Ready to Apply?</h2>
+                                            <h2 className="text-2xl font-bold text-white">
+                                                {cohort.deadline_passed ? 'This call is now closed.' : 'Ready to Apply?'}
+                                            </h2>
                                             <p className="mt-3 text-blue-100">
                                                 The Leaders in Teaching Uganda Program is committed to promoting equity
                                                 and inclusion. Refugees, persons with disabilities, and young women from
                                                 disadvantaged and underserved communities are strongly encouraged to apply.
                                             </p>
-                                            <div className="mt-6 flex flex-wrap gap-4">
-                                                <Link
-                                                    href={route('register')}
-                                                    className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#035A7D] shadow transition hover:bg-blue-50"
-                                                >
-                                                    Start Application
-                                                </Link>
-                                                <a
-                                                    href="mailto:info@lgfug.org"
-                                                    className="rounded-full border border-white px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                                                >
-                                                    Email Us
-                                                </a>
-                                            </div>
+                                            {!cohort.deadline_passed && (
+                                                <div className="mt-6 flex flex-wrap gap-4">
+                                                    <Link
+                                                        href={route('register')}
+                                                        className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#035A7D] shadow transition hover:bg-blue-50"
+                                                    >
+                                                        Start Application
+                                                    </Link>
+                                                    <a
+                                                        href="mailto:info@lgfug.org"
+                                                        className="rounded-full border border-white px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                                                    >
+                                                        Email Us
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="rounded-2xl border border-white/20 bg-white/10 p-6">
@@ -510,15 +541,21 @@ export default function ScholarshipCall() {
                                             >
                                                 info@lgfug.org
                                             </a>
-                                            <div className="mt-6 border-t border-white/20 pt-5">
-                                                <p className="text-sm font-semibold text-white">
-                                                    Application Deadline
-                                                </p>
-                                                <p className="mt-1 text-2xl font-bold text-white">July 15, 2026</p>
-                                                <p className="mt-1 text-sm text-blue-100">
-                                                    No late submissions will be accepted
-                                                </p>
-                                            </div>
+                                            {cohort.deadline_label && (
+                                                <div className="mt-6 border-t border-white/20 pt-5">
+                                                    <p className="text-sm font-semibold text-white">
+                                                        Application Deadline
+                                                    </p>
+                                                    <p className="mt-1 text-2xl font-bold text-white">
+                                                        {cohort.deadline_label}
+                                                    </p>
+                                                    <p className="mt-1 text-sm text-blue-100">
+                                                        {cohort.deadline_passed
+                                                            ? 'This call is now closed.'
+                                                            : 'No late submissions will be accepted'}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </section>

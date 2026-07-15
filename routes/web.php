@@ -52,11 +52,62 @@ Route::get('/terms', function () {
 })->name('terms');
 
 Route::get('/scholarships', function () {
-    return Inertia::render('Scholarships');
+    $activeCohort = \App\Models\Cohort::current();
+
+    // Build a list of all cohorts for the "past calls" section (most recent first)
+    $allCohorts = \App\Models\Cohort::orderBy('id', 'desc')->get()->map(fn ($c) => [
+        'id'                     => $c->id,
+        'name'                   => $c->name,
+        'academic_year'          => $c->academic_year,
+        'slug'                   => $c->slug,
+        'scholarships_available' => $c->scholarships_available,
+        'opens_at'               => $c->opens_at?->toDateString(),
+        'closes_at'              => $c->closes_at?->toDateString(),
+        'deadline_label'         => $c->deadlineLabel(),
+        'is_active'              => $c->is_active,
+        'is_open'                => $c->isOpen(),
+        'deadline_passed'        => $c->isDeadlinePassed(),
+        'description'            => $c->description,
+    ]);
+
+    $cohortProp = $activeCohort ? [
+        'id'                     => $activeCohort->id,
+        'name'                   => $activeCohort->name,
+        'academic_year'          => $activeCohort->academic_year,
+        'slug'                   => $activeCohort->slug,
+        'scholarships_available' => $activeCohort->scholarships_available,
+        'opens_at'               => $activeCohort->opens_at?->toDateString(),
+        'closes_at'              => $activeCohort->closes_at?->toDateString(),
+        'deadline_label'         => $activeCohort->deadlineLabel(),
+        'is_open'                => $activeCohort->isOpen(),
+        'deadline_passed'        => $activeCohort->isDeadlinePassed(),
+        'description'            => $activeCohort->description,
+    ] : null;
+
+    return Inertia::render('Scholarships', [
+        'activeCohort' => $cohortProp,
+        'allCohorts'   => $allCohorts,
+    ]);
 })->name('scholarships');
 
-Route::get('/scholarships/{year}', function (string $year) {
-    return Inertia::render('ScholarshipCall', ['year' => $year]);
+Route::get('/scholarships/{slug}', function (string $slug) {
+    $cohort = \App\Models\Cohort::where('slug', $slug)->firstOrFail();
+
+    return Inertia::render('ScholarshipCall', [
+        'cohort' => [
+            'id'                     => $cohort->id,
+            'name'                   => $cohort->name,
+            'academic_year'          => $cohort->academic_year,
+            'slug'                   => $cohort->slug,
+            'scholarships_available' => $cohort->scholarships_available,
+            'opens_at'               => $cohort->opens_at?->toDateString(),
+            'closes_at'              => $cohort->closes_at?->toDateString(),
+            'deadline_label'         => $cohort->deadlineLabel(),
+            'is_open'                => $cohort->isOpen(),
+            'deadline_passed'        => $cohort->isDeadlinePassed(),
+            'description'            => $cohort->description,
+        ],
+    ]);
 })->name('scholarship.call');
 
 // Legacy redirect — keep old /scholarship URL working
@@ -81,8 +132,14 @@ use App\Http\Controllers\AcademicProgressController;
 use App\Http\Controllers\Admin\DocumentController;
 
 Route::get('/portal', function () {
-    $application = auth()->user()->applications()->latest()->first();
-    $deadline = \Carbon\Carbon::parse(config('scholarship.application_deadline'))->setTime(23, 59, 59);
+    $cohort   = \App\Models\Cohort::current();
+    $deadline = \App\Models\Cohort::effectiveDeadline();
+
+    // Fetch the applicant's application for the active cohort (falls back to
+    // any latest application if no active cohort is set, preserving legacy behaviour).
+    $application = $cohort
+        ? auth()->user()->applications()->where('cohort_id', $cohort->id)->latest()->first()
+        : auth()->user()->applications()->latest()->first();
 
     // Flag for the hearing-source retrofit dialog: only show for submitted applicants
     // who haven't yet filled in how they heard about the scholarship.
@@ -92,9 +149,15 @@ Route::get('/portal', function () {
 
     return Inertia::render('Dashboard', [
         'application'         => $application,
-        'deadlinePassed'      => now()->greaterThan($deadline),
-        'applicationDeadline' => $deadline->toDateString(),
+        'deadlinePassed'      => $deadline ? now()->greaterThan($deadline) : false,
+        'applicationDeadline' => $deadline?->toDateString(),
         'needsHearingSource'  => $needsHearingSource,
+        'cohort'              => $cohort ? [
+            'id'           => $cohort->id,
+            'name'         => $cohort->name,
+            'academic_year' => $cohort->academic_year,
+            'slug'         => $cohort->slug,
+        ] : null,
     ]);
 })->middleware(['auth', 'verified', \App\Http\Middleware\EnsureApplicantOrScholar::class])->name('portal');
 

@@ -113,6 +113,11 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
             $query->whereIn('personal_info->institution', $canonical);
         }
 
+        // Cohort filter
+        if (!empty($this->filters['cohort_id'])) {
+            $query->where('cohort_id', $this->filters['cohort_id']);
+        }
+
         // Admission letter upload filter (university_report only)
         if (!empty($this->filters['admission_letter_filter'])) {
             if ($this->filters['admission_letter_filter'] === 'yes') {

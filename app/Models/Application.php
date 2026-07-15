@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Models\Cohort;
 
 class Application extends Model
 {
@@ -28,6 +29,7 @@ class Application extends Model
 
     protected $fillable = [
         'user_id',
+        'cohort_id',
         'personal_info',
         'disability_info',
         'dependants_info',
@@ -55,5 +57,10 @@ class Application extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function cohort(): BelongsTo
+    {
+        return $this->belongsTo(Cohort::class);
     }
 }

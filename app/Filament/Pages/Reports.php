@@ -7,6 +7,7 @@ use App\Exports\BreakdownReportExport;
 use App\Exports\GeneralBreakdownExport;
 use App\Exports\ReportExport;
 use App\Models\Application;
+use App\Models\Cohort;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
@@ -40,6 +41,7 @@ class Reports extends Page implements HasForms
 
     public array $data = [
         'report_type'              => null,
+        'cohort_id'                => null,
         'status'                   => null,
         'gender'                   => null,
         'nationality'              => null,
@@ -159,6 +161,19 @@ class Reports extends Page implements HasForms
                             ])
                             ->native(false)
                             ->placeholder('Select a report type…')
+                            ->live()
+                            ->columnSpan(2),
+
+                        // ── Cohort filter ─────────────────────────────────────────────────
+                        Select::make('cohort_id')
+                            ->label('Filter by Cohort')
+                            ->options(fn () => Cohort::orderBy('id', 'desc')
+                                ->pluck('name', 'id')
+                                ->toArray())
+                            ->native(false)
+                            ->placeholder('All cohorts')
+                            ->nullable()
+                            ->searchable()
                             ->live()
                             ->columnSpan(2),
 
@@ -301,6 +316,7 @@ class Reports extends Page implements HasForms
     private function buildFilters(): array
     {
         return array_filter([
+            'cohort_id'               => $this->data['cohort_id']               ?? null,
             'status'                  => $this->data['status']                  ?? null,
             'gender'                  => $this->data['gender']                  ?? null,
             'nationality'             => $this->data['nationality']             ?? null,
@@ -333,6 +349,7 @@ class Reports extends Page implements HasForms
     private function getDistrictOptions(): array
     {
         $raw = Application::whereNotIn('status', ['draft'])
+            ->when(!empty($this->data['cohort_id']), fn ($q) => $q->where('cohort_id', $this->data['cohort_id']))
             ->pluck('personal_info')
             ->map(fn ($p) => ucwords(strtolower(trim((string) ($p['residence_district'] ?? '')))))
             ->filter()
@@ -357,6 +374,7 @@ class Reports extends Page implements HasForms
         $type = $this->data['report_type'] ?? null;
 
         $apps = Application::whereNotIn('status', ['draft'])
+            ->when(!empty($this->data['cohort_id']), fn ($q) => $q->where('cohort_id', $this->data['cohort_id']))
             ->when(!empty($this->data['status']), fn ($q) => $q->where('status', $this->data['status']))
             ->when(!empty($this->data['date_from']), fn ($q) => $q->whereDate('created_at', '>=', $this->data['date_from']))
             ->when(!empty($this->data['date_to']), fn ($q) => $q->whereDate('created_at', '<=', $this->data['date_to']))
@@ -405,6 +423,7 @@ class Reports extends Page implements HasForms
     {
         $parts = [];
 
+        $cohortId               = $this->data['cohort_id']                  ?? null;
         $status                 = $this->data['status']                  ?? null;
         $gender                 = $this->data['gender']                  ?? null;
         $nationality            = $this->data['nationality']             ?? null;
@@ -415,6 +434,10 @@ class Reports extends Page implements HasForms
         $genderFilter           = $this->data['gender_filter']           ?? null;
         $admissionLetterFilter  = $this->data['admission_letter_filter'] ?? null;
 
+        if ($cohortId) {
+            $cohortName = Cohort::find($cohortId)?->name ?? "Cohort #{$cohortId}";
+            $parts[] = 'Cohort: ' . $cohortName;
+        }
         if ($universityFilter)      $parts[] = 'University: '           . $universityFilter;
         if ($districtFilter)        $parts[] = 'District: '             . $districtFilter;
         if ($genderFilter)          $parts[] = 'Gender group: '         . $genderFilter;
