@@ -71,10 +71,10 @@ class NormaliseInstitutions extends Command
         'gulu'                              => 'Gulu University (All Campuses)',
 
         // Mountains of the Moon — handle missing 's' and any mixed-case variant
+        // (normalise() lowercases $raw before matching, so all keys must be lowercase)
         'mountains of the moon'             => 'Mountains of the Moon University',
         'mountain of the moon'              => 'Mountains of the Moon University',
         'mmu'                               => 'Mountains of the Moon University',
-        'MOUNTAINS OF THE Moon UNIVERSITY'  => 'Mountains of the Moon University',
 
         // Mbarara University of Science and Technology
         // — bare "mbarara" catches "Mbarara school of science and technology" etc.
