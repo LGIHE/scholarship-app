@@ -4,7 +4,6 @@ namespace App\Exports;
 
 use App\Console\Commands\NormaliseInstitutions;
 use App\Models\Application;
-use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -111,25 +110,19 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
         // must not appear in any report.
         if ($this->reportType === 'university_report') {
             $canonical = NormaliseInstitutions::CANONICAL;
-            $query->whereIn(
-                \Illuminate\Support\Facades\DB::raw("JSON_UNQUOTE(JSON_EXTRACT(personal_info, '$.institution'))"),
-                $canonical
-            );
+            $query->whereIn('personal_info->institution', $canonical);
         }
 
         // Admission letter upload filter (university_report only)
         if (!empty($this->filters['admission_letter_filter'])) {
             if ($this->filters['admission_letter_filter'] === 'yes') {
-                // Has a non-null, non-empty admission_letter key in documents
-                $query->whereNotNull('documents')
-                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(documents, '$.admission_letter')) IS NOT NULL")
-                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(documents, '$.admission_letter')) != ''");
+                $query->whereNotNull('documents->admission_letter')
+                      ->where('documents->admission_letter', '!=', '');
             } else {
-                // Missing, null, or empty admission_letter
                 $query->where(function ($q) {
                     $q->whereNull('documents')
-                      ->orWhereRaw("JSON_EXTRACT(documents, '$.admission_letter') IS NULL")
-                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(documents, '$.admission_letter')) = ''");
+                      ->orWhereNull('documents->admission_letter')
+                      ->orWhere('documents->admission_letter', '=', '');
                 });
             }
         }
