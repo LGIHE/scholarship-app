@@ -6,6 +6,7 @@ use App\Filament\Resources\CohortResource\Pages;
 use App\Models\Cohort;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
@@ -89,7 +90,7 @@ class CohortResource extends Resource
                     ->columns(2),
 
                 Forms\Components\Section::make('Application Window')
-                    ->description('Set the date and time when applications open and when they close (deadline). Times are interpreted in the server\'s timezone.')
+                    ->description('Set the date and time when applications open and close. The submission deadline (closes_at) is always the real enforcement cutoff.')
                     ->schema([
                         Forms\Components\DateTimePicker::make('opens_at')
                             ->label('Applications Open')
@@ -99,12 +100,34 @@ class CohortResource extends Resource
                             ->helperText('Leave blank if applications open immediately.'),
 
                         Forms\Components\DateTimePicker::make('closes_at')
-                            ->label('Application Deadline')
+                            ->label('Submission Deadline (enforced)')
                             ->nullable()
                             ->displayFormat('d/m/Y H:i')
                             ->seconds(false)
-                            ->helperText('Applications are locked at 23:59:59 on this date.')
+                            ->helperText('Applications are locked at 23:59:59 on this date. This is ALWAYS the real cutoff.')
                             ->after('opens_at'),
+
+                        // ── Display deadline ──────────────────────────────────────────────
+                        Forms\Components\Toggle::make('use_custom_display_deadline')
+                            ->label('Show a different deadline date to applicants')
+                            ->helperText('Enable if you want the public-facing deadline shown on /scholarships and the applicant portal to differ from the submission cutoff above.')
+                            ->default(false)
+                            ->live()
+                            // Derive the toggle state from the saved record: on if display_closes_at is set
+                            ->afterStateHydrated(function (Forms\Components\Toggle $component, $state, $record) {
+                                if ($record && $record->display_closes_at) {
+                                    $component->state(true);
+                                }
+                            })
+                            ->columnSpanFull(),
+
+                        Forms\Components\DatePicker::make('display_closes_at')
+                            ->label('Displayed Deadline (shown to applicants)')
+                            ->nullable()
+                            ->displayFormat('d/m/Y')
+                            ->helperText('This date is shown on the /scholarships page, scholarship call page, and the applicant portal. It does NOT affect when submissions are actually locked.')
+                            ->visible(fn (Forms\Get $get): bool => (bool) $get('use_custom_display_deadline'))
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
 
@@ -158,9 +181,15 @@ class CohortResource extends Resource
                             ->placeholder('Not set'),
 
                         Infolists\Components\TextEntry::make('closes_at')
-                            ->label('Deadline')
+                            ->label('Submission Deadline (enforced)')
                             ->dateTime('d M Y, H:i')
                             ->placeholder('Not set'),
+
+                        Infolists\Components\TextEntry::make('display_closes_at')
+                            ->label('Displayed Deadline (shown to applicants)')
+                            ->date('d M Y')
+                            ->placeholder('Same as submission deadline')
+                            ->helperText('When set, this date is shown publicly instead of the submission deadline.'),
 
                         Infolists\Components\IconEntry::make('is_active')
                             ->label('Active')

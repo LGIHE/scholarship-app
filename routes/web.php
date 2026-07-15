@@ -63,7 +63,7 @@ Route::get('/scholarships', function () {
         'scholarships_available' => $c->scholarships_available,
         'opens_at'               => $c->opens_at?->toDateString(),
         'closes_at'              => $c->closes_at?->toDateString(),
-        'deadline_label'         => $c->deadlineLabel(),
+        'deadline_label'         => $c->deadlineLabel(),       // uses display date if set
         'is_active'              => $c->is_active,
         'is_open'                => $c->isOpen(),
         'deadline_passed'        => $c->isDeadlinePassed(),
@@ -78,7 +78,7 @@ Route::get('/scholarships', function () {
         'scholarships_available' => $activeCohort->scholarships_available,
         'opens_at'               => $activeCohort->opens_at?->toDateString(),
         'closes_at'              => $activeCohort->closes_at?->toDateString(),
-        'deadline_label'         => $activeCohort->deadlineLabel(),
+        'deadline_label'         => $activeCohort->deadlineLabel(),       // uses display date if set
         'is_open'                => $activeCohort->isOpen(),
         'deadline_passed'        => $activeCohort->isDeadlinePassed(),
         'description'            => $activeCohort->description,
@@ -102,7 +102,7 @@ Route::get('/scholarships/{slug}', function (string $slug) {
             'scholarships_available' => $cohort->scholarships_available,
             'opens_at'               => $cohort->opens_at?->toDateString(),
             'closes_at'              => $cohort->closes_at?->toDateString(),
-            'deadline_label'         => $cohort->deadlineLabel(),
+            'deadline_label'         => $cohort->deadlineLabel(),       // uses display date if set
             'is_open'                => $cohort->isOpen(),
             'deadline_passed'        => $cohort->isDeadlinePassed(),
             'description'            => $cohort->description,
@@ -150,13 +150,13 @@ Route::get('/portal', function () {
     return Inertia::render('Dashboard', [
         'application'         => $application,
         'deadlinePassed'      => $deadline ? now()->greaterThan($deadline) : false,
-        'applicationDeadline' => $deadline?->toDateString(),
+        'applicationDeadline' => $cohort ? $cohort->publicDeadlineDateString() : $deadline?->toDateString(),
         'needsHearingSource'  => $needsHearingSource,
         'cohort'              => $cohort ? [
-            'id'           => $cohort->id,
-            'name'         => $cohort->name,
+            'id'            => $cohort->id,
+            'name'          => $cohort->name,
             'academic_year' => $cohort->academic_year,
-            'slug'         => $cohort->slug,
+            'slug'          => $cohort->slug,
         ] : null,
     ]);
 })->middleware(['auth', 'verified', \App\Http\Middleware\EnsureApplicantOrScholar::class])->name('portal');

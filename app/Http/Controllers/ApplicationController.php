@@ -29,7 +29,10 @@ class ApplicationController extends Controller
                 'closes_at'              => $cohort->closes_at?->toDateTimeString(),
             ] : null,
             'deadlinePassed'      => $deadline ? now()->greaterThan($deadline) : false,
-            'applicationDeadline' => $deadline?->toDateString(),
+            // Show the display date to the applicant, not necessarily the raw closes_at
+            'applicationDeadline' => $cohort
+                ? $cohort->publicDeadlineDateString()
+                : $deadline?->toDateString(),
         ];
     }
 

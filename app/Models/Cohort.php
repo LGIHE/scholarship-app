@@ -16,13 +16,15 @@ class Cohort extends Model
         'scholarships_available',
         'opens_at',
         'closes_at',
+        'display_closes_at',
         'is_active',
         'description',
     ];
 
     protected $casts = [
-        'opens_at'               => 'datetime',
-        'closes_at'              => 'datetime',
+        'opens_at'          => 'datetime',
+        'closes_at'         => 'datetime',
+        'display_closes_at' => 'date',        // date-only — no time component needed
         'is_active'              => 'boolean',
         'scholarships_available' => 'integer',
     ];
@@ -36,9 +38,6 @@ class Cohort extends Model
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
-    /**
-     * Scope to the single active cohort.
-     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
@@ -55,7 +54,8 @@ class Cohort extends Model
     }
 
     /**
-     * Returns the effective application deadline as a Carbon instance.
+     * Returns the effective submission deadline as a Carbon instance.
+     * This is ALWAYS driven by closes_at — it is never affected by display_closes_at.
      * Falls back to the legacy config value if no active cohort exists.
      */
     public static function effectiveDeadline(): ?Carbon
@@ -63,7 +63,6 @@ class Cohort extends Model
         $cohort = static::current();
 
         if ($cohort && $cohort->closes_at) {
-            // closes_at stores the exact datetime; honour it as-is
             return $cohort->closes_at->copy()->setTime(23, 59, 59);
         }
 
@@ -73,7 +72,8 @@ class Cohort extends Model
     }
 
     /**
-     * Whether the application window for this cohort has closed.
+     * Whether the submission deadline for this cohort has passed.
+     * Based on closes_at only — display_closes_at has no effect here.
      */
     public function isDeadlinePassed(): bool
     {
@@ -85,12 +85,13 @@ class Cohort extends Model
 
     /**
      * Whether applications are currently open for this cohort.
+     * Still governed by closes_at (real cutoff).
      */
     public function isOpen(): bool
     {
         $now = now();
 
-        $afterOpen  = $this->opens_at  ? $now->greaterThanOrEqualTo($this->opens_at)  : true;
+        $afterOpen   = $this->opens_at  ? $now->greaterThanOrEqualTo($this->opens_at)                          : true;
         $beforeClose = $this->closes_at ? $now->lessThanOrEqualTo($this->closes_at->copy()->setTime(23, 59, 59)) : true;
 
         return $this->is_active && $afterOpen && $beforeClose;
@@ -98,7 +99,6 @@ class Cohort extends Model
 
     /**
      * Ensure only one cohort is active at a time.
-     * Deactivates all other cohorts before saving the active one.
      */
     public static function activateOnly(self $cohort): void
     {
@@ -108,10 +108,35 @@ class Cohort extends Model
     }
 
     /**
-     * Human-readable deadline string, e.g. "15 July 2026".
+     * Returns the date that should be SHOWN to the public as the deadline.
+     *
+     * - If display_closes_at is set, that date is returned.
+     * - Otherwise falls back to closes_at.
+     *
+     * This is purely cosmetic — it never affects submission enforcement.
+     */
+    public function publicDeadline(): ?Carbon
+    {
+        if ($this->display_closes_at) {
+            return $this->display_closes_at->copy();   // already cast to Carbon date
+        }
+        return $this->closes_at ? $this->closes_at->copy() : null;
+    }
+
+    /**
+     * Human-readable deadline string shown to the public, e.g. "15 July 2026".
+     * Uses display_closes_at when set, otherwise closes_at.
      */
     public function deadlineLabel(): ?string
     {
-        return $this->closes_at?->format('j F Y');
+        return $this->publicDeadline()?->format('j F Y');
+    }
+
+    /**
+     * The display deadline as a plain date string (Y-m-d) for Inertia props.
+     */
+    public function publicDeadlineDateString(): ?string
+    {
+        return $this->publicDeadline()?->toDateString();
     }
 }
