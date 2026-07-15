@@ -44,6 +44,8 @@ class ApplicationsByUniversityChart extends ChartWidget
      */
     private const KEYWORD_MAP = [
         'makerere'                      => 'Makerere University (All Campuses)',
+        'makarere'                      => 'Makerere University (All Campuses)',
+        'mubs'                          => 'Makerere University (All Campuses)',
         'kyambogo'                      => 'Kyambogo University (All Campuses)',
         'kyam'                          => 'Kyambogo University (All Campuses)',
         'busitema'                      => 'Busitema University (All Campuses)',
@@ -53,27 +55,43 @@ class ApplicationsByUniversityChart extends ChartWidget
         'islamic university in uganda'  => 'Islamic University in Uganda (All Campuses)',
         'islamic university'            => 'Islamic University in Uganda (All Campuses)',
         'iuiu'                          => 'Islamic University in Uganda (All Campuses)',
+        // Gulu University — bare "gulu" as well as full name
         'gulu university'               => 'Gulu University (All Campuses)',
-        // Mountains of the Moon — handle missing 's' misspelling
+        'gulu'                          => 'Gulu University (All Campuses)',
+        // Mountains of the Moon — handle missing 's' and mixed-case variants
         'mountains of the moon'         => 'Mountains of the Moon University',
         'mountain of the moon'          => 'Mountains of the Moon University',
         'mmu'                           => 'Mountains of the Moon University',
+        // Mbarara — bare "mbarara" catches "Mbarara school of science..." etc.
         'mbarara university of science' => 'Mbarara University of Science and Technology (All Campuses)',
         'mbarara university'            => 'Mbarara University of Science and Technology (All Campuses)',
+        'mbarara school of science'     => 'Mbarara University of Science and Technology (All Campuses)',
+        'mbarara'                       => 'Mbarara University of Science and Technology (All Campuses)',
         'must'                          => 'Mbarara University of Science and Technology (All Campuses)',
+        // Uganda Martyrs — "marty's" / "martys" typo variants
         'uganda martyrs'                => 'Uganda Martyrs University (All Campuses)',
+        'uganda marty'                  => 'Uganda Martyrs University (All Campuses)',
         'umu'                           => 'Uganda Martyrs University (All Campuses)',
+        // Kabale University — before bare "kabale" and "kabaale" typo
         'kabale university'             => 'Kabale University (All Campuses)',
-        // UNITE campuses — reversed "mubende unite" variant before generic patterns
+        'kabaale university'            => 'Kabale University (All Campuses)',
+        // UNITE campuses — specific patterns before bare keywords
         'mubende unite'                 => 'UNITE Mubende Campus',
+        'unite mubende'                 => 'UNITE Mubende Campus',
+        'mubende'                       => 'UNITE Mubende Campus',
+        'unite-kabale'                  => 'UNITE Kabale Campus',
+        'unite campus (kabale'          => 'UNITE Kabale Campus',
         'unite kabale'                  => 'UNITE Kabale Campus',
         'unite kaliro'                  => 'UNITE Kaliro Campus',
         'kaliro'                        => 'UNITE Kaliro Campus',
-        'unite mubende'                 => 'UNITE Mubende Campus',
         'unite muni'                    => 'UNITE Muni Campus',
         'unite unyama'                  => 'UNITE Unyama Campus',
         'unyama'                        => 'UNITE Unyama Campus',
+        // Bare "kabale" → UNITE Kabale Campus (after "kabale university" above)
+        'kabale'                        => 'UNITE Kabale Campus',
+        // Muni University — bare "muni" after "unite muni" to avoid false match
         'muni university'               => 'Muni University (All Campuses)',
+        'muni'                          => 'Muni University (All Campuses)',
     ];
 
     /**

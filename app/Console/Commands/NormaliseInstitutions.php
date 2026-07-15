@@ -46,8 +46,10 @@ class NormaliseInstitutions extends Command
      * Order matters: more specific patterns first.
      */
     public const KEYWORD_MAP = [
-        // Makerere
+        // Makerere — includes MUBS (Makerere University Business School) and "makarere" typo
         'makerere'                          => 'Makerere University (All Campuses)',
+        'makarere'                          => 'Makerere University (All Campuses)',
+        'mubs'                              => 'Makerere University (All Campuses)',
 
         // Kyambogo
         'kyambogo'                          => 'Kyambogo University (All Campuses)',
@@ -64,39 +66,57 @@ class NormaliseInstitutions extends Command
         'islamic university'                => 'Islamic University in Uganda (All Campuses)',
         'iuiu'                              => 'Islamic University in Uganda (All Campuses)',
 
-        // Gulu University
+        // Gulu University — bare "gulu" as well as full name
         'gulu university'                   => 'Gulu University (All Campuses)',
+        'gulu'                              => 'Gulu University (All Campuses)',
 
-        // Mountains of the Moon — handle misspellings: "mountain of the moon" (no s)
+        // Mountains of the Moon — handle missing 's' and any mixed-case variant
         'mountains of the moon'             => 'Mountains of the Moon University',
         'mountain of the moon'              => 'Mountains of the Moon University',
         'mmu'                               => 'Mountains of the Moon University',
 
         // Mbarara University of Science and Technology
+        // — bare "mbarara" catches "Mbarara school of science and technology" etc.
         'mbarara university of science'     => 'Mbarara University of Science and Technology (All Campuses)',
         'mbarara university'                => 'Mbarara University of Science and Technology (All Campuses)',
+        'mbarara school of science'         => 'Mbarara University of Science and Technology (All Campuses)',
+        'mbarara'                           => 'Mbarara University of Science and Technology (All Campuses)',
         'must'                              => 'Mbarara University of Science and Technology (All Campuses)',
 
-        // Uganda Martyrs University
+        // Uganda Martyrs University — "marty's" / "martys" typo variants
         'uganda martyrs'                    => 'Uganda Martyrs University (All Campuses)',
+        "uganda marty"                      => 'Uganda Martyrs University (All Campuses)',
         'umu'                               => 'Uganda Martyrs University (All Campuses)',
 
-        // Kabale University (must come before generic "kabale" to avoid conflict with UNITE Kabale)
+        // Kabale University — must come before bare "kabale" and "kabaale" (double-a typo)
         'kabale university'                 => 'Kabale University (All Campuses)',
+        'kabaale university'                => 'Kabale University (All Campuses)',
 
-        // UNITE campuses — specific patterns before generic "unite"
-        // "mubende unite" is a known reversed variant
+        // UNITE campuses — all specific patterns before bare keywords
+        // Reversed variant "mubende unite" and bare "mubende"
         'mubende unite'                     => 'UNITE Mubende Campus',
+        'unite mubende'                     => 'UNITE Mubende Campus',
+        'mubende'                           => 'UNITE Mubende Campus',
+
+        // "unite campus (kabale)" and "unite-kabale" variants
+        'unite-kabale'                      => 'UNITE Kabale Campus',
+        'unite campus (kabale'              => 'UNITE Kabale Campus',
         'unite kabale'                      => 'UNITE Kabale Campus',
+
         'unite kaliro'                      => 'UNITE Kaliro Campus',
         'kaliro'                            => 'UNITE Kaliro Campus',
-        'unite mubende'                     => 'UNITE Mubende Campus',
+
         'unite muni'                        => 'UNITE Muni Campus',
+
         'unite unyama'                      => 'UNITE Unyama Campus',
         'unyama'                            => 'UNITE Unyama Campus',
 
-        // Muni University (after UNITE Muni to avoid false match)
+        // Bare "kabale" → UNITE Kabale Campus (after "kabale university" above)
+        'kabale'                            => 'UNITE Kabale Campus',
+
+        // Muni University — bare "muni" after "unite muni" to avoid false match
         'muni university'                   => 'Muni University (All Campuses)',
+        'muni'                              => 'Muni University (All Campuses)',
     ];
 
     public function handle(): int

@@ -35,6 +35,8 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
     // Canonical institution keyword → display name (mirrors ApplicationsByUniversityChart)
     private const KEYWORD_MAP = [
         'makerere'                      => 'Makerere University',
+        'makarere'                      => 'Makerere University',
+        'mubs'                          => 'Makerere University',
         'kyambogo'                      => 'Kyambogo University',
         'kyam'                          => 'Kyambogo University',
         'busitema'                      => 'Busitema University',
@@ -44,27 +46,43 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
         'islamic university in uganda'  => 'Islamic University in Uganda',
         'islamic university'            => 'Islamic University in Uganda',
         'iuiu'                          => 'Islamic University in Uganda',
+        // Gulu University — bare "gulu" as well as full name
         'gulu university'               => 'Gulu University',
-        // Mountains of the Moon — handle missing 's' misspelling
+        'gulu'                          => 'Gulu University',
+        // Mountains of the Moon — handle missing 's' and mixed-case variants
         'mountains of the moon'         => 'Mountains of the Moon University',
         'mountain of the moon'          => 'Mountains of the Moon University',
         'mmu'                           => 'Mountains of the Moon University',
+        // Mbarara — bare "mbarara" catches "Mbarara school of science..." etc.
         'mbarara university of science' => 'Mbarara University of Science and Technology',
         'mbarara university'            => 'Mbarara University of Science and Technology',
+        'mbarara school of science'     => 'Mbarara University of Science and Technology',
+        'mbarara'                       => 'Mbarara University of Science and Technology',
         'must'                          => 'Mbarara University of Science and Technology',
+        // Uganda Martyrs — "marty's" / "martys" typo variants
         'uganda martyrs'                => 'Uganda Martyrs University',
+        'uganda marty'                  => 'Uganda Martyrs University',
         'umu'                           => 'Uganda Martyrs University',
+        // Kabale University — before bare "kabale" and "kabaale" typo
         'kabale university'             => 'Kabale University',
-        // UNITE campuses — reversed "mubende unite" variant before generic patterns
+        'kabaale university'            => 'Kabale University',
+        // UNITE campuses — specific patterns before bare keywords
         'mubende unite'                 => 'UNITE Mubende Campus',
+        'unite mubende'                 => 'UNITE Mubende Campus',
+        'mubende'                       => 'UNITE Mubende Campus',
+        'unite-kabale'                  => 'UNITE Kabale Campus',
+        'unite campus (kabale'          => 'UNITE Kabale Campus',
         'unite kabale'                  => 'UNITE Kabale Campus',
         'unite kaliro'                  => 'UNITE Kaliro Campus',
         'kaliro'                        => 'UNITE Kaliro Campus',
-        'unite mubende'                 => 'UNITE Mubende Campus',
         'unite muni'                    => 'UNITE Muni Campus',
         'unite unyama'                  => 'UNITE Unyama Campus',
         'unyama'                        => 'UNITE Unyama Campus',
+        // Bare "kabale" → UNITE Kabale Campus (after "kabale university" above)
+        'kabale'                        => 'UNITE Kabale Campus',
+        // Muni University — bare "muni" after "unite muni" to avoid false match
         'muni university'               => 'Muni University',
+        'muni'                          => 'Muni University',
     ];
 
     public function __construct(string $reportType, array $filters = [])
