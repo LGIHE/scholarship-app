@@ -2,7 +2,9 @@
 
 namespace App\Exports;
 
+use App\Console\Commands\NormaliseInstitutions;
 use App\Models\Application;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -104,7 +106,36 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
             $query->where('personal_info->nin', 'like', $prefix . '%');
         }
 
-        return $query->get();    }
+        // ── University report: restrict to canonical institutions only ─────────
+        // Applications whose institution cannot be matched to the approved list
+        // must not appear in any report.
+        if ($this->reportType === 'university_report') {
+            $canonical = NormaliseInstitutions::CANONICAL;
+            $query->whereIn(
+                \Illuminate\Support\Facades\DB::raw("JSON_UNQUOTE(JSON_EXTRACT(personal_info, '$.institution'))"),
+                $canonical
+            );
+        }
+
+        // Admission letter upload filter (university_report only)
+        if (!empty($this->filters['admission_letter_filter'])) {
+            if ($this->filters['admission_letter_filter'] === 'yes') {
+                // Has a non-null, non-empty admission_letter key in documents
+                $query->whereNotNull('documents')
+                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(documents, '$.admission_letter')) IS NOT NULL")
+                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(documents, '$.admission_letter')) != ''");
+            } else {
+                // Missing, null, or empty admission_letter
+                $query->where(function ($q) {
+                    $q->whereNull('documents')
+                      ->orWhereRaw("JSON_EXTRACT(documents, '$.admission_letter') IS NULL")
+                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(documents, '$.admission_letter')) = ''");
+                });
+            }
+        }
+
+        return $query->get();
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Headings per report type
@@ -137,7 +168,7 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
                 'ID', 'Applicant Name', 'Status',
                 'University / Institution', 'Academic Programme',
                 'Teaching Subject 1', 'Teaching Subject 2',
-                'Student Admission Number',
+                'Student Admission Number', 'Admission Letter Uploaded',
             ],
             'gender_report' => [
                 'ID', 'Applicant Name', 'Status', 'Gender',
@@ -246,6 +277,7 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
                 $p['teaching_subjects_1']      ?? '',
                 $p['teaching_subjects_2']      ?? '',
                 $p['student_admission_number'] ?? '',
+                !empty(trim((string) ($app->documents['admission_letter'] ?? ''))) ? 'Yes' : 'No',
             ],
             'gender_report' => [
                 $app->id,

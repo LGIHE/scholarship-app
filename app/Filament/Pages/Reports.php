@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Console\Commands\NormaliseInstitutions;
 use App\Exports\BreakdownReportExport;
 use App\Exports\GeneralBreakdownExport;
 use App\Exports\ReportExport;
@@ -38,19 +39,21 @@ class Reports extends Page implements HasForms
     // full component re-render — giving us live preview updates.
 
     public array $data = [
-        'report_type'       => null,
-        'status'            => null,
-        'gender'            => null,
-        'nationality'       => null,
-        'date_from'         => null,
-        'date_to'           => null,
+        'report_type'              => null,
+        'status'                   => null,
+        'gender'                   => null,
+        'nationality'              => null,
+        'date_from'                => null,
+        'date_to'                  => null,
         // Granular filters for per-applicant report types
-        'university_filter' => null,
-        'district_filter'   => null,
-        'gender_filter'     => null,
+        'university_filter'        => null,
+        'district_filter'          => null,
+        'gender_filter'            => null,
+        // Admission letter upload filter (university_report only)
+        'admission_letter_filter'  => null,
         // Split-by-group option (downloads a zip of separate reports)
-        'split_by_group'    => false,
-        'zip_format'        => 'pdf',   // 'pdf' or 'excel'
+        'split_by_group'           => false,
+        'zip_format'               => 'pdf',   // 'pdf' or 'excel'
     ];
 
     // ── Access control ────────────────────────────────────────────────────────
@@ -171,6 +174,20 @@ class Reports extends Page implements HasForms
                             ->visible(fn () => ($this->data['report_type'] ?? null) === 'university_report')
                             ->columnSpan(2),
 
+                        // ── Admission letter filter (university_report only) ──────────────
+                        Select::make('admission_letter_filter')
+                            ->label('Admission Letter Uploaded')
+                            ->options([
+                                'yes' => 'Uploaded',
+                                'no'  => 'Not Uploaded',
+                            ])
+                            ->native(false)
+                            ->placeholder('All (uploaded & not uploaded)')
+                            ->nullable()
+                            ->live()
+                            ->visible(fn () => ($this->data['report_type'] ?? null) === 'university_report')
+                            ->columnSpan(1),
+
                         // ── District filter (shown only for district_report) ──────────────
                         Select::make('district_filter')
                             ->label('Filter by District / Region')
@@ -284,36 +301,28 @@ class Reports extends Page implements HasForms
     private function buildFilters(): array
     {
         return array_filter([
-            'status'            => $this->data['status']            ?? null,
-            'gender'            => $this->data['gender']            ?? null,
-            'nationality'       => $this->data['nationality']       ?? null,
-            'date_from'         => $this->data['date_from']         ?? null,
-            'date_to'           => $this->data['date_to']           ?? null,
-            'university_filter' => $this->data['university_filter'] ?? null,
-            'district_filter'   => $this->data['district_filter']   ?? null,
-            'gender_filter'     => $this->data['gender_filter']     ?? null,
+            'status'                  => $this->data['status']                  ?? null,
+            'gender'                  => $this->data['gender']                  ?? null,
+            'nationality'             => $this->data['nationality']             ?? null,
+            'date_from'               => $this->data['date_from']               ?? null,
+            'date_to'                 => $this->data['date_to']                 ?? null,
+            'university_filter'       => $this->data['university_filter']       ?? null,
+            'district_filter'         => $this->data['district_filter']         ?? null,
+            'gender_filter'           => $this->data['gender_filter']           ?? null,
+            'admission_letter_filter' => $this->data['admission_letter_filter'] ?? null,
         ]);
     }
 
     /**
-     * Returns a unique sorted list of normalised university names from the DB,
-     * used to populate the university filter select.
+     * Returns only canonical institution names for the university filter.
+     * Non-canonical values are excluded from reports entirely.
      */
     private function getUniversityOptions(): array
     {
-        $raw = Application::whereNotIn('status', ['draft'])
-            ->pluck('personal_info')
-            ->map(fn ($p) => trim((string) ($p['institution'] ?? '')))
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values();
-
         $options = [];
-        foreach ($raw as $name) {
+        foreach (NormaliseInstitutions::CANONICAL as $name) {
             $options[$name] = $name;
         }
-
         return $options;
     }
 
@@ -396,23 +405,25 @@ class Reports extends Page implements HasForms
     {
         $parts = [];
 
-        $status          = $this->data['status']            ?? null;
-        $gender          = $this->data['gender']            ?? null;
-        $nationality     = $this->data['nationality']       ?? null;
-        $dateFrom        = $this->data['date_from']         ?? null;
-        $dateTo          = $this->data['date_to']           ?? null;
-        $universityFilter = $this->data['university_filter'] ?? null;
-        $districtFilter  = $this->data['district_filter']   ?? null;
-        $genderFilter    = $this->data['gender_filter']     ?? null;
+        $status                 = $this->data['status']                  ?? null;
+        $gender                 = $this->data['gender']                  ?? null;
+        $nationality            = $this->data['nationality']             ?? null;
+        $dateFrom               = $this->data['date_from']               ?? null;
+        $dateTo                 = $this->data['date_to']                 ?? null;
+        $universityFilter       = $this->data['university_filter']       ?? null;
+        $districtFilter         = $this->data['district_filter']         ?? null;
+        $genderFilter           = $this->data['gender_filter']           ?? null;
+        $admissionLetterFilter  = $this->data['admission_letter_filter'] ?? null;
 
-        if ($universityFilter) $parts[] = 'University: '       . $universityFilter;
-        if ($districtFilter)   $parts[] = 'District: '         . $districtFilter;
-        if ($genderFilter)     $parts[] = 'Gender group: '     . $genderFilter;
-        if ($status)           $parts[] = 'Status: '           . ucwords(str_replace('_', ' ', $status));
-        if ($gender)           $parts[] = 'Gender: '           . ucfirst($gender);
-        if ($nationality)      $parts[] = 'Nationality: '      . ($nationality === 'ugandan' ? 'Ugandan' : 'Non-Ugandan');
-        if ($dateFrom)         $parts[] = 'From: '             . \Carbon\Carbon::parse($dateFrom)->format('d M Y');
-        if ($dateTo)           $parts[] = 'To: '               . \Carbon\Carbon::parse($dateTo)->format('d M Y');
+        if ($universityFilter)      $parts[] = 'University: '           . $universityFilter;
+        if ($districtFilter)        $parts[] = 'District: '             . $districtFilter;
+        if ($genderFilter)          $parts[] = 'Gender group: '         . $genderFilter;
+        if ($admissionLetterFilter) $parts[] = 'Admission Letter: '     . ($admissionLetterFilter === 'yes' ? 'Uploaded' : 'Not Uploaded');
+        if ($status)                $parts[] = 'Status: '               . ucwords(str_replace('_', ' ', $status));
+        if ($gender)                $parts[] = 'Gender: '               . ucfirst($gender);
+        if ($nationality)           $parts[] = 'Nationality: '          . ($nationality === 'ugandan' ? 'Ugandan' : 'Non-Ugandan');
+        if ($dateFrom)              $parts[] = 'From: '                 . \Carbon\Carbon::parse($dateFrom)->format('d M Y');
+        if ($dateTo)                $parts[] = 'To: '                   . \Carbon\Carbon::parse($dateTo)->format('d M Y');
 
         return implode(' | ', $parts) ?: 'None (all submitted applications)';
     }
