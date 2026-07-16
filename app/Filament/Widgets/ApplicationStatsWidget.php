@@ -16,19 +16,25 @@ class ApplicationStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        // Load non-draft applications and filter to eligible (approved criteria) only
-        $all = Application::whereNotIn('status', ['draft'])
-            ->get(['personal_info', 'status', 'id']);
+        // "Applications in Progress" counts ALL draft + under_review applications
+        // regardless of eligibility — these have not been submitted yet so their
+        // data may still be incomplete / uncleaned. Filtering them out would give
+        // a misleading zero while work is still ongoing.
+        $inProgress = Application::whereIn('status', ['draft', 'under_review'])->count();
 
-        $eligible = Application::filterEligible($all);
+        // Submitted and Approved counts are restricted to eligible applications only
+        // (approved gender + course + subject) because those appear in reports.
+        $eligible  = Application::filterEligible(
+            Application::whereNotIn('status', ['draft'])
+                ->get(['personal_info', 'status', 'id'])
+        );
 
-        $inProgress = $eligible->whereIn('status', ['under_review'])->count();
-        $submitted  = $eligible->where('status', 'submitted')->count();
-        $approved   = $eligible->where('status', 'approved')->count();
+        $submitted = $eligible->where('status', 'submitted')->count();
+        $approved  = $eligible->where('status', 'approved')->count();
 
         return [
             Stat::make('Applications in Progress', $inProgress)
-                ->description('Under review (eligible applications)')
+                ->description('Draft and under review')
                 ->descriptionIcon('heroicon-m-document-text')
                 ->color('primary')
                 ->url(route('filament.admin.resources.applications.index')),
