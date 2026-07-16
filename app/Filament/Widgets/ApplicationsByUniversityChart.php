@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Application;
+use App\Support\ApprovedCriteria;
 use Filament\Widgets\ChartWidget;
 
 class ApplicationsByUniversityChart extends ChartWidget
@@ -133,8 +134,15 @@ class ApplicationsByUniversityChart extends ChartWidget
             ->whereNotIn('status', ['draft'])
             ->get(['personal_info'])
             ->each(function ($app) use (&$counts, &$others) {
-                $raw        = (string) ($app->personal_info['institution'] ?? '');
-                $canonical  = $this->normalise($raw);
+                $info = $app->personal_info ?? [];
+
+                // Skip applications that do not meet all eligibility criteria
+                if (!ApprovedCriteria::isEligible($info)) {
+                    return;
+                }
+
+                $raw       = (string) ($info['institution'] ?? '');
+                $canonical = $this->normalise($raw);
 
                 if ($canonical !== null) {
                     $counts[$canonical]++;

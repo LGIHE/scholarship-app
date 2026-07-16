@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Application;
+use App\Support\ApprovedCriteria;
 use Filament\Widgets\ChartWidget;
 
 class ApplicationsByNationalityChart extends ChartWidget
@@ -25,13 +26,19 @@ class ApplicationsByNationalityChart extends ChartWidget
             ->whereNotIn('status', ['draft'])
             ->get(['personal_info'])
             ->each(function ($app) use (&$grouped) {
-                $isUgandan = strtolower(trim((string) ($app->personal_info['is_ugandan'] ?? '')));
+                $info      = $app->personal_info ?? [];
+                $isUgandan = strtolower(trim((string) ($info['is_ugandan'] ?? '')));
+
+                // Skip ineligible applications
+                if (!ApprovedCriteria::isEligible($info)) {
+                    return;
+                }
 
                 if ($isUgandan === 'yes') {
                     $nationality = 'Ugandan';
                 } elseif ($isUgandan === 'no') {
                     // Use the free-text explanation, fall back to "Other"
-                    $raw = trim((string) ($app->personal_info['non_ugandan_explanation'] ?? ''));
+                    $raw = trim((string) ($info['non_ugandan_explanation'] ?? ''));
                     $nationality = $raw !== '' ? mb_convert_case($raw, MB_CASE_TITLE, 'UTF-8') : 'Other';
                 } else {
                     // is_ugandan not filled in yet (draft applications)

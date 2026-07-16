@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Application;
+use App\Support\ApprovedCriteria;
 use App\Support\DistrictHelper;
 use Filament\Widgets\ChartWidget;
 
@@ -26,7 +27,14 @@ class ApplicationsByDistrictChart extends ChartWidget
             ->whereNotIn('status', ['draft'])
             ->get(['personal_info'])
             ->each(function ($app) use (&$grouped) {
-                $raw = trim((string) ($app->personal_info['residence_district'] ?? ''));
+                $info = $app->personal_info ?? [];
+
+                // Skip ineligible applications
+                if (!ApprovedCriteria::isEligible($info)) {
+                    return;
+                }
+
+                $raw = trim((string) ($info['residence_district'] ?? ''));
                 if ($raw === '') return;
 
                 $subregion = DistrictHelper::subregion($raw);

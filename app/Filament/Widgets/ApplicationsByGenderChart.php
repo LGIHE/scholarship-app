@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Application;
+use App\Support\ApprovedCriteria;
 use Filament\Widgets\ChartWidget;
 
 class ApplicationsByGenderChart extends ChartWidget
@@ -18,29 +19,35 @@ class ApplicationsByGenderChart extends ChartWidget
 
     protected function getData(): array
     {
-        $counts = ['Female' => 0, 'Male' => 0, 'Other' => 0];
+        // Only approved criteria: Female only in this scholarship
+        $counts = ['Female' => 0];
 
-        // Use model cast to read personal_info array directly — no DB::raw needed
-        // Only count submitted applications (excludes drafts)
         Application::query()
             ->whereNotNull('personal_info')
             ->whereNotIn('status', ['draft'])
             ->get(['personal_info'])
             ->each(function ($app) use (&$counts) {
-                $nin    = trim((string) ($app->personal_info['nin'] ?? ''));
-                $prefix = strtoupper(substr($nin, 0, 2));
+                $info = $app->personal_info ?? [];
 
-                if ($prefix === 'CF') {
+                // Must meet all eligibility criteria before counting
+                if (!ApprovedCriteria::isEligible($info)) {
+                    return;
+                }
+
+                // Approved gender is Female only
+                if (ApprovedCriteria::isFemale($info)) {
                     $counts['Female']++;
-                } elseif ($prefix === 'CM') {
-                    $counts['Male']++;
-                } else {
-                    $counts['Other']++;
                 }
             });
 
-        // Remove zero-count categories for a cleaner chart
         $counts = array_filter($counts, fn ($v) => $v > 0);
+
+        if (empty($counts)) {
+            return [
+                'datasets' => [['label' => 'Applications', 'data' => [0], 'backgroundColor' => ['rgb(156, 163, 175)']]],
+                'labels'   => ['No eligible data'],
+            ];
+        }
 
         return [
             'datasets' => [
@@ -48,9 +55,7 @@ class ApplicationsByGenderChart extends ChartWidget
                     'label'           => 'Applications',
                     'data'            => array_values($counts),
                     'backgroundColor' => [
-                        'rgb(236, 72, 153)',  // pink  – Female
-                        'rgb(59, 130, 246)',  // blue  – Male
-                        'rgb(156, 163, 175)', // gray  – Other
+                        'rgb(236, 72, 153)',  // pink – Female
                     ],
                 ],
             ],

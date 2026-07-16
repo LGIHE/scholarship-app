@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Application;
+use App\Support\ApprovedCriteria;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -20,9 +21,16 @@ class RecentApplicationsWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
+        // Collect eligible application IDs (PHP-level fuzzy matching on JSON fields)
+        $eligibleIds = Application::whereNotIn('status', ['draft'])
+            ->get(['id', 'personal_info'])
+            ->filter(fn ($app) => ApprovedCriteria::isEligible($app->personal_info ?? []))
+            ->pluck('id');
+
         return $table
             ->query(
                 Application::query()
+                    ->whereIn('id', $eligibleIds)
                     ->latest()
                     ->limit(5)
             )
