@@ -4,7 +4,6 @@ namespace App\Exports;
 
 use App\Console\Commands\NormaliseInstitutions;
 use App\Models\Application;
-use App\Support\ApprovedCriteria;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -133,12 +132,7 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
             }
         }
 
-        // ── Eligibility filter (approved gender + course + subject) ──────────
-        // Applied in PHP after the DB query because matching uses fuzzy keyword
-        // logic that cannot be expressed in SQL on JSON fields.
-        return $query->get()->filter(
-            fn ($app) => ApprovedCriteria::isEligible($app->personal_info ?? [])
-        )->values();
+        return $query->get()->values();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
