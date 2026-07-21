@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Console\Commands\NormaliseInstitutions;
 use App\Exports\ApplicationsExport;
+use App\Exports\ApplicantDetailsExport;
 use App\Exports\BreakdownReportExport;
 use App\Exports\GeneralBreakdownExport;
 use App\Exports\ReportExport;
@@ -302,7 +303,7 @@ class Reports extends Page implements HasForms
                             ->live(onBlur: true),
 
                         DatePicker::make('date_to')
-                            ->label('Submitted To')
+                            ->label('Submitted By')
                             ->nullable()
                             ->displayFormat('d/m/Y')
                             ->live(onBlur: true),
@@ -451,7 +452,7 @@ class Reports extends Page implements HasForms
         if ($gender)                $parts[] = 'Gender: '               . ucfirst($gender);
         if ($nationality)           $parts[] = 'Nationality: '          . ($nationality === 'ugandan' ? 'Ugandan' : 'Non-Ugandan');
         if ($dateFrom)              $parts[] = 'From: '                 . \Carbon\Carbon::parse($dateFrom)->format('d M Y');
-        if ($dateTo)                $parts[] = 'To: '                   . \Carbon\Carbon::parse($dateTo)->format('d M Y');
+        if ($dateTo)                $parts[] = 'By: '                   . \Carbon\Carbon::parse($dateTo)->format('d M Y');
 
         return implode(' | ', $parts) ?: 'None (all submitted applications)';
     }
@@ -519,13 +520,13 @@ class Reports extends Page implements HasForms
     {
         $filename = 'applicant_details_' . now()->format('Y-m-d_His') . '.xlsx';
 
-        // Female applicants with status = submitted, all available columns
+        // Extract date filters from the form data
+        $dateFrom = $this->data['date_from'] ?? null;
+        $dateTo = $this->data['date_to'] ?? null;
+
+        // Use the new specialized export class with proper filtering
         return Excel::download(
-            new ApplicationsExport(
-                array_keys(ApplicationsExport::availableColumns()),
-                'submitted',
-                'female'
-            ),
+            new \App\Exports\ApplicantDetailsExport($dateFrom, $dateTo),
             $filename
         );
     }
