@@ -61,12 +61,18 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
             $query->whereNotIn('status', ['draft']);
         }
 
-        // Date range
+        // Date range — convert the user-selected local date to a UTC-aware boundary
+        // so that records are included/excluded based on the actual submission moment
+        // in the app timezone (Africa/Kampala), not the raw UTC date string.
         if (!empty($this->filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $this->filters['date_from']);
+            $query->where('created_at', '>=',
+                \Carbon\Carbon::parse($this->filters['date_from'], config('app.timezone'))->startOfDay()->utc()
+            );
         }
         if (!empty($this->filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $this->filters['date_to']);
+            $query->where('created_at', '<=',
+                \Carbon\Carbon::parse($this->filters['date_to'], config('app.timezone'))->endOfDay()->utc()
+            );
         }
 
         // Gender (via NIN prefix)

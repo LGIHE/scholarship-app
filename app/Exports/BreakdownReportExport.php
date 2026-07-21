@@ -199,10 +199,14 @@ class BreakdownReportExport implements FromCollection, WithHeadings, WithMapping
             $query->where('status', $this->filters['status']);
         }
         if (!empty($this->filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $this->filters['date_from']);
+            $query->where('created_at', '>=',
+                \Carbon\Carbon::parse($this->filters['date_from'], config('app.timezone'))->startOfDay()->utc()
+            );
         }
         if (!empty($this->filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $this->filters['date_to']);
+            $query->where('created_at', '<=',
+                \Carbon\Carbon::parse($this->filters['date_to'], config('app.timezone'))->endOfDay()->utc()
+            );
         }
         if (!empty($this->filters['gender'])) {
             $prefix = $this->filters['gender'] === 'female' ? 'CF' : 'CM';

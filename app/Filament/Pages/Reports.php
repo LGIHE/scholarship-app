@@ -377,8 +377,12 @@ class Reports extends Page implements HasForms
         $apps = Application::whereNotIn('status', ['draft'])
             ->when(!empty($this->data['cohort_id']), fn ($q) => $q->where('cohort_id', $this->data['cohort_id']))
             ->when(!empty($this->data['status']), fn ($q) => $q->where('status', $this->data['status']))
-            ->when(!empty($this->data['date_from']), fn ($q) => $q->whereDate('created_at', '>=', $this->data['date_from']))
-            ->when(!empty($this->data['date_to']), fn ($q) => $q->whereDate('created_at', '<=', $this->data['date_to']))
+            ->when(!empty($this->data['date_from']), fn ($q) => $q->where('created_at', '>=',
+                \Carbon\Carbon::parse($this->data['date_from'], config('app.timezone'))->startOfDay()->utc()
+            ))
+            ->when(!empty($this->data['date_to']), fn ($q) => $q->where('created_at', '<=',
+                \Carbon\Carbon::parse($this->data['date_to'], config('app.timezone'))->endOfDay()->utc()
+            ))
             ->when(!empty($this->data['gender']), function ($q) {
                 $prefix = $this->data['gender'] === 'female' ? 'CF' : 'CM';
                 $q->where('personal_info->nin', 'like', $prefix . '%');
