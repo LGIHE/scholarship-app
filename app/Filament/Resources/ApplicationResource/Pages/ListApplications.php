@@ -29,6 +29,17 @@ class ListApplications extends ListRecords
                 ->color('success')
                 // ── Column-picker modal ──────────────────────────────────────
                 ->form([
+                    Forms\Components\Select::make('status')
+                        ->label('Application Status')
+                        ->options([
+                            'submitted' => 'Submitted',
+                            'draft'     => 'Draft',
+                        ])
+                        ->placeholder('Select a status')
+                        ->required()
+                        ->validationMessages([
+                            'required' => 'Please select a status to export.',
+                        ]),
                     Forms\Components\CheckboxList::make('columns')
                         ->label('Select columns to export')
                         ->options($options)
@@ -53,10 +64,11 @@ class ListApplications extends ListRecords
                 // ── Download on submit ───────────────────────────────────────
                 ->action(function (array $data) {
                     $selected = $data['columns'] ?? array_keys(ApplicationsExport::availableColumns());
+                    $status   = $data['status'];
 
                     return Excel::download(
-                        new ApplicationsExport($selected),
-                        'applications_' . now()->format('Y-m-d_His') . '.xlsx'
+                        new ApplicationsExport($selected, $status),
+                        'applications_' . $status . '_' . now()->format('Y-m-d_His') . '.xlsx'
                     );
                 }),
 

@@ -160,18 +160,30 @@ class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, W
     /** @var array<string> */
     protected array $selectedColumns;
 
+    /** @var string|null */
+    protected ?string $status;
+
     /**
      * @param array<string>|null $selectedColumns  Keys from availableColumns().
      *                                             Pass null to export every column.
+     * @param string|null        $status           Filter by application status (e.g. 'submitted', 'draft').
+     *                                             Pass null to export all statuses.
      */
-    public function __construct(?array $selectedColumns = null)
+    public function __construct(?array $selectedColumns = null, ?string $status = null)
     {
         $this->selectedColumns = $selectedColumns ?? array_keys(static::availableColumns());
+        $this->status          = $status;
     }
 
     public function collection(): Collection
     {
-        return Application::with('user')->get();
+        $query = Application::with('user');
+
+        if ($this->status !== null) {
+            $query->where('status', $this->status);
+        }
+
+        return $query->get();
     }
 
     public function headings(): array
