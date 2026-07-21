@@ -163,16 +163,21 @@ class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, W
     /** @var string|null */
     protected ?string $status;
 
+    /** @var string|null 'male' | 'female' | null */
+    protected ?string $gender;
+
     /**
      * @param array<string>|null $selectedColumns  Keys from availableColumns().
      *                                             Pass null to export every column.
      * @param string|null        $status           Filter by application status (e.g. 'submitted', 'draft').
      *                                             Pass null to export all statuses.
+     * @param string|null        $gender           Filter by gender via NIN prefix: 'female' (CF) | 'male' (CM) | null.
      */
-    public function __construct(?array $selectedColumns = null, ?string $status = null)
+    public function __construct(?array $selectedColumns = null, ?string $status = null, ?string $gender = null)
     {
         $this->selectedColumns = $selectedColumns ?? array_keys(static::availableColumns());
         $this->status          = $status;
+        $this->gender          = $gender;
     }
 
     public function collection(): Collection
@@ -181,6 +186,11 @@ class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, W
 
         if ($this->status !== null) {
             $query->where('status', $this->status);
+        }
+
+        if ($this->gender !== null) {
+            $prefix = $this->gender === 'female' ? 'CF' : 'CM';
+            $query->where('personal_info->nin', 'like', $prefix . '%');
         }
 
         return $query->get();

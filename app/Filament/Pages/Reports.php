@@ -515,9 +515,13 @@ class Reports extends Page implements HasForms
     {
         $filename = 'applicant_details_' . now()->format('Y-m-d_His') . '.xlsx';
 
-        // Export every available column, no status filter — all applications
+        // Female applicants with status = submitted, all available columns
         return Excel::download(
-            new ApplicationsExport(array_keys(ApplicationsExport::availableColumns())),
+            new ApplicationsExport(
+                array_keys(ApplicationsExport::availableColumns()),
+                'submitted',
+                'female'
+            ),
             $filename
         );
     }
