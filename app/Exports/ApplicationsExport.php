@@ -166,18 +166,33 @@ class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, W
     /** @var string|null 'male' | 'female' | null */
     protected ?string $gender;
 
+    /** @var string|null  Date string (Y-m-d) — inclusive lower bound on created_at */
+    protected ?string $dateFrom;
+
+    /** @var string|null  Date string (Y-m-d) — inclusive upper bound on created_at */
+    protected ?string $dateTo;
+
     /**
      * @param array<string>|null $selectedColumns  Keys from availableColumns().
      *                                             Pass null to export every column.
      * @param string|null        $status           Filter by application status (e.g. 'submitted', 'draft').
      *                                             Pass null to export all statuses.
      * @param string|null        $gender           Filter by gender via NIN prefix: 'female' (CF) | 'male' (CM) | null.
+     * @param string|null        $dateFrom         Submitted-from date (Y-m-d), inclusive.
+     * @param string|null        $dateTo           Submitted-to date (Y-m-d), inclusive (end of day).
      */
-    public function __construct(?array $selectedColumns = null, ?string $status = null, ?string $gender = null)
-    {
+    public function __construct(
+        ?array $selectedColumns = null,
+        ?string $status = null,
+        ?string $gender = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ) {
         $this->selectedColumns = $selectedColumns ?? array_keys(static::availableColumns());
         $this->status          = $status;
         $this->gender          = $gender;
+        $this->dateFrom        = $dateFrom;
+        $this->dateTo          = $dateTo;
     }
 
     public function collection(): Collection
@@ -191,6 +206,18 @@ class ApplicationsExport implements FromCollection, WithHeadings, WithMapping, W
         if ($this->gender !== null) {
             $prefix = $this->gender === 'female' ? 'CF' : 'CM';
             $query->where('personal_info->nin', 'like', $prefix . '%');
+        }
+
+        if ($this->dateFrom !== null) {
+            $query->where('created_at', '>=',
+                \Carbon\Carbon::parse($this->dateFrom, config('app.timezone'))->startOfDay()->utc()
+            );
+        }
+
+        if ($this->dateTo !== null) {
+            $query->where('created_at', '<=',
+                \Carbon\Carbon::parse($this->dateTo, config('app.timezone'))->endOfDay()->utc()
+            );
         }
 
         return $query->get();
