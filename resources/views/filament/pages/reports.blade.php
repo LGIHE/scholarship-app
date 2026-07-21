@@ -35,6 +35,18 @@
                 <span wire:loading wire:target="exportGeneralBreakdownExcel">Generating Excel…</span>
             </x-filament::button>
 
+        @elseif ($reportType === 'applicant_details')
+            {{-- Applicant Details: Excel only — full field export via ApplicationsExport --}}
+            <x-filament::button
+                wire:click="exportApplicantDetailsExcel"
+                color="success"
+                icon="heroicon-o-table-cells"
+                wire:loading.attr="disabled"
+            >
+                <span wire:loading.remove wire:target="exportApplicantDetailsExcel">Download Applicant Details (Excel)</span>
+                <span wire:loading wire:target="exportApplicantDetailsExcel">Generating Excel…</span>
+            </x-filament::button>
+
         @elseif ($reportType)
             {{-- Standard per-type export buttons --}}
             <x-filament::button

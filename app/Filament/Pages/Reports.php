@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Console\Commands\NormaliseInstitutions;
+use App\Exports\ApplicationsExport;
 use App\Exports\BreakdownReportExport;
 use App\Exports\GeneralBreakdownExport;
 use App\Exports\ReportExport;
@@ -508,6 +509,17 @@ class Reports extends Page implements HasForms
         $filename = ($this->data['report_type']) . '_' . now()->format('Y-m-d_His') . '.xlsx';
 
         return Excel::download($this->makeExport(), $filename);
+    }
+
+    public function exportApplicantDetailsExcel(): BinaryFileResponse
+    {
+        $filename = 'applicant_details_' . now()->format('Y-m-d_His') . '.xlsx';
+
+        // Export every available column, no status filter — all applications
+        return Excel::download(
+            new ApplicationsExport(array_keys(ApplicationsExport::availableColumns())),
+            $filename
+        );
     }
 
     public function exportPdf(): StreamedResponse
