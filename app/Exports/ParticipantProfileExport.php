@@ -3,7 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Application;
-use App\Helpers\ApprovedCriteria;
+use App\Support\ApprovedCriteria;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
