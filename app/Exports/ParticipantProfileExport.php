@@ -22,35 +22,12 @@ class ParticipantProfileExport
     /** @var array All filters from the Reports page */
     protected array $filters;
 
-    /** @var callable|null Progress callback function */
-    protected $progressCallback = null;
-
     /**
      * @param array $filters All filters from Reports page (cohort_id, status, gender, nationality, date_from, date_to)
      */
     public function __construct(array $filters = [])
     {
         $this->filters = $filters;
-    }
-
-    /**
-     * Set a progress callback to report progress during export
-     * 
-     * @param callable $callback Function that receives ($current, $total, $stage)
-     */
-    public function setProgressCallback(callable $callback): void
-    {
-        $this->progressCallback = $callback;
-    }
-
-    /**
-     * Report progress to callback if set
-     */
-    protected function reportProgress(int $current, int $total, string $stage = 'processing'): void
-    {
-        if ($this->progressCallback) {
-            call_user_func($this->progressCallback, $current, $total, $stage);
-        }
     }
 
     /**
@@ -100,9 +77,6 @@ class ParticipantProfileExport
                 try {
                     $processedCount++;
                     
-                    // Report progress via callback
-                    $this->reportProgress($processedCount, $totalCount, 'processing');
-                    
                     // Log progress every 50 applications
                     if ($processedCount % 50 === 0 || $processedCount === $totalCount) {
                         \Log::info("ParticipantProfileExport: Progress: {$processedCount}/{$totalCount} applications processed");
@@ -119,19 +93,11 @@ class ParticipantProfileExport
             }
 
             \Log::info("ParticipantProfileExport: Finished processing all applications. Closing ZIP archive with {$processedCount} participants");
-            
-            // Report finalizing stage
-            $this->reportProgress($processedCount, $totalCount, 'finalizing');
-            
             $zip->close();
             \Log::info("ParticipantProfileExport: ZIP archive closed successfully");
             
             // Now it's safe to delete temporary PDF files
             \Log::info("ParticipantProfileExport: Cleaning up " . count($tempPdfFiles) . " temporary PDF files");
-            
-            // Report cleanup stage
-            $this->reportProgress($processedCount, $totalCount, 'cleanup');
-            
             foreach ($tempPdfFiles as $pdfFile) {
                 if (file_exists($pdfFile)) {
                     unlink($pdfFile);

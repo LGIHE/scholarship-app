@@ -548,42 +548,8 @@ class Reports extends Page implements HasForms
 
             \Log::info('ParticipantProfile: Starting export with filters', $filters);
 
-            // Show initial notification
-            Notification::make()
-                ->title('Export Started')
-                ->body('Preparing participant profiles... This may take several minutes.')
-                ->info()
-                ->persistent()
-                ->send();
-
-            // Create the export instance with all filters and pass progress callback
+            // Create the export instance with all filters
             $export = new \App\Exports\ParticipantProfileExport($filters);
-            
-            // Set up progress callback
-            $export->setProgressCallback(function($current, $total, $stage) {
-                // Send notifications at 25%, 50%, 75% milestones
-                $percentage = ($current / $total) * 100;
-                
-                if ($percentage >= 25 && $percentage < 26) {
-                    Notification::make()
-                        ->title('Export Progress: 25%')
-                        ->body("Processing participants... ({$current}/{$total})")
-                        ->info()
-                        ->send();
-                } elseif ($percentage >= 50 && $percentage < 51) {
-                    Notification::make()
-                        ->title('Export Progress: 50%')
-                        ->body("Halfway there... ({$current}/{$total})")
-                        ->info()
-                        ->send();
-                } elseif ($percentage >= 75 && $percentage < 76) {
-                    Notification::make()
-                        ->title('Export Progress: 75%')
-                        ->body("Almost done... ({$current}/{$total})")
-                        ->info()
-                        ->send();
-                }
-            });
             
             // Generate the ZIP file
             $zipPath = $export->generateZip();
@@ -593,23 +559,11 @@ class Reports extends Page implements HasForms
             }
 
             $filename = 'participant_profiles_' . now()->format('Y-m-d_His') . '.zip';
-            $zipContents = file_get_contents($zipPath);
-
-            // Clean up the temporary ZIP file
-            $export->cleanup($zipPath);
-
-            // Success notification
-            Notification::make()
-                ->title('Export Complete!')
-                ->body('Your participant profiles ZIP file is downloading now.')
-                ->success()
-                ->send();
-
-            return response()->streamDownload(
-                fn () => print($zipContents),
-                $filename,
-                ['Content-Type' => 'application/zip']
-            );
+            
+            // Stream the file directly without loading into memory
+            return response()->download($zipPath, $filename, [
+                'Content-Type' => 'application/zip',
+            ])->deleteFileAfterSend(true);
 
         } catch (\Exception $e) {
             \Log::error('Failed to export participant profiles: ' . $e->getMessage());
