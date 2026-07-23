@@ -11,7 +11,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
  * Export class for generating participant profile ZIP files.
  * 
  * Creates a ZIP archive containing individual folders for each participant,
- * with each folder containing only their Application Profile PDF.
+ * with each folder containing:
+ * - Application_Profile.pdf (comprehensive participant information)
+ * - All uploaded documents (exam results, NID, birth certificate, etc.)
+ * 
  * Respects all filters from the Reports page.
  */
 class ParticipantProfileExport
@@ -172,11 +175,12 @@ class ParticipantProfileExport
     }
 
     /**
-     * Add a single participant's folder and PDF to the ZIP (no documents)
+     * Add a single participant's folder and files to the ZIP
      */
     protected function addParticipantToZip(ZipArchive $zip, Application $application, string $tmpDir): void
     {
         $personalInfo = $application->personal_info ?? [];
+        $documents = $application->documents ?? [];
         
         // Generate participant folder name
         $surname = $this->sanitizeFilename($personalInfo['surname'] ?? 'Unknown');
@@ -193,7 +197,7 @@ class ParticipantProfileExport
             $counter++;
         }
 
-        // Generate PDF profile only (no documents)
+        // Generate PDF profile
         try {
             \Log::info("ParticipantProfileExport: Generating PDF for {$folderName}");
             $pdfPath = $this->generateParticipantPDF($application, $tmpDir, $folderName);
@@ -210,6 +214,56 @@ class ParticipantProfileExport
         } catch (\Exception $e) {
             \Log::error("ParticipantProfileExport: PDF generation failed for {$folderName}: " . $e->getMessage());
         }
+
+        // Add uploaded documents
+        try {
+            $this->addDocumentsToZip($zip, $documents, $folderName);
+        } catch (\Exception $e) {
+            \Log::error("ParticipantProfileExport: Document addition failed for {$folderName}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Add participant's uploaded documents to ZIP
+     */
+    protected function addDocumentsToZip(ZipArchive $zip, array $documents, string $folderName): void
+    {
+        $documentLabels = [
+            'exam_results' => 'Exam_Results',
+            'national_id' => 'National_ID',
+            'birth_certificate' => 'Birth_Certificate', 
+            'admission_letter' => 'Admission_Letter',
+            'recommendation_lc1' => 'Recommendation_LC1',
+            'recommendation_school' => 'School_Recommendation',
+            'refugee_number' => 'Refugee_Number'
+        ];
+
+        $addedCount = 0;
+        foreach ($documents as $field => $filePath) {
+            if (empty($filePath)) {
+                continue;
+            }
+
+            $fullPath = storage_path('app/public/' . $filePath);
+            
+            if (file_exists($fullPath)) {
+                $extension = pathinfo($filePath, PATHINFO_EXTENSION);
+                $documentName = $documentLabels[$field] ?? ucfirst($field);
+                $zipFileName = $folderName . '/' . $documentName . '.' . $extension;
+                
+                $addResult = $zip->addFile($fullPath, $zipFileName);
+                if ($addResult) {
+                    $addedCount++;
+                    \Log::info("ParticipantProfileExport: Added document {$field} for {$folderName}");
+                } else {
+                    \Log::error("ParticipantProfileExport: Failed to add document {$field} for {$folderName}");
+                }
+            } else {
+                \Log::warning("ParticipantProfileExport: Document file not found: {$fullPath} for {$folderName}");
+            }
+        }
+        
+        \Log::info("ParticipantProfileExport: Added {$addedCount} documents for {$folderName}");
     }
 
     /**
