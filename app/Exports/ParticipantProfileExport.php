@@ -63,19 +63,34 @@ class ParticipantProfileExport
 
             \Log::info("ParticipantProfileExport: ZIP file created, processing {$applications->count()} applications");
 
+            // Track all temporary PDF files that need to stay until ZIP is closed
+            $tempPdfFiles = [];
+
             foreach ($applications as $index => $application) {
                 try {
                     $currentNum = $index + 1;
                     $totalNum = $applications->count();
                     \Log::info("ParticipantProfileExport: Processing application {$application->id} ({$currentNum}/{$totalNum})");
-                    $this->addParticipantToZip($zip, $application, $tmpDir);
+                    
+                    $pdfFile = $this->addParticipantToZip($zip, $application, $tmpDir);
+                    if ($pdfFile) {
+                        $tempPdfFiles[] = $pdfFile;
+                    }
                 } catch (\Exception $e) {
                     \Log::error("ParticipantProfileExport: Failed to process application {$application->id}: " . $e->getMessage());
                     // Continue with other applications instead of failing completely
                 }
             }
 
+            \Log::info("ParticipantProfileExport: Closing ZIP archive");
             $zip->close();
+            
+            // Now it's safe to delete temporary PDF files
+            foreach ($tempPdfFiles as $pdfFile) {
+                if (file_exists($pdfFile)) {
+                    unlink($pdfFile);
+                }
+            }
             
             if (!file_exists($zipPath)) {
                 throw new \Exception("ZIP file was not created at expected path: {$zipPath}");
@@ -176,8 +191,9 @@ class ParticipantProfileExport
 
     /**
      * Add a single participant's folder and files to the ZIP
+     * Returns the temporary PDF file path so it can be deleted after ZIP is closed
      */
-    protected function addParticipantToZip(ZipArchive $zip, Application $application, string $tmpDir): void
+    protected function addParticipantToZip(ZipArchive $zip, Application $application, string $tmpDir): ?string
     {
         $personalInfo = $application->personal_info ?? [];
         $documents = $application->documents ?? [];
@@ -197,6 +213,8 @@ class ParticipantProfileExport
             $counter++;
         }
 
+        $pdfPath = null;
+
         // Generate PDF profile
         try {
             \Log::info("ParticipantProfileExport: Generating PDF for {$folderName}");
@@ -205,14 +223,21 @@ class ParticipantProfileExport
                 $addResult = $zip->addFile($pdfPath, $folderName . '/Application_Profile.pdf');
                 if (!$addResult) {
                     \Log::error("ParticipantProfileExport: Failed to add PDF to ZIP for {$folderName}");
+                    // If adding failed, clean up the PDF
+                    if (file_exists($pdfPath)) {
+                        unlink($pdfPath);
+                    }
+                    $pdfPath = null;
                 } else {
                     \Log::info("ParticipantProfileExport: PDF added to ZIP for {$folderName}");
                 }
             } else {
                 \Log::warning("ParticipantProfileExport: No PDF generated for {$folderName}");
+                $pdfPath = null;
             }
         } catch (\Exception $e) {
             \Log::error("ParticipantProfileExport: PDF generation failed for {$folderName}: " . $e->getMessage());
+            $pdfPath = null;
         }
 
         // Add uploaded documents
@@ -221,6 +246,9 @@ class ParticipantProfileExport
         } catch (\Exception $e) {
             \Log::error("ParticipantProfileExport: Document addition failed for {$folderName}: " . $e->getMessage());
         }
+        
+        // Return the PDF path so it can be deleted after ZIP is closed
+        return $pdfPath;
     }
 
     /**
