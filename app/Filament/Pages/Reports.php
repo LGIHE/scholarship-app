@@ -7,6 +7,7 @@ use App\Exports\ApplicationsExport;
 use App\Exports\ApplicantDetailsExport;
 use App\Exports\BreakdownReportExport;
 use App\Exports\GeneralBreakdownExport;
+use App\Exports\ParticipantProfileExport;
 use App\Exports\ReportExport;
 use App\Models\Application;
 use App\Models\Cohort;
@@ -149,6 +150,7 @@ class Reports extends Page implements HasForms
                                 'Detailed Reports' => [
                                     'applications_summary' => 'Applications Summary',
                                     'applicant_details'    => 'Applicant Details',
+                                    'participant_profile'  => 'Participant Profile',
                                     'scoring_report'       => 'Scoring Report',
                                     'district_report'      => 'District / Region (per applicant)',
                                     'university_report'    => 'University (per applicant)',
@@ -529,6 +531,49 @@ class Reports extends Page implements HasForms
             new \App\Exports\ApplicantDetailsExport($dateFrom, $dateTo),
             $filename
         );
+    }
+
+    public function exportParticipantProfile(): StreamedResponse
+    {
+        try {
+            // Extract filters from the form data
+            $dateFrom = $this->data['date_from'] ?? null;
+            $dateTo = $this->data['date_to'] ?? null;
+            $cohortId = $this->data['cohort_id'] ?? null;
+
+            // Create the export instance
+            $export = new \App\Exports\ParticipantProfileExport($dateFrom, $dateTo, $cohortId);
+            
+            // Generate the ZIP file
+            $zipPath = $export->generateZip();
+            
+            if (!file_exists($zipPath)) {
+                throw new \Exception('Failed to generate participant profiles ZIP file.');
+            }
+
+            $filename = 'participant_profiles_' . now()->format('Y-m-d_His') . '.zip';
+            $zipContents = file_get_contents($zipPath);
+
+            // Clean up the temporary ZIP file
+            $export->cleanup($zipPath);
+
+            return response()->streamDownload(
+                fn () => print($zipContents),
+                $filename,
+                ['Content-Type' => 'application/zip']
+            );
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to export participant profiles: ' . $e->getMessage());
+            
+            Notification::make()
+                ->title('Export Failed')
+                ->body('Failed to generate participant profiles. Please try again.')
+                ->danger()
+                ->send();
+
+            return response()->streamDownload(fn () => null, 'error.zip');
+        }
     }
 
     public function exportPdf(): StreamedResponse

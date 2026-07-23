@@ -47,6 +47,18 @@
                 <span wire:loading wire:target="exportApplicantDetailsExcel">Generating Excel…</span>
             </x-filament::button>
 
+        @elseif ($reportType === 'participant_profile')
+            {{-- Participant Profile: ZIP with PDFs and documents --}}
+            <x-filament::button
+                wire:click="exportParticipantProfile"
+                color="warning"
+                icon="heroicon-o-archive-box-arrow-down"
+                wire:loading.attr="disabled"
+            >
+                <span wire:loading.remove wire:target="exportParticipantProfile">Download Participant Profiles (ZIP)</span>
+                <span wire:loading wire:target="exportParticipantProfile">Generating ZIP…</span>
+            </x-filament::button>
+
         @elseif ($reportType)
             {{-- Standard per-type export buttons --}}
             <x-filament::button
@@ -94,7 +106,7 @@
         {{-- Loading overlay — visible while Livewire is processing a field change --}}
         <div
             wire:loading
-            wire:target="updatedData,data.report_type,data.status,data.gender,data.nationality,data.date_from,data.date_to,data.university_filter,data.district_filter,data.gender_filter,data.split_by_group,data.zip_format"
+            wire:target="updatedData,data.report_type,data.status,data.gender,data.nationality,data.date_from,data.date_to,data.university_filter,data.district_filter,data.gender_filter,data.split_by_group,data.zip_format,exportParticipantProfile"
             class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm"
         >
             <div class="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300">
