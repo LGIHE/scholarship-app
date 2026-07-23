@@ -3,10 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Application;
-use App\Support\ApprovedCriteria;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\File;
 use ZipArchive;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -14,31 +11,20 @@ use Barryvdh\DomPDF\Facade\Pdf;
  * Export class for generating participant profile ZIP files.
  * 
  * Creates a ZIP archive containing individual folders for each participant,
- * with each folder containing:
- * - Application_Profile.pdf (comprehensive participant information)
- * - All uploaded documents (exam results, NID, birth certificate, etc.)
+ * with each folder containing only their Application Profile PDF.
+ * Respects all filters from the Reports page.
  */
 class ParticipantProfileExport
 {
-    /** @var string|null Date string (Y-m-d) — inclusive lower bound on created_at */
-    protected ?string $dateFrom;
-
-    /** @var string|null Date string (Y-m-d) — inclusive upper bound on created_at */
-    protected ?string $dateTo;
-
-    /** @var int|null Cohort ID filter */
-    protected ?int $cohortId;
+    /** @var array All filters from the Reports page */
+    protected array $filters;
 
     /**
-     * @param string|null $dateFrom Submitted-from date (Y-m-d), inclusive.
-     * @param string|null $dateTo   Submitted-to date (Y-m-d), inclusive (end of day).
-     * @param int|null    $cohortId Optional cohort filter
+     * @param array $filters All filters from Reports page (cohort_id, status, gender, nationality, date_from, date_to)
      */
-    public function __construct(?string $dateFrom = null, ?string $dateTo = null, ?int $cohortId = null)
+    public function __construct(array $filters = [])
     {
-        $this->dateFrom = $dateFrom;
-        $this->dateTo = $dateTo;
-        $this->cohortId = $cohortId;
+        $this->filters = $filters;
     }
 
     /**
@@ -105,76 +91,92 @@ class ParticipantProfileExport
     }
 
     /**
-     * Get filtered applications based on the same criteria as ApplicantDetailsExport
+     * Get filtered applications based on all Reports page filters
      */
     protected function getFilteredApplications(): Collection
     {
-        $query = Application::with(['user', 'cohort'])
-            ->where('status', 'submitted'); // Only submitted applications
+        $query = Application::with(['user', 'cohort']);
 
-        // Apply cohort filter if provided
-        if ($this->cohortId !== null) {
-            $query->where('cohort_id', $this->cohortId);
+        // Apply status filter (default to submitted if not specified)
+        $status = $this->filters['status'] ?? 'submitted';
+        if ($status) {
+            $query->where('status', $status);
+        } else {
+            // If no status specified, exclude drafts
+            $query->whereNotIn('status', ['draft']);
         }
 
-        // Apply date filters if provided
-        if ($this->dateFrom !== null) {
+        // Apply cohort filter
+        if (!empty($this->filters['cohort_id'])) {
+            $query->where('cohort_id', $this->filters['cohort_id']);
+        }
+
+        // Apply date filters (Submitted From / Submitted By)
+        if (!empty($this->filters['date_from'])) {
             try {
                 $query->where('created_at', '>=',
-                    \Carbon\Carbon::parse($this->dateFrom, config('app.timezone'))->startOfDay()->utc()
+                    \Carbon\Carbon::parse($this->filters['date_from'], config('app.timezone'))->startOfDay()->utc()
                 );
             } catch (\Exception $e) {
-                // If date parsing fails, ignore the filter
+                \Log::warning("ParticipantProfileExport: Invalid date_from format: " . $this->filters['date_from']);
             }
         }
 
-        if ($this->dateTo !== null) {
+        if (!empty($this->filters['date_to'])) {
             try {
                 $query->where('created_at', '<=',
-                    \Carbon\Carbon::parse($this->dateTo, config('app.timezone'))->endOfDay()->utc()
+                    \Carbon\Carbon::parse($this->filters['date_to'], config('app.timezone'))->endOfDay()->utc()
                 );
             } catch (\Exception $e) {
-                // If date parsing fails, ignore the filter
+                \Log::warning("ParticipantProfileExport: Invalid date_to format: " . $this->filters['date_to']);
             }
         }
 
         $applications = $query->get();
 
-        // Apply the same filtering logic as ApplicantDetailsExport
-        return $applications->filter(function ($app) {
-            $personalInfo = $app->personal_info ?? [];
-            
-            // Must be female (either explicit gender or NIN prefix CF)
-            if (!$this->isFemaleApplicant($personalInfo)) {
-                return false;
-            }
+        // Apply gender filter if specified
+        if (!empty($this->filters['gender'])) {
+            $applications = $applications->filter(function ($app) {
+                $personalInfo = $app->personal_info ?? [];
+                $gender = $this->filters['gender']; // 'female' or 'male'
+                
+                if ($gender === 'female') {
+                    return $this->isFemaleApplicant($personalInfo);
+                } elseif ($gender === 'male') {
+                    return !$this->isFemaleApplicant($personalInfo);
+                }
+                
+                return true;
+            });
+        }
 
-            // Must have approved course (Bachelor of Science with Education)
-            if (!ApprovedCriteria::hasApprovedCourse($personalInfo)) {
-                return false;
-            }
+        // Apply nationality filter if specified
+        if (!empty($this->filters['nationality'])) {
+            $applications = $applications->filter(function ($app) {
+                $personalInfo = $app->personal_info ?? [];
+                $nationality = $this->filters['nationality']; // 'ugandan' or 'non_ugandan'
+                
+                $isUgandan = ($personalInfo['is_ugandan'] ?? null) === 'yes';
+                
+                if ($nationality === 'ugandan') {
+                    return $isUgandan;
+                } elseif ($nationality === 'non_ugandan') {
+                    return !$isUgandan;
+                }
+                
+                return true;
+            });
+        }
 
-            // Must have at least one approved subject
-            if (!ApprovedCriteria::hasApprovedSubject($personalInfo)) {
-                return false;
-            }
-
-            // Must be from an approved university/institution
-            if (!$this->hasApprovedUniversity($personalInfo)) {
-                return false;
-            }
-
-            return true;
-        });
+        return $applications;
     }
 
     /**
-     * Add a single participant's folder and files to the ZIP
+     * Add a single participant's folder and PDF to the ZIP (no documents)
      */
     protected function addParticipantToZip(ZipArchive $zip, Application $application, string $tmpDir): void
     {
         $personalInfo = $application->personal_info ?? [];
-        $documents = $application->documents ?? [];
         
         // Generate participant folder name
         $surname = $this->sanitizeFilename($personalInfo['surname'] ?? 'Unknown');
@@ -191,7 +193,7 @@ class ParticipantProfileExport
             $counter++;
         }
 
-        // Generate PDF profile
+        // Generate PDF profile only (no documents)
         try {
             \Log::info("ParticipantProfileExport: Generating PDF for {$folderName}");
             $pdfPath = $this->generateParticipantPDF($application, $tmpDir, $folderName);
@@ -207,13 +209,6 @@ class ParticipantProfileExport
             }
         } catch (\Exception $e) {
             \Log::error("ParticipantProfileExport: PDF generation failed for {$folderName}: " . $e->getMessage());
-        }
-
-        // Add uploaded documents
-        try {
-            $this->addDocumentsToZip($zip, $documents, $folderName);
-        } catch (\Exception $e) {
-            \Log::error("ParticipantProfileExport: Document addition failed for {$folderName}: " . $e->getMessage());
         }
     }
 
@@ -262,49 +257,6 @@ class ParticipantProfileExport
     }
 
     /**
-     * Add participant's uploaded documents to ZIP
-     */
-    protected function addDocumentsToZip(ZipArchive $zip, array $documents, string $folderName): void
-    {
-        $documentLabels = [
-            'exam_results' => 'Exam_Results',
-            'national_id' => 'National_ID',
-            'birth_certificate' => 'Birth_Certificate', 
-            'admission_letter' => 'Admission_Letter',
-            'recommendation_lc1' => 'Recommendation_LC1',
-            'recommendation_school' => 'School_Recommendation',
-            'refugee_number' => 'Refugee_Number'
-        ];
-
-        $addedCount = 0;
-        foreach ($documents as $field => $filePath) {
-            if (empty($filePath)) {
-                continue;
-            }
-
-            $fullPath = storage_path('app/public/' . $filePath);
-            
-            if (file_exists($fullPath)) {
-                $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-                $documentName = $documentLabels[$field] ?? ucfirst($field);
-                $zipFileName = $folderName . '/' . $documentName . '.' . $extension;
-                
-                $addResult = $zip->addFile($fullPath, $zipFileName);
-                if ($addResult) {
-                    $addedCount++;
-                    \Log::info("ParticipantProfileExport: Added document {$field} for {$folderName}");
-                } else {
-                    \Log::error("ParticipantProfileExport: Failed to add document {$field} for {$folderName}");
-                }
-            } else {
-                \Log::warning("ParticipantProfileExport: Document file not found: {$fullPath} for {$folderName}");
-            }
-        }
-        
-        \Log::info("ParticipantProfileExport: Added {$addedCount} documents for {$folderName}");
-    }
-
-    /**
      * Check if a folder name already exists in the ZIP
      */
     protected function folderExistsInZip(ZipArchive $zip, string $folderName): bool
@@ -335,16 +287,18 @@ class ParticipantProfileExport
 
     /**
      * Check if the applicant is female (either by NIN prefix CF or explicit gender)
-     * Same logic as ApplicantDetailsExport
      */
     protected function isFemaleApplicant(array $personalInfo): bool
     {
-        // Check NIN prefix first (CF indicates female)
+        // Check NIN prefix first (CF indicates female, CM indicates male)
         $nin = trim((string) ($personalInfo['nin'] ?? ''));
         if (strlen($nin) >= 2) {
             $prefix = strtoupper(substr($nin, 0, 2));
             if ($prefix === 'CF') {
                 return true;
+            }
+            if ($prefix === 'CM') {
+                return false;
             }
         }
 
@@ -355,89 +309,12 @@ class ParticipantProfileExport
             if ($gender === 'female' || $gender === 'f') {
                 return true;
             }
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if the applicant is from an approved university/institution
-     * Same logic as ApplicantDetailsExport
-     */
-    protected function hasApprovedUniversity(array $personalInfo): bool
-    {
-        $approvedUniversities = [
-            'Makerere University',
-            'Kyambogo University', 
-            'Busitema University',
-            'Islamic University in Uganda',
-            'Gulu University',
-            'Muni University',
-            'Mountains of the Moon University',
-            'Mbarara University of Science and Technology',
-            'Uganda Martyrs University',
-            'Kabale University',
-            'UNITE Kabale Campus',
-            'UNITE Kaliro Campus',
-            'UNITE Mubende Campus',
-            'UNITE Muni Campus',
-        ];
-
-        $institution = trim((string) ($personalInfo['institution'] ?? ''));
-        if ($institution === '') {
-            return false;
-        }
-
-        $normalizedInstitution = strtolower($institution);
-        
-        // Define keyword mappings for more accurate matching
-        $universityKeywords = [
-            'makerere' => ['Makerere University'],
-            'kyambogo' => ['Kyambogo University'],
-            'busitema' => ['Busitema University'],
-            'islamic' => ['Islamic University in Uganda'],
-            'iuiu' => ['Islamic University in Uganda'],
-            'gulu' => ['Gulu University'],
-            'muni' => ['Muni University', 'UNITE Muni Campus'],
-            'mountains of the moon' => ['Mountains of the Moon University'],
-            'mountain of the moon' => ['Mountains of the Moon University'],
-            'mmu' => ['Mountains of the Moon University'],
-            'mbarara' => ['Mbarara University of Science and Technology'],
-            'must' => ['Mbarara University of Science and Technology'],
-            'uganda martyrs' => ['Uganda Martyrs University'],
-            'umu' => ['Uganda Martyrs University'],
-            'kabale university' => ['Kabale University'],
-            'kabale' => ['Kabale University', 'UNITE Kabale Campus'],
-            'unite kabale' => ['UNITE Kabale Campus'],
-            'unite kaliro' => ['UNITE Kaliro Campus'],
-            'kaliro' => ['UNITE Kaliro Campus'],
-            'unite mubende' => ['UNITE Mubende Campus'],
-            'mubende' => ['UNITE Mubende Campus'],
-            'unite muni' => ['UNITE Muni Campus'],
-        ];
-
-        // Check for keyword matches
-        foreach ($universityKeywords as $keyword => $universities) {
-            if (str_contains($normalizedInstitution, $keyword)) {
-                foreach ($universities as $uni) {
-                    if (in_array($uni, $approvedUniversities)) {
-                        return true;
-                    }
-                }
+            if ($gender === 'male' || $gender === 'm') {
+                return false;
             }
         }
 
-        // Direct name matching (case-insensitive)
-        foreach ($approvedUniversities as $approvedUni) {
-            $normalizedApproved = strtolower($approvedUni);
-            
-            if ($normalizedInstitution === $normalizedApproved || 
-                str_contains($normalizedInstitution, $normalizedApproved) ||
-                str_contains($normalizedApproved, $normalizedInstitution)) {
-                return true;
-            }
-        }
-
+        // Default to unknown/unfiltered
         return false;
     }
 

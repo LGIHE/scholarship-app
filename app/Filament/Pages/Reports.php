@@ -536,13 +536,20 @@ class Reports extends Page implements HasForms
     public function exportParticipantProfile(): StreamedResponse
     {
         try {
-            // Extract filters from the form data
-            $dateFrom = $this->data['date_from'] ?? null;
-            $dateTo = $this->data['date_to'] ?? null;
-            $cohortId = $this->data['cohort_id'] ?? null;
+            // Extract ALL filters from the form data
+            $filters = [
+                'cohort_id' => $this->data['cohort_id'] ?? null,
+                'status' => $this->data['status'] ?? 'submitted',
+                'gender' => $this->data['gender'] ?? null,
+                'nationality' => $this->data['nationality'] ?? null,
+                'date_from' => $this->data['date_from'] ?? null,
+                'date_to' => $this->data['date_to'] ?? null,
+            ];
 
-            // Create the export instance
-            $export = new \App\Exports\ParticipantProfileExport($dateFrom, $dateTo, $cohortId);
+            \Log::info('ParticipantProfile: Starting export with filters', $filters);
+
+            // Create the export instance with all filters
+            $export = new \App\Exports\ParticipantProfileExport($filters);
             
             // Generate the ZIP file
             $zipPath = $export->generateZip();
@@ -568,7 +575,7 @@ class Reports extends Page implements HasForms
             
             Notification::make()
                 ->title('Export Failed')
-                ->body('Failed to generate participant profiles. Please try again.')
+                ->body($e->getMessage())
                 ->danger()
                 ->send();
 
