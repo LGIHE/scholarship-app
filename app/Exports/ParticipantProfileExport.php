@@ -63,14 +63,24 @@ class ParticipantProfileExport
 
             \Log::info("ParticipantProfileExport: ZIP file created, processing {$applications->count()} applications");
 
+            // Warn if processing a very large batch
+            if ($applications->count() > 500) {
+                \Log::warning("ParticipantProfileExport: Processing {$applications->count()} applications - this may take several minutes");
+            }
+
             // Track all temporary PDF files that need to stay until ZIP is closed
             $tempPdfFiles = [];
+            $processedCount = 0;
+            $totalCount = $applications->count();
 
-            foreach ($applications as $index => $application) {
+            foreach ($applications as $application) {
                 try {
-                    $currentNum = $index + 1;
-                    $totalNum = $applications->count();
-                    \Log::info("ParticipantProfileExport: Processing application {$application->id} ({$currentNum}/{$totalNum})");
+                    $processedCount++;
+                    
+                    // Log progress every 50 applications
+                    if ($processedCount % 50 === 0 || $processedCount === $totalCount) {
+                        \Log::info("ParticipantProfileExport: Progress: {$processedCount}/{$totalCount} applications processed");
+                    }
                     
                     $pdfFile = $this->addParticipantToZip($zip, $application, $tmpDir);
                     if ($pdfFile) {
@@ -82,15 +92,18 @@ class ParticipantProfileExport
                 }
             }
 
-            \Log::info("ParticipantProfileExport: Closing ZIP archive");
+            \Log::info("ParticipantProfileExport: Finished processing all applications. Closing ZIP archive with {$processedCount} participants");
             $zip->close();
+            \Log::info("ParticipantProfileExport: ZIP archive closed successfully");
             
             // Now it's safe to delete temporary PDF files
+            \Log::info("ParticipantProfileExport: Cleaning up " . count($tempPdfFiles) . " temporary PDF files");
             foreach ($tempPdfFiles as $pdfFile) {
                 if (file_exists($pdfFile)) {
                     unlink($pdfFile);
                 }
             }
+            \Log::info("ParticipantProfileExport: Temporary files cleaned up");
             
             if (!file_exists($zipPath)) {
                 throw new \Exception("ZIP file was not created at expected path: {$zipPath}");
@@ -132,9 +145,9 @@ class ParticipantProfileExport
         // Apply date filters (Submitted From / Submitted By)
         if (!empty($this->filters['date_from'])) {
             try {
-                $query->where('created_at', '>=',
-                    \Carbon\Carbon::parse($this->filters['date_from'], config('app.timezone'))->startOfDay()->utc()
-                );
+                $dateFrom = \Carbon\Carbon::parse($this->filters['date_from'], config('app.timezone'))->startOfDay()->utc();
+                $query->where('created_at', '>=', $dateFrom);
+                \Log::info("ParticipantProfileExport: Applying date_from filter: {$dateFrom}");
             } catch (\Exception $e) {
                 \Log::warning("ParticipantProfileExport: Invalid date_from format: " . $this->filters['date_from']);
             }
@@ -142,15 +155,19 @@ class ParticipantProfileExport
 
         if (!empty($this->filters['date_to'])) {
             try {
-                $query->where('created_at', '<=',
-                    \Carbon\Carbon::parse($this->filters['date_to'], config('app.timezone'))->endOfDay()->utc()
-                );
+                $dateTo = \Carbon\Carbon::parse($this->filters['date_to'], config('app.timezone'))->endOfDay()->utc();
+                $query->where('created_at', '<=', $dateTo);
+                \Log::info("ParticipantProfileExport: Applying date_to filter: {$dateTo}");
             } catch (\Exception $e) {
                 \Log::warning("ParticipantProfileExport: Invalid date_to format: " . $this->filters['date_to']);
             }
         }
 
+        // Log the SQL query for debugging
+        \Log::info("ParticipantProfileExport: Database query - " . $query->toSql());
+
         $applications = $query->get();
+        \Log::info("ParticipantProfileExport: Database returned {$applications->count()} applications before collection filters");
 
         // Apply gender filter if specified
         if (!empty($this->filters['gender'])) {
@@ -165,7 +182,9 @@ class ParticipantProfileExport
                 }
                 
                 return true;
-            });
+            })->values(); // Re-index the collection to fix counter issues
+            
+            \Log::info("ParticipantProfileExport: After gender filter: {$applications->count()} applications");
         }
 
         // Apply nationality filter if specified
@@ -183,9 +202,13 @@ class ParticipantProfileExport
                 }
                 
                 return true;
-            });
+            })->values(); // Re-index the collection
+            
+            \Log::info("ParticipantProfileExport: After nationality filter: {$applications->count()} applications");
         }
 
+        \Log::info("ParticipantProfileExport: Final filtered count: {$applications->count()} applications");
+        
         return $applications;
     }
 
@@ -203,8 +226,6 @@ class ParticipantProfileExport
         $otherNames = $this->sanitizeFilename($personalInfo['other_names'] ?? '');
         $folderName = $surname . ($otherNames ? '_' . $otherNames : '');
         
-        \Log::info("ParticipantProfileExport: Processing participant folder: {$folderName} (Application ID: {$application->id})");
-        
         // Ensure unique folder names in case of duplicates
         $originalFolderName = $folderName;
         $counter = 1;
@@ -217,7 +238,6 @@ class ParticipantProfileExport
 
         // Generate PDF profile
         try {
-            \Log::info("ParticipantProfileExport: Generating PDF for {$folderName}");
             $pdfPath = $this->generateParticipantPDF($application, $tmpDir, $folderName);
             if ($pdfPath && file_exists($pdfPath)) {
                 $addResult = $zip->addFile($pdfPath, $folderName . '/Application_Profile.pdf');
@@ -228,8 +248,6 @@ class ParticipantProfileExport
                         unlink($pdfPath);
                     }
                     $pdfPath = null;
-                } else {
-                    \Log::info("ParticipantProfileExport: PDF added to ZIP for {$folderName}");
                 }
             } else {
                 \Log::warning("ParticipantProfileExport: No PDF generated for {$folderName}");
@@ -282,16 +300,13 @@ class ParticipantProfileExport
                 $addResult = $zip->addFile($fullPath, $zipFileName);
                 if ($addResult) {
                     $addedCount++;
-                    \Log::info("ParticipantProfileExport: Added document {$field} for {$folderName}");
                 } else {
                     \Log::error("ParticipantProfileExport: Failed to add document {$field} for {$folderName}");
                 }
             } else {
-                \Log::warning("ParticipantProfileExport: Document file not found: {$fullPath} for {$folderName}");
+                \Log::warning("ParticipantProfileExport: Document file not found: {$fullPath}");
             }
         }
-        
-        \Log::info("ParticipantProfileExport: Added {$addedCount} documents for {$folderName}");
     }
 
     /**
@@ -300,8 +315,6 @@ class ParticipantProfileExport
     protected function generateParticipantPDF(Application $application, string $tmpDir, string $folderName): ?string
     {
         try {
-            \Log::info("ParticipantProfileExport: Starting PDF generation for {$folderName}");
-            
             $pdfData = [
                 'application' => $application,
                 'personalInfo' => $application->personal_info ?? [],
@@ -318,22 +331,17 @@ class ParticipantProfileExport
                 ->setPaper('a4', 'portrait');
 
             $pdfPath = $tmpDir . '/' . $folderName . '_profile.pdf';
-            \Log::info("ParticipantProfileExport: Saving PDF to {$pdfPath}");
-            
             $pdf->save($pdfPath);
             
             if (file_exists($pdfPath)) {
-                $fileSize = filesize($pdfPath);
-                \Log::info("ParticipantProfileExport: PDF saved successfully for {$folderName}. Size: {$fileSize} bytes");
                 return $pdfPath;
             } else {
-                \Log::error("ParticipantProfileExport: PDF file was not created at {$pdfPath}");
+                \Log::error("ParticipantProfileExport: PDF file was not created for {$folderName}");
                 return null;
             }
             
         } catch (\Exception $e) {
-            \Log::error("ParticipantProfileExport: Failed to generate PDF for participant {$folderName}: " . $e->getMessage());
-            \Log::error("ParticipantProfileExport: PDF generation stack trace: " . $e->getTraceAsString());
+            \Log::error("ParticipantProfileExport: Failed to generate PDF for {$folderName}: " . $e->getMessage());
             return null;
         }
     }
